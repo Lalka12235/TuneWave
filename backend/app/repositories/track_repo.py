@@ -1,4 +1,4 @@
-from sqlalchemy import select,insert,delete,update
+from sqlalchemy import select,insert,delete,update,and_
 from app.config.session import Session
 from backend.app.schemas.track_schema import (
     TrackSchema,
@@ -17,13 +17,13 @@ class TrackRepository:
                 TrackModel.title == track.title,
                 TrackModel.artist == track.artist,
             )
-            result = session.execute(stmt).scalar_one_or_none
+            result = session.execute(stmt).scalar_one_or_none()
             return result
         
     @staticmethod
     def create_track(track: TrackSchema):
         with Session() as session:
-            new_track = TrackSchema(
+            new_track = TrackModel(
                 title=track.title,
                 artist=track.artist,
                 genre=track.genre,
@@ -33,15 +33,15 @@ class TrackRepository:
             session.add(new_track)
             session.commit()
 
-            return True
+            return new_track
         
     @staticmethod
     def update_track(upd_track: UpdateTrackSchema):
         with Session() as session:
-            stmt = update(TrackModel).where(
+            stmt = update(TrackModel).where(and_(
                 TrackModel.title == upd_track.title,
                 TrackModel.artist == upd_track.artist,
-            )
+            )).values(title=upd_track.title,artist=upd_track.artist)
             result = session.execute(stmt)
             session.commit()
 
@@ -51,10 +51,10 @@ class TrackRepository:
     @staticmethod
     def delete_track(del_track: DeleteTrackSchema):
         with Session() as session:
-            stmt = delete(TrackModel).where(
+            stmt = delete(TrackModel).where(and_(
                 TrackModel.title == del_track.title,
                 TrackModel.artist == del_track.artist,
-            )
+            ))
 
             result = session.execute(stmt)
             session.commit()
