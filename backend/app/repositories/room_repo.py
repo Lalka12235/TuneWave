@@ -1,10 +1,8 @@
 from sqlalchemy import select,insert,delete,update,and_
 from app.config.session import Session
 from app.models.room import RoomModel,RoomTracksModel,RoomMembersModel
-from app.models.track import TrackModel
 from app.models.user import UserModel
 from app.services.track_services import TrackServices
-from app.services.user_services import UserServices
 from app.schemas.track_schema import GetTrackSchema
 
 
@@ -19,7 +17,7 @@ class RoomRepository:
         
         
     @staticmethod
-    def get_all_room(name: str):
+    def get_all_room():
         with Session() as session:
             stmt = select(RoomModel)
             return session.execute(stmt).scalars().all()
@@ -37,13 +35,11 @@ class RoomRepository:
 
 
     @staticmethod
-    def create_room(username: str,name: str):# кол-во учатстников и тип комнаты для обновление
+    def create_room(user_id: int,name: str):# кол-во учатстников и тип комнаты для обновление
         with Session() as session:
-            user = UserServices.get_user(username)
-
             new_room = RoomModel(
                 name=name,
-                owner_id=user.id,
+                owner_id=user_id,
             )
 
             session.add(new_room)
@@ -52,37 +48,47 @@ class RoomRepository:
             return new_room
     
     @staticmethod
-    def update_room(username: str , name: str,new_name: str): # кол-во учатстников и тип комнаты для обновление
+    def update_room(user_id: int , name: str,new_name: str): # кол-во учатстников и тип комнаты для обновление
         with Session() as session:
-            user = UserServices.get_user(username)
-
-            upd_room = update(RoomModel).where(
+            upd_room = update(RoomModel).where(and_(
                 RoomModel.name == name,
-            ).values(
+                RoomModel.owner_id == user_id,
+            )).values(
                 name=new_name,
-                owner_id=user.id,
+                owner_id=user_id,
             )
 
             result = session.execute(upd_room)
             session.commit()
             return result
+        
     
     @staticmethod
-    def delete_room(username: str):
+    def delete_room(user_id: str):
         with Session() as session:
-            user = UserServices.get_user(username)
-
-            stmt = delete(RoomModel).where(RoomModel.owner_id == user.id)
+            stmt = delete(RoomModel).where(RoomModel.owner_id == user_id)
             result = session.execute(stmt)
 
             return result
         
-    @staticmethod
-    def add_track_to_room(username: str, track: GetTrackSchema):
-        with Session() as session:
-            user = UserServices.get_user(username)
 
-            room = session.execute(select(RoomModel).where(RoomModel.owner_id == user.id)).scalar_one_or_none()
+    @staticmethod
+    def get_track_from_room(room_name: str, track: GetTrackSchema):
+        with Session() as session:
+            room = session.execute(select(RoomModel).where(RoomModel.name == room_name)).scalar_one_or_none()
+            tracks = TrackServices.get_track(track)
+            exist_track = session.execute(select(RoomTracksModel).where(and_(
+                RoomTracksModel.track_id == tracks.id,
+                RoomTracksModel.room_id == room.id,
+                ))).scalar_one_or_none()
+            return exist_track
+
+
+        
+    @staticmethod
+    def add_track_to_room(user_id: int, track: GetTrackSchema):
+        with Session() as session:
+            room = session.execute(select(RoomModel).where(RoomModel.owner_id == user_id)).scalar_one_or_none()
 
             tracks = TrackServices.get_track(track)
 
@@ -98,11 +104,9 @@ class RoomRepository:
         
 
     @staticmethod
-    def del_track_from_room(username: str, track: GetTrackSchema):
+    def del_track_from_room(user_id: int, track: GetTrackSchema):
         with Session() as session:
-            user = UserServices.get_user(username)
-
-            room = session.execute(select(RoomModel).where(RoomModel.owner_id == user.id)).scalar_one_or_none()
+            room = session.execute(select(RoomModel).where(RoomModel.owner_id == user_id)).scalar_one_or_none()
 
             tracks = TrackServices.get_track(track)
 
