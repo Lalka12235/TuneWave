@@ -3,6 +3,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped,mapped_column,relationship
 from app.models.user import UserModel
 from app.models.track import TrackModel
+from app.models.ban import BanModel
 
 class RoomModel(Base):
     __tablename__ = 'rooms'
@@ -22,6 +23,8 @@ class RoomModel(Base):
 
     # Связь "один-ко-многим" с RoomMembersModel (в комнате может быть несколько участников)
     room_members: Mapped[list['RoomMembersModel']] = relationship(back_populates='room')
+
+    ban: Mapped['BanModel'] = relationship(back_populates='room')
 
 
 class RoomTracksModel(Base):

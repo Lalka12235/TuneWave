@@ -4,6 +4,8 @@ from app.models.room import RoomModel,RoomTracksModel,RoomMembersModel
 from app.models.user import UserModel
 from app.services.track_services import TrackServices
 from app.schemas.track_schema import GetTrackSchema
+from app.models.ban import BanModel
+from datetime import datetime
 
 
 class RoomRepository:
@@ -147,3 +149,28 @@ class RoomRepository:
             result = session.execute(stmt)
             session.commit()
             return result
+        
+    
+    @staticmethod
+    def ban_user_in_room(user_id: int, room_id: int,ban_expired: datetime ,reason: str | None = None):
+        with Session() as session:
+            stmt = insert(BanModel).values(
+                reason=reason,
+                user_id=user_id,
+                room_id=room_id,
+                ban_expired=ban_expired
+            )
+            result = session.execute(stmt)
+            session.commit()
+            return result
+        
+
+    @staticmethod
+    def unban_user_in_room(user_id: int, room_id: int,):
+        with Session() as session:
+            stmt = delete(BanModel).where(and_(
+                BanModel.user_id==user_id,
+                BanModel.room_id==room_id,
+            ))
+            result = session.execute(stmt)
+            session.commit()

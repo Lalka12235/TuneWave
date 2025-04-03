@@ -7,6 +7,8 @@ from fastapi import HTTPException,status
 
 from app.utils.hash import make_hash_pass,verify_pass
 
+from datetime import datetime
+
 class RoomServices:
 
     @staticmethod
@@ -218,4 +220,56 @@ class RoomServices:
         
         if owner.id == room.owner_id:
             RoomRepository.del_user_from_room(user.id,room.id)
+            return {'message': 'leave room', 'detail': room_name}
+        
+    
+    @staticmethod
+    def ban_user_in_room(owner_name: str,username: str, room_name: str,ban_expired: datetime):
+        user = UserRepository.get_user(username)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        owner = UserRepository.get_user(owner_name)
+        
+
+        room = RoomRepository.get_room_on_name(room_name)
+        if not room:
+            raise HTTPException(status_code=404, detail="Room not found")
+        
+        members = [member['username'] for member in RoomRepository.get_members_from_room(room_name)]
+
+        if username not in members:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Member not found'
+            )
+        
+        if owner.id == room.owner_id:
+            RoomRepository.ban_user_in_room(user.id,room.id,ban_expired)
+            return {'message': 'leave room', 'detail': room_name}
+        
+    
+    @staticmethod
+    def unban_user_in_room(owner_name: str,username: str, room_name: str):
+        user = UserRepository.get_user(username)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        owner = UserRepository.get_user(owner_name)
+        
+
+        room = RoomRepository.get_room_on_name(room_name)
+        if not room:
+            raise HTTPException(status_code=404, detail="Room not found")
+        
+        members = [member['username'] for member in RoomRepository.get_members_from_room(room_name)]
+
+        if username not in members:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Member not found'
+            )
+        
+        if owner.id == room.owner_id:
+            RoomRepository.unban_user_in_room(user.id,room.id)
             return {'message': 'leave room', 'detail': room_name}
