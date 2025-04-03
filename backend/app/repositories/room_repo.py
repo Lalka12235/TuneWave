@@ -134,6 +134,7 @@ class RoomRepository:
             return result
         
         
+        
     @staticmethod
     def add_user_to_room(user_id: int, room_id: int):
         with Session() as session:

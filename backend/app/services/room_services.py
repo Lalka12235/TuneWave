@@ -1,5 +1,6 @@
 from app.repositories.room_repo import RoomRepository
 from app.repositories.user_repo import UserRepository
+from app.repositories.track_repo import TrackRepository
 
 from app.schemas.track_schema import GetTrackSchema
 
@@ -100,13 +101,23 @@ class RoomServices:
     
 
     @staticmethod
-    def add_track_to_room(username: str, room_name: str,track: GetTrackSchema):
+    def add_track_to_room(owner_name: str,username: str, room_name: str,track: GetTrackSchema):
         user =  UserRepository.get_user(username)
 
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='User not found'
+            )
+        
+        owner = UserRepository.get_user(owner_name)
+
+        tracks = TrackRepository.get_track(track)
+
+        if not tracks:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Track not found'
             )
         
         room = RoomRepository.get_room_on_name(room_name)
@@ -117,13 +128,13 @@ class RoomServices:
                 detail='Room not found'
             )
         
-        add_track = RoomRepository.add_track_to_room(user.id, track)
-
-        return {'message': 'add track to room','detail': add_track}
+        if owner.id == room.id:
+            RoomRepository.add_track_to_room(user.id, track)
+            return {'message': 'add track to room','detail': track}
     
 
     @staticmethod
-    def del_track_from_room(username: str,room_name: str ,track: GetTrackSchema):
+    def del_track_from_room(owner_name: str,username: str,room_name: str ,track: GetTrackSchema):
         user =  UserRepository.get_user(username)
 
         if not user:
@@ -131,6 +142,8 @@ class RoomServices:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='User not found'
             )
+        
+        owner = UserRepository.get_user(owner_name)
         
         room = RoomRepository.get_room_on_name(room_name)
 
@@ -148,9 +161,9 @@ class RoomServices:
                 detail='Track not found',
             )
         
-        result = RoomRepository.del_track_from_room(user.id,track)
-
-        return {'message': 'del track from room', 'detail': result}
+        if owner.id == room.id:
+            RoomRepository.del_track_from_room(user.id,track)
+            return {'message': 'del track from room', 'detail': tracks}
 
 
     @staticmethod
