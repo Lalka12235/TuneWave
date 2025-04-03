@@ -51,7 +51,7 @@ class RoomServices:
 
 
     @staticmethod
-    def create_room(username: str,name: str):
+    def create_room(username: str,name: str, max_member: int, private: bool):
         user =  UserRepository.get_user(username)
 
         if not user:
@@ -60,13 +60,13 @@ class RoomServices:
                 detail='User not found'
             )
         
-        room = RoomRepository.create_room(user.id,name)
+        room = RoomRepository.create_room(user.id,name,max_member,private)
 
         return {'message': 'create room','detail': room}
     
 
     @staticmethod
-    def update_room(username: str , name: str,new_name: str):# кол-во учатстников и тип комнаты для обновление
+    def update_room(username: str , name: str,new_name: str, max_member: int, private: bool):# кол-во учатстников и тип комнаты для обновление
         user =  UserRepository.get_user(username)
 
         if not user:
@@ -75,7 +75,7 @@ class RoomServices:
                 detail='User not found'
             )
         
-        upd_room = RoomRepository.update_room(user.id,name,new_name)
+        upd_room = RoomRepository.update_room(user.id,name,new_name,max_member,private)
 
         return {'message': 'update room','detail': upd_room}
     

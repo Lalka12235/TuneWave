@@ -35,11 +35,13 @@ class RoomRepository:
 
 
     @staticmethod
-    def create_room(user_id: int,name: str):# кол-во учатстников и тип комнаты для обновление
+    def create_room(user_id: int,name: str, max_members: int, private: bool):# кол-во учатстников и тип комнаты для обновление
         with Session() as session:
             new_room = RoomModel(
                 name=name,
                 owner_id=user_id,
+                max_members=max_members,
+                is_private=private,
             )
 
             session.add(new_room)
@@ -48,7 +50,7 @@ class RoomRepository:
             return new_room
     
     @staticmethod
-    def update_room(user_id: int , name: str,new_name: str): # кол-во учатстников и тип комнаты для обновление
+    def update_room(user_id: int , name: str,new_name: str,max_member: int,private: bool): # кол-во учатстников и тип комнаты для обновление
         with Session() as session:
             upd_room = update(RoomModel).where(and_(
                 RoomModel.name == name,
@@ -56,6 +58,8 @@ class RoomRepository:
             )).values(
                 name=new_name,
                 owner_id=user_id,
+                max_member=max_member,
+                is_private=private,
             )
 
             result = session.execute(upd_room)

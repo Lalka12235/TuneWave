@@ -12,15 +12,17 @@ class RoomModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
-    owner_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    max_member: Mapped[int]
+    is_private: Mapped[bool]
+    owner_id: Mapped[int] = mapped_column(ForeignKey('users.id'), unique=True)
 
-    # Связь "один-к-одному" с UserModel
-    owner: Mapped['UserModel'] = relationship(back_populates='room', uselist=False, foreign_keys='RoomModel.owner_id')
+    # Связь "один-к-одному" с UserModel (комната принадлежит только одному пользователю)
+    owner: Mapped['UserModel'] = relationship(back_populates='room')
 
-    # Связь "один-ко-многим" с RoomTracksModel
+    # Связь "один-ко-многим" с RoomTracksModel (в комнате могут быть несколько треков)
     room_tracks: Mapped[list['RoomTracksModel']] = relationship(back_populates='room')
 
-    # Связь "один-ко-многим" с RoomMembersModel
+    # Связь "один-ко-многим" с RoomMembersModel (в комнате может быть несколько участников)
     room_members: Mapped[list['RoomMembersModel']] = relationship(back_populates='room')
 
 
@@ -31,10 +33,10 @@ class RoomTracksModel(Base):
     room_id: Mapped[int] = mapped_column(ForeignKey('rooms.id'))
     track_id: Mapped[int] = mapped_column(ForeignKey('tracks.id'))
 
-    # Связь "многие-к-одному" с RoomModel
+    # Связь "многие-к-одному" с RoomModel (одна комната содержит много треков)
     room: Mapped['RoomModel'] = relationship(back_populates='room_tracks')
 
-    # Связь "многие-к-одному" с TrackModel
+    # Связь "многие-к-одному" с TrackModel (один трек может быть в разных комнатах)
     track: Mapped['TrackModel'] = relationship(back_populates='room_tracks')
 
 
@@ -44,12 +46,14 @@ class RoomMembersModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     room_id: Mapped[int] = mapped_column(ForeignKey('rooms.id'))
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    role: Mapped[str]
 
-    # Связь "многие-к-одному" с RoomModel
+    # Связь "многие-к-одному" с RoomModel (одна комната содержит несколько участников)
     room: Mapped['RoomModel'] = relationship(back_populates='room_members')
 
-    # Связь "многие-к-одному" с UserModel
-    user: Mapped['UserModel'] = relationship(back_populates='room_member')
+    # Связь "многие-к-одному" с UserModel (один пользователь может состоять только в одной комнате)
+    user: Mapped['UserModel'] = relationship()
+
 
 
 class UserModel(Base):

@@ -9,6 +9,8 @@ class RoomModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
+    max_member: Mapped[int]
+    is_private: Mapped[bool]
     owner_id: Mapped[int] = mapped_column(ForeignKey('users.id'), unique=True)
 
     # Связь "один-к-одному" с UserModel (комната принадлежит только одному пользователю)
@@ -41,6 +43,7 @@ class RoomMembersModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     room_id: Mapped[int] = mapped_column(ForeignKey('rooms.id'))
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    role: Mapped[str]
 
     # Связь "многие-к-одному" с RoomModel (одна комната содержит несколько участников)
     room: Mapped['RoomModel'] = relationship(back_populates='room_members')
