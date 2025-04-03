@@ -35,22 +35,30 @@ class RoomRepository:
 
 
     @staticmethod
-    def create_room(user_id: int,name: str, max_members: int, private: bool):# кол-во учатстников и тип комнаты для обновление
+    def create_room(user_id: int,name: str, max_members: int, private: bool, password_hash: str | None = None):
         with Session() as session:
             new_room = RoomModel(
                 name=name,
                 owner_id=user_id,
                 max_members=max_members,
                 is_private=private,
+                password=password_hash,
+            )
+
+            member = RoomMembersModel(
+                room_id=new_room.id,
+                user_id=user_id,
+                role='Admin'
             )
 
             session.add(new_room)
+            session.add(member)
             session.commit()
 
             return new_room
     
     @staticmethod
-    def update_room(user_id: int , name: str,new_name: str,max_member: int,private: bool): # кол-во учатстников и тип комнаты для обновление
+    def update_room(user_id: int , name: str,new_name: str,max_member: int,private: bool):
         with Session() as session:
             upd_room = update(RoomModel).where(and_(
                 RoomModel.name == name,
@@ -119,6 +127,23 @@ class RoomRepository:
                 RoomModel.id == room.id,
                 ))
             
+            result = session.execute(stmt)
+            session.commit()
+            return result
+        
+        
+    @staticmethod
+    def add_user_to_room(user_id: int, room_id: int):
+        with Session() as session:
+            new_member = RoomMembersModel(user_id=user_id, room_id=room_id,role='Member')
+            session.add(new_member)
+            session.commit()
+
+
+    @staticmethod
+    def del_user_from_room(user_id: int, room_id: int):
+        with Session() as session:
+            stmt = delete(RoomMembersModel).where(RoomMembersModel.user_id == user_id, RoomMembersModel.room_id == room_id)
             result = session.execute(stmt)
             session.commit()
             return result

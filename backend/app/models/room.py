@@ -11,6 +11,7 @@ class RoomModel(Base):
     name: Mapped[str]
     max_member: Mapped[int]
     is_private: Mapped[bool]
+    password: Mapped[str]
     owner_id: Mapped[int] = mapped_column(ForeignKey('users.id'), unique=True)
 
     # Связь "один-к-одному" с UserModel (комната принадлежит только одному пользователю)
