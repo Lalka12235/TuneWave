@@ -14,7 +14,7 @@ class TrackServices:
     def get_track(track: GetTrackSchema):
         tracks = TrackRepository.get_track(track)
         
-        if not tracks:
+        if tracks is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Track not found'
@@ -42,7 +42,7 @@ class TrackServices:
     def update_track(upd_track: UpdateTrackSchema):
         tracks = TrackRepository.get_track(upd_track)
         
-        if not tracks:
+        if tracks is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Track not found'
@@ -57,7 +57,7 @@ class TrackServices:
     def delete_track(del_track: DeleteTrackSchema):
         tracks = TrackRepository.get_track(del_track)
         
-        if not tracks:
+        if tracks is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Track not found'

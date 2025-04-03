@@ -8,7 +8,7 @@ class UserServices:
     @staticmethod
     def get_user(username: str):
         user = UserRepository.get_user(username)
-        if not user:
+        if user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='User not found'

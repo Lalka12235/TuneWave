@@ -15,16 +15,10 @@ class RoomModel(Base):
     password: Mapped[str]
     owner_id: Mapped[int] = mapped_column(ForeignKey('users.id'), unique=True)
 
-    # Связь "один-к-одному" с UserModel (комната принадлежит только одному пользователю)
     owner: Mapped['UserModel'] = relationship(back_populates='room')
-
-    # Связь "один-ко-многим" с RoomTracksModel (в комнате могут быть несколько треков)
     room_tracks: Mapped[list['RoomTracksModel']] = relationship(back_populates='room')
-
-    # Связь "один-ко-многим" с RoomMembersModel (в комнате может быть несколько участников)
     room_members: Mapped[list['RoomMembersModel']] = relationship(back_populates='room')
-
-    ban: Mapped['BanModel'] = relationship(back_populates='room')
+    bans: Mapped[list['BanModel']] = relationship(back_populates='room') 
 
 
 class RoomTracksModel(Base):

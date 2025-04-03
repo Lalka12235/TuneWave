@@ -13,10 +13,6 @@ class UserModel(Base):
     email: Mapped[str]
     password_hash: Mapped[str]
 
-    # Связь "один-к-одному" с RoomModel (у пользователя может быть только одна комната)
     room: Mapped['RoomModel'] = relationship(back_populates='owner', uselist=False)
-
-    # Связь "один-ко-многим" с TrackModel (пользователь может добавлять несколько треков)
     tracks: Mapped[list['TrackModel']] = relationship(back_populates='user')
-
-    ban: Mapped['BanModel'] = relationship(back_populates='user')
+    ban: Mapped[list['BanModel']] = relationship(back_populates='user')

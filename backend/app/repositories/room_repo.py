@@ -81,9 +81,7 @@ class RoomRepository:
     def delete_room(user_id: str):
         with Session() as session:
             stmt = delete(RoomModel).where(RoomModel.owner_id == user_id)
-            result = session.execute(stmt)
-
-            return result
+            session.execute(stmt)
         
 
     @staticmethod
@@ -129,9 +127,8 @@ class RoomRepository:
                 RoomModel.id == room.id,
                 ))
             
-            result = session.execute(stmt)
+            session.execute(stmt)
             session.commit()
-            return result
         
         
         
@@ -147,10 +144,20 @@ class RoomRepository:
     def del_user_from_room(user_id: int, room_id: int):
         with Session() as session:
             stmt = delete(RoomMembersModel).where(RoomMembersModel.user_id == user_id, RoomMembersModel.room_id == room_id)
-            result = session.execute(stmt)
+            session.execute(stmt)
             session.commit()
-            return result
         
+
+    @staticmethod
+    def get_ban_for_user(user_id: int, room_id: int):
+        with Session() as session:
+            stmt = select(BanModel).where(and_(
+                BanModel.user_id == user_id,
+                BanModel.room_id == room_id,
+                BanModel.ban_expired > datetime.now()
+            ))
+            return session.execute(stmt).scalar_one_or_none()
+
     
     @staticmethod
     def ban_user_in_room(user_id: int, room_id: int,ban_expired: datetime ,reason: str | None = None):
@@ -161,9 +168,8 @@ class RoomRepository:
                 room_id=room_id,
                 ban_expired=ban_expired
             )
-            result = session.execute(stmt)
+            session.execute(stmt)
             session.commit()
-            return result
         
 
     @staticmethod
@@ -173,5 +179,5 @@ class RoomRepository:
                 BanModel.user_id==user_id,
                 BanModel.room_id==room_id,
             ))
-            result = session.execute(stmt)
+            session.execute(stmt)
             session.commit()

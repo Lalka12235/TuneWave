@@ -16,7 +16,7 @@ class RoomServices:
     def get_room_on_name(name: str):
         room = RoomRepository.get_room_on_name(name)
 
-        if not room:
+        if room is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Room not found'
@@ -29,7 +29,7 @@ class RoomServices:
     def get_all_room():
         rooms = RoomRepository.get_all_room()
 
-        if not rooms:
+        if rooms is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='No one Rooms'
@@ -42,7 +42,7 @@ class RoomServices:
     def get_members_from_room(room_name: str):
         room = RoomRepository.get_room_on_name(room_name)
 
-        if not room:
+        if room is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Room not found'
@@ -57,7 +57,7 @@ class RoomServices:
     def create_room(username: str,name: str, max_member: int, private: bool, password: str | None = None):
         user =  UserRepository.get_user(username)
 
-        if not user:
+        if user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='User not found'
@@ -74,7 +74,7 @@ class RoomServices:
     def update_room(username: str , name: str,new_name: str, max_member: int, private: bool):
         user =  UserRepository.get_user(username)
 
-        if not user:
+        if user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='User not found'
@@ -82,14 +82,14 @@ class RoomServices:
         
         upd_room = RoomRepository.update_room(user.id,name,new_name,max_member,private)
 
-        return {'message': 'update room','detail': upd_room}
+        return {'message': 'update room','detail': ''}
     
 
     @staticmethod
     def delete_room(username: str):
         user =  UserRepository.get_user(username)
 
-        if not user:
+        if user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='User not found'
@@ -97,14 +97,14 @@ class RoomServices:
         
         deL_room = RoomRepository.delete_room(user.id)
 
-        return {'message': 'delete room','detail': deL_room}
+        return {'message': 'delete room','detail': ''}
     
 
     @staticmethod
     def add_track_to_room(owner_name: str,username: str, room_name: str,track: GetTrackSchema):
         user =  UserRepository.get_user(username)
 
-        if not user:
+        if user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='User not found'
@@ -114,7 +114,7 @@ class RoomServices:
 
         tracks = TrackRepository.get_track(track)
 
-        if not tracks:
+        if tracks is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Track not found'
@@ -122,7 +122,7 @@ class RoomServices:
         
         room = RoomRepository.get_room_on_name(room_name)
 
-        if not room:
+        if room is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Room not found'
@@ -130,14 +130,14 @@ class RoomServices:
         
         if owner.id == room.id:
             RoomRepository.add_track_to_room(user.id, track)
-            return {'message': 'add track to room','detail': track}
+            return {'message': 'add track to room','detail': ''}
     
 
     @staticmethod
     def del_track_from_room(owner_name: str,username: str,room_name: str ,track: GetTrackSchema):
         user =  UserRepository.get_user(username)
 
-        if not user:
+        if user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='User not found'
@@ -147,7 +147,7 @@ class RoomServices:
         
         room = RoomRepository.get_room_on_name(room_name)
 
-        if not room:
+        if room is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Room not found'
@@ -155,7 +155,7 @@ class RoomServices:
         
         tracks = RoomRepository.get_track_from_room(room_name,track)
 
-        if not tracks:
+        if tracks is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='Track not found',
@@ -163,17 +163,17 @@ class RoomServices:
         
         if owner.id == room.id:
             RoomRepository.del_track_from_room(user.id,track)
-            return {'message': 'del track from room', 'detail': tracks}
+            return {'message': 'del track from room', 'detail': ''}
 
 
     @staticmethod
     def join_room(username: str, room_name: str, password: str | None = None):
         user = UserRepository.get_user(username)
-        if not user:
+        if user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
         room = RoomRepository.get_room_on_name(room_name)
-        if not room:
+        if room is None:
             raise HTTPException(status_code=404, detail="Room not found")
 
         if room.is_private:
@@ -198,11 +198,11 @@ class RoomServices:
     @staticmethod
     def leave_room(username: str, room_name: str,):
         user = UserRepository.get_user(username)
-        if not user:
+        if user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
         room = RoomRepository.get_room_on_name(room_name)
-        if not room:
+        if room is None:
             raise HTTPException(status_code=404, detail="Room not found")
         
         
@@ -213,23 +213,16 @@ class RoomServices:
     @staticmethod
     def kick_member(owner_name: str,username: str, room_name: str):
         user = UserRepository.get_user(username)
-        if not user:
+        if user is None:
             raise HTTPException(status_code=404, detail="User not found")
         
         owner = UserRepository.get_user(owner_name)
         
 
         room = RoomRepository.get_room_on_name(room_name)
-        if not room:
+        if room is None:
             raise HTTPException(status_code=404, detail="Room not found")
         
-        members = [member['username'] for member in RoomRepository.get_members_from_room(room_name)]
-
-        if username not in members:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Member not found'
-            )
         
         if owner.id == room.owner_id:
             RoomRepository.del_user_from_room(user.id,room.id)
@@ -239,23 +232,19 @@ class RoomServices:
     @staticmethod
     def ban_user_in_room(owner_name: str,username: str, room_name: str,ban_expired: datetime):
         user = UserRepository.get_user(username)
-        if not user:
+        if user is None:
             raise HTTPException(status_code=404, detail="User not found")
         
         owner = UserRepository.get_user(owner_name)
         
 
         room = RoomRepository.get_room_on_name(room_name)
-        if not room:
+        if room is None:
             raise HTTPException(status_code=404, detail="Room not found")
         
-        members = [member['username'] for member in RoomRepository.get_members_from_room(room_name)]
-
-        if username not in members:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Member not found'
-            )
+        existing_ban = RoomRepository.get_ban_for_user(user.id, room.id)
+        if existing_ban:
+            raise HTTPException(status_code=400, detail="User is already banned.")
         
         if owner.id == room.owner_id:
             RoomRepository.ban_user_in_room(user.id,room.id,ban_expired)
@@ -265,23 +254,16 @@ class RoomServices:
     @staticmethod
     def unban_user_in_room(owner_name: str,username: str, room_name: str):
         user = UserRepository.get_user(username)
-        if not user:
+        if user is None:
             raise HTTPException(status_code=404, detail="User not found")
         
         owner = UserRepository.get_user(owner_name)
         
 
         room = RoomRepository.get_room_on_name(room_name)
-        if not room:
+        if room is None:
             raise HTTPException(status_code=404, detail="Room not found")
         
-        members = [member['username'] for member in RoomRepository.get_members_from_room(room_name)]
-
-        if username not in members:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Member not found'
-            )
         
         if owner.id == room.owner_id:
             RoomRepository.unban_user_in_room(user.id,room.id)

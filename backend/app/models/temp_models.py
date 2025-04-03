@@ -1,6 +1,7 @@
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from datetime import datetime
 
 
 class Base(DeclarativeBase):
@@ -14,16 +15,13 @@ class RoomModel(Base):
     name: Mapped[str]
     max_member: Mapped[int]
     is_private: Mapped[bool]
+    password: Mapped[str]
     owner_id: Mapped[int] = mapped_column(ForeignKey('users.id'), unique=True)
 
-    # Связь "один-к-одному" с UserModel (комната принадлежит только одному пользователю)
     owner: Mapped['UserModel'] = relationship(back_populates='room')
-
-    # Связь "один-ко-многим" с RoomTracksModel (в комнате могут быть несколько треков)
     room_tracks: Mapped[list['RoomTracksModel']] = relationship(back_populates='room')
-
-    # Связь "один-ко-многим" с RoomMembersModel (в комнате может быть несколько участников)
     room_members: Mapped[list['RoomMembersModel']] = relationship(back_populates='room')
+    bans: Mapped[list['BanModel']] = relationship(back_populates='room') 
 
 
 class RoomTracksModel(Base):
@@ -64,14 +62,10 @@ class UserModel(Base):
     email: Mapped[str]
     password_hash: Mapped[str]
 
-    # Связь "один-к-одному" с RoomModel 
-    room: Mapped['RoomModel'] = relationship(back_populates='owner', uselist=False, foreign_keys='RoomModel.owner_id')
-
-    # Связь "один-ко-многим" с TrackModel
+    room: Mapped['RoomModel'] = relationship(back_populates='owner', uselist=False)
     tracks: Mapped[list['TrackModel']] = relationship(back_populates='user')
+    ban: Mapped[list['BanModel']] = relationship(back_populates='user')
 
-    # Связь "один-к-одному" с RoomMembersModel
-    room_member: Mapped['RoomMembersModel'] = relationship(back_populates='user', uselist=False)
 
 
 class TrackModel(Base):
@@ -89,3 +83,16 @@ class TrackModel(Base):
 
     # Связь "один-ко-многим" с RoomTracksModel
     room_tracks: Mapped[list['RoomTracksModel']] = relationship(back_populates='track', cascade="all, delete-orphan")
+
+
+class BanModel(Base):
+    __tablename__ = 'bans'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    reason: Mapped[str]
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    room_id: Mapped[int] = mapped_column(ForeignKey('rooms.id')) 
+    ban_expired: Mapped[datetime]
+
+    user: Mapped['UserModel'] = relationship(back_populates='ban') 
+    room: Mapped['RoomModel'] = relationship(back_populates='bans')

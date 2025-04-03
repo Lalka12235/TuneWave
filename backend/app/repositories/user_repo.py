@@ -21,10 +21,8 @@ class UserRepository:
             hash_pass = make_hash_pass(user.password)
 
             stmt = insert(UserModel).values(username=user.username,email=user.email,password_hash=hash_pass)
-            result = session.execute(stmt)
+            session.execute(stmt)
             session.commit()
-
-            return result
         
     @staticmethod
     def delete_user(user: UserLoginSchema):
@@ -32,7 +30,5 @@ class UserRepository:
             hash_pass = make_hash_pass(user.password)
 
             stmt = delete(UserModel).where(UserModel.username == user.username,UserModel.password_hash == hash_pass).returning(UserModel.id)
-            result = session.execute(stmt)
+            session.execute(stmt)
             session.commit()
-
-            return result

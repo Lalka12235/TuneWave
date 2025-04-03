@@ -56,8 +56,5 @@ class TrackRepository:
                 TrackModel.artist == del_track.artist,
             ))
 
-            result = session.execute(stmt)
+            session.execute(stmt)
             session.commit()
-
-            return result
-        
