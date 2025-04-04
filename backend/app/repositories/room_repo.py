@@ -28,7 +28,7 @@ class RoomRepository:
     @staticmethod
     def get_members_from_room(room_name: str):
         with Session() as session:
-            room = session.execute(select(RoomModel).where(RoomModel.name == room_name)).scalar_one_or_none()
+            room = RoomRepository.get_room_on_name(room_name)
 
             stmt = select(UserModel.id, UserModel.username).join(RoomMembersModel).where(RoomMembersModel.room_id == room.id)
             users = session.execute(stmt).all()
@@ -45,6 +45,7 @@ class RoomRepository:
                 max_members=max_members,
                 is_private=private,
                 password=password_hash,
+                cuurent_track_id=None,
             )
 
             member = RoomMembersModel(
@@ -72,9 +73,9 @@ class RoomRepository:
                 is_private=private,
             )
 
-            result = session.execute(upd_room)
+            session.execute(upd_room)
             session.commit()
-            return result
+            return upd_room
         
     
     @staticmethod
@@ -83,54 +84,90 @@ class RoomRepository:
             stmt = delete(RoomModel).where(RoomModel.owner_id == user_id)
             session.execute(stmt)
         
+    
+    @staticmethod
+    def set_current_track(room_id: int, track_id: int):
+        with Session() as session:
+            stmt = update(RoomModel).where(
+                RoomModel.id == room_id,
+            ).values(
+                current_track_id=track_id,
+            )
+            session.execute(stmt)
+            session.commit()
+
+    
+    @staticmethod
+    def get_current_track(room_id):
+        with Session() as session:
+            stmt = select(RoomModel).where(RoomModel.id == room_id)
+            result = session.execute(stmt).scalar_one_or_none()
+            return result
+        
 
     @staticmethod
-    def get_track_from_room(room_name: str, track: GetTrackSchema):
+    def get_track_queue(room_id: int):
         with Session() as session:
-            room = session.execute(select(RoomModel).where(RoomModel.name == room_name)).scalar_one_or_none()
-            tracks = TrackServices.get_track(track)
-            exist_track = session.execute(select(RoomTracksModel).where(and_(
-                RoomTracksModel.track_id == tracks.id,
-                RoomTracksModel.room_id == room.id,
-                ))).scalar_one_or_none()
-            return exist_track
-
-
+            stmt =  select(RoomTracksModel).where(RoomTracksModel.room_id == room_id).order_by(RoomTracksModel.position.asc())
+            return session.execute(stmt).scalars()
+        
+            
         
     @staticmethod
-    def add_track_to_room(user_id: int, track: GetTrackSchema):
+    def add_track_to_queue(user_id: int, track: GetTrackSchema):
         with Session() as session:
             room = session.execute(select(RoomModel).where(RoomModel.owner_id == user_id)).scalar_one_or_none()
 
             tracks = TrackServices.get_track(track)
 
+            max_position = session.execute(
+                select(RoomTracksModel)
+                .where(RoomTracksModel.room_id == room.id,)
+                .order_by(RoomTracksModel.position.desc())
+                .limit(1)
+            ).scalar() or 0
+
             track_to_room = RoomTracksModel(
                 room_id=room.id,
-                track_id=tracks.id
+                track_id=tracks.id,
+                position=max_position + 1
             )
 
             session.add(track_to_room)
             session.commit()
-
             return track_to_room
         
 
     @staticmethod
-    def del_track_from_room(user_id: int, track: GetTrackSchema):
+    def del_track_from_queue(room_id: int, track_id: int):
         with Session() as session:
-            room = session.execute(select(RoomModel).where(RoomModel.owner_id == user_id)).scalar_one_or_none()
-
-            tracks = TrackServices.get_track(track)
-
             stmt= delete(RoomTracksModel).where(and_(
-                RoomTracksModel.track_id == tracks.id,
-                RoomModel.id == room.id,
+                RoomTracksModel.track_id == track_id,
+                RoomTracksModel.id == room_id,
                 ))
             
             session.execute(stmt)
             session.commit()
-        
-        
+
+
+    @staticmethod
+    def skip_track_queue(room_id: int):
+        with Session() as session:
+            queue = RoomRepository.get_track_queue(room_id)
+            current_track = queue[0]
+
+            session.delete(current_track)
+            session.commit()
+
+            if len(queue) > 1:
+                next_track = queue[1]
+                RoomRepository.set_current_track(room_id, next_track.track_id)
+            else:
+                RoomRepository.set_current_track(room_id,None)
+
+            session.commit()
+
+            
         
     @staticmethod
     def add_user_to_room(user_id: int, room_id: int):
@@ -181,3 +218,10 @@ class RoomRepository:
             ))
             session.execute(stmt)
             session.commit()
+
+
+    @staticmethod
+    def change_state_player(room_id: int, state: str):
+        with Session() as session:
+            stmt = update(RoomModel).where(RoomModel.id == room_id).values(player_state=state)
+            session.execute(stmt)

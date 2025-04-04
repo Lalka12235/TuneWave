@@ -80,7 +80,7 @@ class RoomServices:
                 detail='User not found'
             )
         
-        upd_room = RoomRepository.update_room(user.id,name,new_name,max_member,private)
+        RoomRepository.update_room(user.id,name,new_name,max_member,private)
 
         return {'message': 'update room','detail': ''}
     
@@ -95,13 +95,68 @@ class RoomServices:
                 detail='User not found'
             )
         
-        deL_room = RoomRepository.delete_room(user.id)
+        RoomRepository.delete_room(user.id)
 
         return {'message': 'delete room','detail': ''}
     
 
     @staticmethod
-    def add_track_to_room(owner_name: str,username: str, room_name: str,track: GetTrackSchema):
+    def set_current_track(room_name: str, track: GetTrackSchema):
+        tracks = TrackRepository.get_track(track)
+
+        if tracks is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Track not found'
+            )
+        
+        room = RoomRepository.get_room_on_name(room_name)
+
+        if room is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Room not found'
+            )
+
+        RoomRepository.set_current_track(room.id,tracks.id)
+
+        return {'message': 'set current track', 'detail': ''}
+
+
+    @staticmethod
+    def get_current_track(room_name: str):
+        room = RoomRepository.get_room_on_name(room_name)
+
+        if room is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Room not found'
+            )
+        
+        RoomRepository.get_current_track(room.id)
+
+        return {'message': 'get current track', 'detail': ''}
+    
+
+
+    @staticmethod
+    def get_track_queue(room_name: str):
+        room = RoomRepository.get_room_on_name(room_name)
+
+        if room is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Room not found'
+            )
+
+        queue = RoomRepository.get_track_queue(room.id)
+
+        return {'message': 'track queue', 'detail': queue}
+
+    
+
+    @staticmethod
+    def add_track_to_queue(owner_name: str,username: str, room_name: str,track: GetTrackSchema):
         user =  UserRepository.get_user(username)
 
         if user is None:
@@ -128,13 +183,18 @@ class RoomServices:
                 detail='Room not found'
             )
         
-        if owner.id == room.id:
-            RoomRepository.add_track_to_room(user.id, track)
+        if owner.id == room.owner_id:
+            RoomRepository.add_track_to_queue(user.id, track)
             return {'message': 'add track to room','detail': ''}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='None'
+            )
     
 
     @staticmethod
-    def del_track_from_room(owner_name: str,username: str,room_name: str ,track: GetTrackSchema):
+    def del_track_from_queue(owner_name: str,username: str,room_name: str ,track: GetTrackSchema):
         user =  UserRepository.get_user(username)
 
         if user is None:
@@ -153,7 +213,7 @@ class RoomServices:
                 detail='Room not found'
             )
         
-        tracks = RoomRepository.get_track_from_room(room_name,track)
+        tracks = RoomRepository.get_track_queue(room.id)
 
         if tracks is None:
             raise HTTPException(
@@ -161,9 +221,30 @@ class RoomServices:
                 detail='Track not found',
             )
         
-        if owner.id == room.id:
-            RoomRepository.del_track_from_room(user.id,track)
+        if owner.id == room.owner_id:
+            RoomRepository.del_track_from_queue(room.id,track)
             return {'message': 'del track from room', 'detail': ''}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='None'
+            )
+
+
+    @staticmethod
+    def skip_track_queue(room_name: str):
+        room = RoomRepository.get_room_on_name(room_name)
+
+        if room is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Room not found'
+            )
+        
+        skip = RoomRepository.skip_track_queue(room.id)
+
+        return {'message': 'skip track','detail': ''}
+
 
 
     @staticmethod
@@ -267,4 +348,7 @@ class RoomServices:
         
         if owner.id == room.owner_id:
             RoomRepository.unban_user_in_room(user.id,room.id)
-            return {'message': 'leave room', 'detail': room_name}
+            return {'message': 'leave room', 'detail': room_name} 
+        
+
+    
