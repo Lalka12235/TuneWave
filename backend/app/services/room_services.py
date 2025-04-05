@@ -3,6 +3,7 @@ from app.repositories.user_repo import UserRepository
 from app.repositories.track_repo import TrackRepository
 
 from app.schemas.track_schema import GetTrackSchema
+from app.schemas.room_schema import RoomSchema, UpdRoomSchema
 
 from fastapi import HTTPException,status
 
@@ -54,7 +55,7 @@ class RoomServices:
 
 
     @staticmethod
-    def create_room(username: str,name: str, max_member: int, private: bool, password: str | None = None):
+    def create_room(username: str,room_setting: RoomSchema):
         user =  UserRepository.get_user(username)
 
         if user is None:
@@ -63,15 +64,15 @@ class RoomServices:
                 detail='User not found'
             )
         
-        hash_pass = make_hash_pass(password) if private and password else None
+        hash_pass = make_hash_pass(room_setting.password) if room_setting.private and room_setting.password else None
         
-        room = RoomRepository.create_room(user.id,name,max_member,private,hash_pass)
+        room = RoomRepository.create_room(user.id,room_setting.name,room_setting.max_member,room_setting.private,hash_pass)
 
         return {'message': 'create room','detail': room}
     
 
     @staticmethod
-    def update_room(username: str , name: str,new_name: str, max_member: int, private: bool):
+    def update_room(username: str , upd_room: UpdRoomSchema):
         user =  UserRepository.get_user(username)
 
         if user is None:
@@ -80,7 +81,7 @@ class RoomServices:
                 detail='User not found'
             )
         
-        RoomRepository.update_room(user.id,name,new_name,max_member,private)
+        RoomRepository.update_room(user.id,upd_room.name,upd_room.new_name,upd_room.max_member,upd_room.private)
 
         return {'message': 'update room','detail': ''}
     
@@ -156,7 +157,7 @@ class RoomServices:
     
 
     @staticmethod
-    def add_track_to_queue(owner_name: str,username: str, room_name: str,track: GetTrackSchema):
+    def add_track_to_queue(username: str, room_name: str,track: GetTrackSchema):
         user =  UserRepository.get_user(username)
 
         if user is None:
@@ -165,7 +166,6 @@ class RoomServices:
                 detail='User not found'
             )
         
-        owner = UserRepository.get_user(owner_name)
 
         tracks = TrackRepository.get_track(track)
 
@@ -183,7 +183,7 @@ class RoomServices:
                 detail='Room not found'
             )
         
-        if owner.id == room.owner_id:
+        if user.id == room.owner_id:
             RoomRepository.add_track_to_queue(user.id, track)
             return {'message': 'add track to room','detail': ''}
         else:
@@ -194,7 +194,7 @@ class RoomServices:
     
 
     @staticmethod
-    def del_track_from_queue(owner_name: str,username: str,room_name: str ,track: GetTrackSchema):
+    def del_track_from_queue(username: str,room_name: str ,track: GetTrackSchema):
         user =  UserRepository.get_user(username)
 
         if user is None:
@@ -203,7 +203,6 @@ class RoomServices:
                 detail='User not found'
             )
         
-        owner = UserRepository.get_user(owner_name)
         
         room = RoomRepository.get_room_on_name(room_name)
 
@@ -221,7 +220,7 @@ class RoomServices:
                 detail='Track not found',
             )
         
-        if owner.id == room.owner_id:
+        if user.id == room.owner_id:
             RoomRepository.del_track_from_queue(room.id,track)
             return {'message': 'del track from room', 'detail': ''}
         else:
@@ -350,5 +349,3 @@ class RoomServices:
             RoomRepository.unban_user_in_room(user.id,room.id)
             return {'message': 'leave room', 'detail': room_name} 
         
-
-    

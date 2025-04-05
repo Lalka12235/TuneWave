@@ -4,7 +4,7 @@ from app.repositories.track_repo import TrackRepository
 from app.schemas.track_schema import GetTrackSchema
 
 
-class PlayerSevice:
+class PlayerService:
 
     @staticmethod
     def start_track(room_name: str):
@@ -28,7 +28,7 @@ class PlayerSevice:
     
 
     @staticmethod
-    def pause_track(room_name: str, track: GetTrackSchema):
+    def pause_track(room_name: str):
         room = RoomRepository.get_room_on_name(room_name)
         
         if room is None:

@@ -8,21 +8,25 @@ track = APIRouter(
 )
 
 
-@track.get('/track/{track.artist}/{track.title}/get')
-async def get_track(track: GetTrackSchema):
+@track.get('/track/{artist}/{title}/get')
+async def get_track(artist: str, title: str):
+    track = GetTrackSchema(artist=artist, title=title)
     return TrackServices.get_track(track)
 
 
-@track.post('/track/{track.artist}/{track.title}/create')
-async def create_track(username: str,track: TrackSchema):
+@track.post('/track/{track}/{track}/create')
+async def create_track(username: str,artist: str, title: str):
+    track = GetTrackSchema(artist=artist, title=title)
     return TrackServices.create_track(username,track)
 
 
-@track.put('/track/{track.artist}/{track.title}/update')
-async def update_track(upd_track: UpdateTrackSchema):
-    return TrackServices.update_track(upd_track)
+@track.put('/track/{track}/{track}/update')
+async def update_track(artist: str, title: str):
+    track = UpdateTrackSchema(artist=artist, title=title)
+    return TrackServices.update_track(track)
 
 
-@track.delete('/track/{track.artist}/{track.title}/delet')
-async def delete_track(username: str, del_track: DeleteTrackSchema):
-    return TrackServices.delete_track(username,del_track)
+@track.delete('/track/{track}/{track}/delete')
+async def delete_track(username: str, artist: str, title: str):
+    track = DeleteTrackSchema(artist=artist, title=title)
+    return TrackServices.delete_track(username,track)
