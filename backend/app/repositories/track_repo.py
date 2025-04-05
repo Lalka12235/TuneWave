@@ -8,6 +8,7 @@ from backend.app.schemas.track_schema import (
 from app.models.track import TrackModel
 
 
+
 class TrackRepository:
 
     @staticmethod
@@ -21,13 +22,14 @@ class TrackRepository:
             return result
         
     @staticmethod
-    def create_track(track: TrackSchema):
+    def create_track(track: TrackSchema,user_id: int):
         with Session() as session:
             new_track = TrackModel(
                 title=track.title,
                 artist=track.artist,
                 genre=track.genre,
                 url=track.url,
+                user_id=user_id,
             )
 
             session.add(new_track)
@@ -49,15 +51,13 @@ class TrackRepository:
         
     
     @staticmethod
-    def delete_track(del_track: DeleteTrackSchema):
+    def delete_track(user_id: int,del_track: DeleteTrackSchema):
         with Session() as session:
             stmt = delete(TrackModel).where(and_(
                 TrackModel.title == del_track.title,
                 TrackModel.artist == del_track.artist,
+                TrackModel.user_id == user_id
             ))
 
             session.execute(stmt)
             session.commit()
-
-    
-    

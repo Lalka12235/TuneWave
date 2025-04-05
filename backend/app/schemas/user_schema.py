@@ -4,7 +4,7 @@ class UserRegisterSchema(BaseModel):
     model_config = {'extra':'forbid'}
 
     username:str
-    email: str
+    #email: str
     password: str
 
 class UserLoginSchema(BaseModel):

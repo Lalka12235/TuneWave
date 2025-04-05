@@ -12,10 +12,8 @@ class PlaylistModel(Base):
     name: Mapped[str]
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
 
-    # Связь "многие-к-одному" с UserModel (плейлист принадлежит одному пользователю)
     user: Mapped['UserModel'] = relationship(back_populates='playlists')
 
-    # Связь "один-ко-многим" с PlaylistTracksModel (плейлист содержит несколько треков)
     playlist_tracks: Mapped[list['PlaylistTracksModel']] = relationship(back_populates='playlist', cascade="all, delete-orphan")
 
 

@@ -31,10 +31,8 @@ class RoomTracksModel(Base):
     room_id: Mapped[int] = mapped_column(ForeignKey('rooms.id'))
     track_id: Mapped[int] = mapped_column(ForeignKey('tracks.id'))
 
-    # Связь "многие-к-одному" с RoomModel (одна комната содержит много треков)
     room: Mapped['RoomModel'] = relationship(back_populates='room_tracks')
 
-    # Связь "многие-к-одному" с TrackModel (один трек может быть в разных комнатах)
     track: Mapped['TrackModel'] = relationship(back_populates='room_tracks')
 
 
@@ -46,10 +44,9 @@ class RoomMembersModel(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     role: Mapped[str]
 
-    # Связь "многие-к-одному" с RoomModel (одна комната содержит несколько участников)
+
     room: Mapped['RoomModel'] = relationship(back_populates='room_members')
 
-    # Связь "многие-к-одному" с UserModel (один пользователь может состоять только в одной комнате)
     user: Mapped['UserModel'] = relationship()
 
 
@@ -78,10 +75,9 @@ class TrackModel(Base):
     url: Mapped[str]
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
 
-    # Связь "многие-к-одному" с UserModel
+
     user: Mapped['UserModel'] = relationship(back_populates='tracks')
 
-    # Связь "один-ко-многим" с RoomTracksModel
     room_tracks: Mapped[list['RoomTracksModel']] = relationship(back_populates='track', cascade="all, delete-orphan")
 
 

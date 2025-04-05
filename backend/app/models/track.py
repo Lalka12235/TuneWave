@@ -14,8 +14,7 @@ class TrackModel(Base):
     url: Mapped[str]
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
 
-    # Связь "многие-к-одному" с UserModel (один пользователь может добавлять много треков)
+
     user: Mapped['UserModel'] = relationship(back_populates='tracks')
 
-    # Связь "один-ко-многим" с RoomTracksModel (один трек может быть в нескольких комнатах)
     room_tracks: Mapped[list['RoomTracksModel']] = relationship(back_populates='track')

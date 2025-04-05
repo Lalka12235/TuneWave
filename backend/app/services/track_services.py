@@ -6,6 +6,7 @@ from backend.app.schemas.track_schema import (
     DeleteTrackSchema
 )
 from fastapi import HTTPException, status
+from app.services.user_services import UserServices
 
 
 class TrackServices:
@@ -24,8 +25,9 @@ class TrackServices:
     
     
     @staticmethod
-    def create_track(track: TrackSchema):
+    def create_track(username: str,track: TrackSchema):
         tracks = TrackRepository.get_track(track)
+        user = UserServices.get_user(username)
         
         if tracks:
             raise HTTPException(
@@ -33,8 +35,9 @@ class TrackServices:
                 detail='Track is exist'
             )
         
-        result = TrackRepository.create_track(track)
-        
+        result = TrackRepository.create_track(track,user.id)
+
+
         return {'message': 'create track','detail': result}
     
 
@@ -54,8 +57,9 @@ class TrackServices:
     
 
     @staticmethod
-    def delete_track(del_track: DeleteTrackSchema):
+    def delete_track(username: str,del_track: DeleteTrackSchema):
         tracks = TrackRepository.get_track(del_track)
+        user = UserServices.get_user(username)
         
         if tracks is None:
             raise HTTPException(
@@ -63,6 +67,6 @@ class TrackServices:
                 detail='Track not found'
             )
         
-        result = TrackRepository.delete_track(del_track)
+        result = TrackRepository.delete_track(del_track,user.id)
 
         return {'message': 'delete track','detail': result}
