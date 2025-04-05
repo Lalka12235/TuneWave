@@ -1,7 +1,5 @@
 from fastapi import HTTPException, status
 from app.repositories.room_repo import RoomRepository
-from app.repositories.track_repo import TrackRepository
-from app.schemas.track_schema import GetTrackSchema
 
 
 class PlayerService:
