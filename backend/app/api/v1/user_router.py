@@ -1,6 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter,Depends
 from app.services.user_services import UserServices
 from app.schemas.user_schema import UserRegisterSchema, UserLoginSchema
+
+from app.auth.auth import get_current_user,check_authorization
 
 
 user = APIRouter(
@@ -20,5 +22,5 @@ async def register_user(user: UserRegisterSchema):
 
 
 @user.delete('/users/{username}/delete')
-async def delete_account(user: UserLoginSchema):
+async def delete_account(user: UserLoginSchema,current_user: str = Depends(get_current_user), _ = Depends(check_authorization)):
     return UserServices.delete_user(user)

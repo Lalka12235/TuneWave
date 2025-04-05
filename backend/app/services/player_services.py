@@ -1,11 +1,12 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
 from app.repositories.room_repo import RoomRepository
 
+from app.auth.auth import get_current_user,check_authorization
 
 class PlayerService:
 
     @staticmethod
-    def start_track(room_name: str):
+    def start_track(room_name: str, current_user: str = Depends(get_current_user), _ = Depends(check_authorization)):
         room = RoomRepository.get_room_on_name(room_name)
         
         if room is None:
@@ -26,7 +27,7 @@ class PlayerService:
     
 
     @staticmethod
-    def pause_track(room_name: str):
+    def pause_track(room_name: str,current_user: str = Depends(get_current_user), _ = Depends(check_authorization)):
         room = RoomRepository.get_room_on_name(room_name)
         
         if room is None:
@@ -44,7 +45,7 @@ class PlayerService:
     
 
     @staticmethod
-    def skip_track(room_name: str):
+    def skip_track(room_name: str,current_user: str = Depends(get_current_user), _ = Depends(check_authorization)):
         room = RoomRepository.get_room_on_name(room_name)
         
         if room is None:
