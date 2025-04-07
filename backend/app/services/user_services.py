@@ -6,8 +6,8 @@ from fastapi import HTTPException, status
 class UserServices:
 
     @staticmethod
-    def get_user(username: str):
-        user = UserRepository.get_user(username)
+    async def get_user(username: str):
+        user = await UserRepository.get_user(username)
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -16,20 +16,20 @@ class UserServices:
         return {'message': 'User found', 'detail': username}
 
     @staticmethod
-    def register_user(user: UserRegisterSchema):
-        existing_user = UserRepository.get_user(user.username)
+    async def register_user(user: UserRegisterSchema):
+        existing_user =await UserRepository.get_user(user.username)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='User already exists'
             )
 
-        user_id = UserRepository.register_user(user)
+        user_id =await UserRepository.register_user(user)
         return {'message': 'Account created', 'user_id': user_id}
 
     @staticmethod
-    def delete_user(user: UserLoginSchema):
-        deleted_user = UserRepository.delete_user(user)
+    async def delete_user(user: UserLoginSchema):
+        deleted_user =await UserRepository.delete_user(user)
         if not deleted_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

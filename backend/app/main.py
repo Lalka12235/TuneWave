@@ -5,6 +5,7 @@ from app.api.v1.player_router import player
 from app.api.v1.room_router import room
 from app.api.v1.track_router import track
 from app.api.v1.user_router import user
+from app.api.v1.ws_router import ws
 
 app = FastAPI(
     title='TuneWave',
@@ -32,3 +33,4 @@ app.include_router(user)
 app.include_router(track)
 app.include_router(room)
 app.include_router(player)
+app.include_router(ws)

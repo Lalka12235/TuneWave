@@ -12,8 +12,8 @@ from app.services.user_services import UserServices
 class TrackServices:
 
     @staticmethod
-    def get_track(track: GetTrackSchema):
-        tracks = TrackRepository.get_track(track)
+    async def get_track(track: GetTrackSchema):
+        tracks =await TrackRepository.get_track(track)
         
         if tracks is None:
             raise HTTPException(
@@ -25,9 +25,9 @@ class TrackServices:
     
     
     @staticmethod
-    def create_track(username: str,track: TrackSchema):
-        tracks = TrackRepository.get_track(track)
-        user = UserServices.get_user(username)
+    async def create_track(username: str,track: TrackSchema):
+        tracks =await TrackRepository.get_track(track)
+        user =await UserServices.get_user(username)
         
         if tracks:
             raise HTTPException(
@@ -35,15 +35,15 @@ class TrackServices:
                 detail='Track is exist'
             )
         
-        result = TrackRepository.create_track(track,user.id)
+        result =await TrackRepository.create_track(track,user.id)
 
 
         return {'message': 'create track','detail': result}
     
 
     @staticmethod
-    def update_track(upd_track: UpdateTrackSchema):
-        tracks = TrackRepository.get_track(upd_track)
+    async def update_track(upd_track: UpdateTrackSchema):
+        tracks =await TrackRepository.get_track(upd_track)
         
         if tracks is None:
             raise HTTPException(
@@ -51,15 +51,15 @@ class TrackServices:
                 detail='Track not found'
             )
         
-        result = TrackRepository.update_track(upd_track)
+        result =await TrackRepository.update_track(upd_track)
 
         return {'message': 'update track','detail': result}
     
 
     @staticmethod
-    def delete_track(username: str,del_track: DeleteTrackSchema):
-        tracks = TrackRepository.get_track(del_track)
-        user = UserServices.get_user(username)
+    async def delete_track(username: str,del_track: DeleteTrackSchema):
+        tracks =await TrackRepository.get_track(del_track)
+        user =await UserServices.get_user(username)
         
         if tracks is None:
             raise HTTPException(
@@ -67,6 +67,6 @@ class TrackServices:
                 detail='Track not found'
             )
         
-        result = TrackRepository.delete_track(del_track,user.id)
+        result =await TrackRepository.delete_track(del_track,user.id)
 
         return {'message': 'delete track','detail': result}

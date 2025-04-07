@@ -10,8 +10,12 @@ class Settings(BaseSettings):
     SECRET_KEY: str
 
     @property
-    def db_url(self):
+    def sync_db_url(self):
         return f'postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}'
+    
+    @property
+    def async_db_url(self):
+        return f'postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}'
     
     class Config:
         env_file = '.env'
