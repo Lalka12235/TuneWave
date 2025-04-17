@@ -7,6 +7,11 @@ from app.api.v1.track_router import track
 from app.api.v1.user_router import user
 from app.api.v1.ws_router import ws
 
+from app.logger.log_config import configure_logging
+
+
+configure_logging()
+
 app = FastAPI(
     title='TuneWave',
     description='Trackify - is your personal music collection where every track and playlist has its place. Easily add, \

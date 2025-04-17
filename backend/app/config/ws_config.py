@@ -2,15 +2,19 @@ from fastapi import WebSocket
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connection: dict[str, list[WebSocket]] = {}
+        self.active_connection: dict[str, list[WebSocket]] = {
+
+        }
 
 
     async def connect(self,room_name,websocket: WebSocket):
         await websocket.accept()
         self.active_connection.setdefault(room_name,[]).append(websocket)
 
+
     def disconnect(self,room_name ,websocket: WebSocket):
         self.active_connection[room_name].remove(websocket)
+        
 
     async def send_personal_message(self,message: str, websocket: WebSocket):
         await websocket.send_text(message)

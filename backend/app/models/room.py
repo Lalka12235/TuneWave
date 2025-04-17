@@ -4,6 +4,7 @@ from sqlalchemy.orm import Mapped,mapped_column,relationship
 from app.models.user import UserModel
 from app.models.track import TrackModel
 from app.models.ban import BanModel
+from datetime import  datetime
 
 class RoomModel(Base):
     __tablename__ = 'rooms'
@@ -16,6 +17,7 @@ class RoomModel(Base):
     owner_id: Mapped[int] = mapped_column(ForeignKey('users.id'), unique=True)
     current_track_id: Mapped[int] = mapped_column(ForeignKey('tracks.id'))
     player_state: Mapped[str] = mapped_column(default='paused')
+
 
     owner: Mapped['UserModel'] = relationship(back_populates='room')
     room_tracks: Mapped[list['RoomTracksModel']] = relationship(back_populates='room')
