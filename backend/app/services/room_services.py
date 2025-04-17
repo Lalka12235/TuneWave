@@ -11,17 +11,32 @@ from app.utils.hash import make_hash_pass,verify_pass
 
 from datetime import datetime
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class RoomServices:
 
     @staticmethod
-    async def get_room_on_name(name: str):
-        room =await RoomRepository.get_room_on_name(name)
+    async def get_room_or_404(room_name):
+        room = await RoomRepository.get_room_on_name(room_name)
+        if not room:
+            raise HTTPException(status_code=404, detail="Room not found")
+        return room
+    
 
-        if room is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Room not found'
-            )
+    @staticmethod
+    async def get_user_or_404(username):
+        user = await UserRepository.get_user(username)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+
+
+    @staticmethod
+    async def get_room_on_name(name: str):
+
+        room = await RoomServices.get_room_or_404(name)
         
         return {'message': 'get room on name','detail': room}
     
@@ -41,13 +56,7 @@ class RoomServices:
 
     @staticmethod
     async def get_members_from_room(room_name: str):
-        room =await RoomRepository.get_room_on_name(room_name)
-
-        if room is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Room not found'
-            )
+        room = await RoomServices.get_room_or_404(room_name)
         
         members = RoomRepository.get_members_from_room(room_name)
 
@@ -56,13 +65,7 @@ class RoomServices:
 
     @staticmethod
     async def create_room(username: str,room_setting: RoomSchema):
-        user =await  UserRepository.get_user(username)
-
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='User not found'
-            )
+        user = await RoomServices.get_user_or_404(username)
         
         hash_pass = make_hash_pass(room_setting.password) if room_setting.private and room_setting.password else None
         
@@ -73,13 +76,7 @@ class RoomServices:
 
     @staticmethod
     async def update_room(username: str , upd_room: UpdRoomSchema):
-        user = await UserRepository.get_user(username)
-
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='User not found'
-            )
+        user = await RoomServices.get_user_or_404(username)
         
         await RoomRepository.update_room(user.id,upd_room.name,upd_room.new_name,upd_room.max_member,upd_room.private)
 
@@ -88,13 +85,7 @@ class RoomServices:
 
     @staticmethod
     async def delete_room(username: str):
-        user =await  UserRepository.get_user(username)
-
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='User not found'
-            )
+        user = await RoomServices.get_user_or_404(username)
         
         await RoomRepository.delete_room(user.id)
 
@@ -111,13 +102,7 @@ class RoomServices:
                 detail='Track not found'
             )
         
-        room =await RoomRepository.get_room_on_name(room_name)
-
-        if room is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Room not found'
-            )
+        room = await RoomServices.get_room_or_404(room_name)
 
         await RoomRepository.set_current_track(room.id,tracks.id)
 
@@ -126,13 +111,7 @@ class RoomServices:
 
     @staticmethod
     async def get_current_track(room_name: str):
-        room =await RoomRepository.get_room_on_name(room_name)
-
-        if room is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Room not found'
-            )
+        room = await RoomServices.get_room_or_404(room_name)
         
         await RoomRepository.get_current_track(room.id)
 
@@ -142,13 +121,7 @@ class RoomServices:
 
     @staticmethod
     async def get_track_queue(room_name: str):
-        room =await RoomRepository.get_room_on_name(room_name)
-
-        if room is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Room not found'
-            )
+        room = await RoomServices.get_room_or_404(room_name)
 
         queue =await RoomRepository.get_track_queue(room.id)
 
@@ -158,13 +131,7 @@ class RoomServices:
 
     @staticmethod
     async def add_track_to_queue(username: str, room_name: str,track: GetTrackSchema):
-        user =await  UserRepository.get_user(username)
-
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='User not found'
-            )
+        user = await RoomServices.get_user_or_404(username)
         
 
         tracks =await TrackRepository.get_track(track)
@@ -175,13 +142,7 @@ class RoomServices:
                 detail='Track not found'
             )
         
-        room =await RoomRepository.get_room_on_name(room_name)
-
-        if room is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Room not found'
-            )
+        room = await RoomServices.get_room_or_404(room_name)
         
         if user.id == room.owner_id:
             await RoomRepository.add_track_to_queue(user.id, track)
@@ -195,22 +156,10 @@ class RoomServices:
 
     @staticmethod
     async def del_track_from_queue(username: str,room_name: str ,track: GetTrackSchema):
-        user =await  UserRepository.get_user(username)
-
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='User not found'
-            )
+        user = await RoomServices.get_user_or_404(username)
         
         
-        room = await RoomRepository.get_room_on_name(room_name)
-
-        if room is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Room not found'
-            )
+        room = await RoomServices.get_room_or_404(room_name)
         
         tracks =await RoomRepository.get_track_queue(room.id)
 
@@ -232,13 +181,7 @@ class RoomServices:
 
     @staticmethod
     async def skip_track_queue(room_name: str):
-        room =await RoomRepository.get_room_on_name(room_name)
-
-        if room is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Room not found'
-            )
+        room = await RoomServices.get_room_or_404(room_name)
         
         await RoomRepository.skip_track_queue(room.id)
 
@@ -248,13 +191,9 @@ class RoomServices:
 
     @staticmethod
     async def join_room(username: str, room_name: str, password: str | None = None):
-        user =await UserRepository.get_user(username)
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+        user = await RoomServices.get_user_or_404(username)
 
-        room =await RoomRepository.get_room_on_name(room_name)
-        if room is None:
-            raise HTTPException(status_code=404, detail="Room not found")
+        room = await RoomServices.get_room_or_404(room_name)
 
         if room.is_private:
             if not password:
@@ -277,13 +216,9 @@ class RoomServices:
 
     @staticmethod
     async def leave_room(username: str, room_name: str,):
-        user =await UserRepository.get_user(username)
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+        user = await RoomServices.get_user_or_404(username)
 
-        room = RoomRepository.get_room_on_name(room_name)
-        if room is None:
-            raise HTTPException(status_code=404, detail="Room not found")
+        room = await RoomServices.get_room_or_404(room_name)
         
         
         await RoomRepository.del_user_from_room(user.id,room.id)
@@ -292,16 +227,12 @@ class RoomServices:
 
     @staticmethod
     async def kick_member(owner_name: str,username: str, room_name: str):
-        user =await UserRepository.get_user(username)
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+        user = await RoomServices.get_user_or_404(username)
         
         owner =await UserRepository.get_user(owner_name)
         
 
-        room =await RoomRepository.get_room_on_name(room_name)
-        if room is None:
-            raise HTTPException(status_code=404, detail="Room not found")
+        room = await RoomServices.get_room_or_404(room_name)
         
         
         if owner.id == room.owner_id:
@@ -311,16 +242,11 @@ class RoomServices:
     
     @staticmethod
     async def ban_user_in_room(owner_name: str,username: str, room_name: str,ban_expired: datetime):
-        user =await UserRepository.get_user(username)
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+        user = await RoomServices.get_user_or_404(username)
         
         owner =await UserRepository.get_user(owner_name)
         
-
-        room = await RoomRepository.get_room_on_name(room_name)
-        if room is None:
-            raise HTTPException(status_code=404, detail="Room not found")
+        room = await RoomServices.get_room_or_404(room_name)
         
         existing_ban = await RoomRepository.get_ban_for_user(user.id, room.id)
         if existing_ban:
@@ -333,16 +259,12 @@ class RoomServices:
     
     @staticmethod
     async def unban_user_in_room(owner_name: str,username: str, room_name: str):
-        user =await UserRepository.get_user(username)
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+        user = await RoomServices.get_user_or_404(username)
         
         owner =await UserRepository.get_user(owner_name)
         
 
-        room =await RoomRepository.get_room_on_name(room_name)
-        if room is None:
-            raise HTTPException(status_code=404, detail="Room not found")
+        room = await RoomServices.get_room_or_404(room_name)
         
         
         if owner.id == room.owner_id:

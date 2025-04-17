@@ -7,6 +7,10 @@ from backend.app.schemas.track_schema import (
     DeleteTrackSchema)
 from app.models.track import TrackModel
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 
 class TrackRepository:
@@ -14,6 +18,7 @@ class TrackRepository:
     @staticmethod
     async def get_track(track: GetTrackSchema):
         async with AsyncSessionLocal() as session:
+            
             stmt =  select(TrackModel).where(
                 TrackModel.title == track.title,
                 TrackModel.artist == track.artist,

@@ -8,6 +8,7 @@ from app.api.v1.user_router import user
 from app.api.v1.ws_router import ws
 
 from app.logger.log_config import configure_logging
+from backend.app.config.loggingMiddleware import dispatch
 
 
 configure_logging()
@@ -33,6 +34,7 @@ app.add_middleware(
     allow_headers=["*"],  
 )
 
+app.add_middleware(dispatch)
 
 app.include_router(user)
 app.include_router(track)

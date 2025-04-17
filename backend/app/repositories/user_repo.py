@@ -4,7 +4,9 @@ from app.models.user import UserModel
 from backend.app.schemas.user_schema import UserRegisterSchema,UserLoginSchema
 from app.utils.hash import make_hash_pass
 
+import logging
 
+logger = logging.getLogger(__name__)
 
 class UserRepository:
 
@@ -18,6 +20,7 @@ class UserRepository:
     @staticmethod
     async def register_user(user: UserRegisterSchema):
         async with AsyncSessionLocal() as session:
+
             hash_pass = make_hash_pass(user.password)
 
             stmt = insert(UserModel).values(username=user.username,password_hash=hash_pass)
