@@ -6,7 +6,7 @@ import time
 logger = logging.getLogger(__name__)
 
 
-async def dispatch(request: Request,call_next):
+async def logMiddleware(request: Request,call_next):
     start_time = time.perf_counter()
     method = request.method
     url = request.url
