@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete,update,and_
 from app.config.session import Session
-from backend.app.schemas.track_schema import (
+from app.schemas.track_schema import (
     TrackSchema,
     GetTrackSchema,
     UpdateTrackSchema, 

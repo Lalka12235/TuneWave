@@ -4,7 +4,7 @@ from app.config.settings import settings
 from fastapi import HTTPException,status
 
 
-SECRET_KEY = settings.get_secret_key()
+SECRET_KEY = settings.SECRET_KEY
 ALGHORITHM = 'HS256'
 ACCESS_TOKEN_MINUTES_EXPIRED = 15
 

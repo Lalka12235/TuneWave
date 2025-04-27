@@ -1,7 +1,7 @@
 from sqlalchemy import select,insert,delete
 from app.config.session import Session
 from app.models.user import UserModel
-from backend.app.schemas.user_schema import UserRegisterSchema,UserLoginSchema
+from app.schemas.user_schema import UserRegisterSchema,UserLoginSchema
 from app.utils.hash import make_hash_pass
 
 import logging

@@ -1,5 +1,5 @@
 from app.repositories.user_repo import UserRepository
-from backend.app.schemas.user_schema import UserRegisterSchema, UserLoginSchema
+from app.schemas.user_schema import UserRegisterSchema, UserLoginSchema
 from fastapi import HTTPException, status
 
 import logging

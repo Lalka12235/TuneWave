@@ -1,8 +1,6 @@
 from app.models.base import Base
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, Mapped,mapped_column
-from app.models.user import UserModel
-from app.models.room import RoomModel
 from datetime import datetime
 
 class BanModel(Base):

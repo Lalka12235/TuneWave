@@ -1,9 +1,6 @@
 from app.models.base import Base
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped,mapped_column,relationship
-from app.models.user import UserModel
-from app.models.track import TrackModel
-from app.models.ban import BanModel
 from datetime import  datetime
 
 class RoomModel(Base):

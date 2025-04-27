@@ -1,8 +1,7 @@
 from app.models.base import Base
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped,mapped_column,relationship
-from app.models.user import UserModel
-from app.models.room import RoomTracksModel
+
 
 class TrackModel(Base):
     __tablename__ = 'tracks'

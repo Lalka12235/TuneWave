@@ -1,5 +1,5 @@
 from app.repositories.track_repo import TrackRepository
-from backend.app.schemas.track_schema import (
+from app.schemas.track_schema import (
     TrackSchema,
     GetTrackSchema,
     UpdateTrackSchema, 

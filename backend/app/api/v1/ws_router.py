@@ -6,7 +6,7 @@ ws = APIRouter(tags=['WebSocket'])
 
 
 @ws.websocket('/ws/{room_name}/{username}')
-async def websocket_endpoint(websocket: WebSocket,room_name: str, username: str):
+async def enter_or_leave_room(websocket: WebSocket,room_name: str, username: str):
     await manager.connect(room_name,websocket)
     await manager.broadcast(room_name,f'{username} was joined the room')
 

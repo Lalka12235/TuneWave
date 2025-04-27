@@ -1,15 +1,16 @@
 from fastapi import FastAPI, Request, Response
 
 
-async def cspMiddleware(request: Request, call_next):
-    response: Response = await call_next(request)
 
+async def csp_middleware(request: Request, call_next):
+    response = await call_next(request)
+    
     csp_policy = (
-        "default-src 'self'; "                   # Всё по умолчанию — только с текущего домена
-        "script-src 'self' https://cdn.jsdelivr.net; "  # Скрипты только с этих источников
-        "img-src 'self' data:; "                 # Картинки с текущего сайта и data URI
-        "font-src 'self'; "                        #Шрифты с текущего сайта
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net; "
+        "img-src 'self' data:; "
+        "font-src 'self'; "
     )
-
+    
     response.headers['Content-Security-Policy'] = csp_policy
     return response

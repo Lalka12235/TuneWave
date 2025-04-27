@@ -9,10 +9,12 @@ from app.api.v1.ws_router import ws
 
 from app.logger.log_config import configure_logging
 
-from backend.app.config.loggingMiddleware import logMiddleware
-from backend.app.config.cspmiddleware import cspMiddleware
+from app.config.loggingMiddleware import LogMiddleware
+import logging
+#from app.config.cspmiddleware import csp_middleware
 
 configure_logging()
+logging.getLogger("watchfiles").setLevel(logging.WARNING)
 
 app = FastAPI(
     title='TuneWave',
@@ -34,8 +36,8 @@ app.add_middleware(
     allow_headers=["*"],  
 )
 
-app.add_middleware(logMiddleware)
-app.add_middleware(cspMiddleware)
+app.add_middleware(LogMiddleware)
+#app.add_middleware(csp_middleware)
 
 
 app.include_router(user)
