@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 class TrackServices:
 
     @staticmethod
-    async def get_track(track: GetTrackSchema):
-        tracks =await TrackRepository.get_track(track)
+    def get_track(track: GetTrackSchema):
+        tracks = TrackRepository.get_track(track)
         logger.debug(f'Попытка получить трек: {track.title}')
         
         if tracks is None:
@@ -31,10 +31,10 @@ class TrackServices:
     
     
     @staticmethod
-    async def create_track(username: str,track: TrackSchema):
+    def create_track(username: str,track: TrackSchema):
         logger.debug(f'Попытка создания трека')
-        tracks =await TrackRepository.get_track(track)
-        user =await UserServices.get_user(username)
+        tracks = TrackRepository.get_track(track)
+        user = UserServices.get_user(username)
         
         if tracks:
             logger.error(f'Ошибка в создание трека')
@@ -43,16 +43,16 @@ class TrackServices:
                 detail='Track is exist'
             )
         logger.info(f'Трек успешно создан')
-        result =await TrackRepository.create_track(track,user.id)
+        result = TrackRepository.create_track(track,user.id)
 
 
         return {'message': 'create track','detail': result}
     
 
     @staticmethod
-    async def update_track(upd_track: UpdateTrackSchema):
+    def update_track(upd_track: UpdateTrackSchema):
         logger.debug(f'Попытка обновления трека')
-        tracks =await TrackRepository.get_track(upd_track)
+        tracks = TrackRepository.get_track(upd_track)
         
         if tracks is None:
             logger.error(f'Трек не найден: {upd_track.title}')
@@ -61,16 +61,16 @@ class TrackServices:
                 detail='Track not found'
             )
         logger.info(f'Трек обновлен')
-        result =await TrackRepository.update_track(upd_track)
+        result = TrackRepository.update_track(upd_track)
 
         return {'message': 'update track','detail': result}
     
 
     @staticmethod
-    async def delete_track(username: str,del_track: DeleteTrackSchema):
+    def delete_track(username: str,del_track: DeleteTrackSchema):
         logger.debug(f'Попытка удаления трека')
-        tracks =await TrackRepository.get_track(del_track)
-        user =await UserServices.get_user(username)
+        tracks = TrackRepository.get_track(del_track)
+        user = UserServices.get_user(username)
         
         if tracks is None:
             logger.error(f'Ошибка в удаление трека')
@@ -79,6 +79,6 @@ class TrackServices:
                 detail='Track not found'
             )
         
-        result =await TrackRepository.delete_track(del_track,user.id)
+        result = TrackRepository.delete_track(del_track,user.id)
         logger.info(f'Трек успешно удален')
         return {'message': 'delete track','detail': result}
