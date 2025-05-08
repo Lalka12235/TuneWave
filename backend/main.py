@@ -22,6 +22,9 @@ app = FastAPI(
         update and share music with friends. Manage your music world wherever you are.'
 )
 
+@app.get('/ping')
+async def ping():
+    return 'Server is running'
 
 origins = [
     "http://localhost",  

@@ -11,7 +11,7 @@ def configure_logging(level=logging.INFO, log_file='app/logger/logs/app.log'):
     #console_handler = logging.StreamHandler(sys.stdout)
     #console_handler.setFormatter(formatter)
 
-    file_handler = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=3)
+    file_handler = RotatingFileHandler(log_file) #, maxBytes=5*1024*1024, backupCount=3
     file_handler.setFormatter(formatter)
 
     root_logger = logging.getLogger()
