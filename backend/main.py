@@ -17,9 +17,30 @@ configure_logging()
 logging.getLogger("watchfiles").setLevel(logging.WARNING)
 
 app = FastAPI(
-    title='TuneWave',
-    description='Trackify - is your personal music collection where every track and playlist has its place. Easily add, \
-        update and share music with friends. Manage your music world wherever you are.'
+    title="TuneWave",
+    description="""
+    🎵 **TuneWave** - Ваша персональная музыкальная вселенная
+    
+    ✨ **Ключевые возможности:**
+    - 🎧 Умное управление трек-коллекцией
+    - 📁 Организация плейлистов с душой
+    - 🔗 Легкий обмен музыкой с друзьями
+    - 🌐 Доступ к вашей музыке из любой точки мира
+    
+    🚀 Откройте новый уровень взаимодействия с музыкой!
+    """,
+    version="1.0.0",
+    contact={
+        "name": "Egor",
+        "url": "https://github.com/Lalka12235",
+    },
+    license_info={
+        "name": "MIT",
+    },
+    openapi_tags=[{
+        "name": "music",
+        "description": "Операции с музыкальными треками"
+    }]
 )
 
 @app.get('/ping')
