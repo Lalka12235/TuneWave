@@ -1,11 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.player_router import player
-from app.api.v1.room_router import room
-from app.api.v1.track_router import track
-from app.api.v1.user_router import user
-from app.api.v1.ws_router import ws
 
 from app.logger.log_config import configure_logging
 
@@ -61,11 +56,3 @@ app.add_middleware(
 )
 
 app.add_middleware(LogMiddleware)
-#app.add_middleware(csp_middleware)
-
-
-app.include_router(user)
-app.include_router(track)
-app.include_router(room)
-app.include_router(player)
-app.include_router(ws)
