@@ -1,11 +1,12 @@
-FROM python:3.13-alpine
+FROM python:3.13-slim-bookworm
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-RUN apk add --no-cache bash
+COPY uv.lock pyproject.toml ./
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv sync
 
 COPY app/prestart.sh .
 RUN chmod +x prestart.sh
@@ -14,4 +15,4 @@ COPY .env .
 COPY . .
 
 ENTRYPOINT ["/app/prestart.sh"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/app/.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
