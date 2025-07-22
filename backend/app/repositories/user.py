@@ -102,6 +102,29 @@ class UserRepository:
         db.refresh(new_user) # Обновляем объект, чтобы убедиться, что все поля (включая ID) актуальны
         db.commit()
         return new_user
+    
+    @staticmethod
+    def update_user(db: Session, user: User, update_data: dict) -> User:
+        """
+        Обновляет существующего пользователя в базе данных.
+        
+        Args:
+            db (Session): Сессия базы данных.
+            user (User): Объект пользователя, который нужно обновить.
+            update_data (dict): Словарь с данными для обновления. Ключи словаря
+                                должны соответствовать именам полей модели User.
+            
+        Returns:
+            User: Обновленный объект User.
+        """
+        # Итерируемся по данным для обновления и устанавливаем соответствующие атрибуты объекта User.
+        for key, value in update_data.items():
+            setattr(user, key, value)
+        
+        db.add(user) # Добавляем (или повторно добавляем) объект в сессию для отслеживания изменений.
+        db.flush() # Выполняем операции в БД, но без коммита.
+        db.refresh(user) # Обновляем объект, чтобы убедиться, что все поля (включая updated_at) актуальны.
+        return user
 
 
     #@staticmethod

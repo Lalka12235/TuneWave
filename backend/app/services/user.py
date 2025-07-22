@@ -2,7 +2,7 @@ from fastapi import HTTPException,status
 from app.repositories.user import UserRepository
 from sqlalchemy.orm import Session
 from app.models.user import User
-from app.schemas.user import UserResponse, UserCreate
+from app.schemas.user import UserResponse, UserCreate, UserUpdate
 import uuid
 from typing import Any
 
@@ -179,6 +179,36 @@ class UserService:
         new_user = UserRepository.create_user(db,user_data.model_dump())
 
         return UserService._map_user_to_response(new_user)
+    
+    @staticmethod
+    async def update_user_profile(db: Session, user_id: uuid.UUID, update_data: UserUpdate) -> UserResponse:
+        """
+        Обновляет профиль пользователя.
+        Включает проверку на уникальность email, если он изменяется.
+        
+        Args:
+            db (Session): Сессия базы данных.
+            user_id (uuid.UUID): ID пользователя, чей профиль обновляется.
+            update_data (UserUpdate): Pydantic-модель с данными для обновления.
+            
+        Returns:
+            UserResponse: Обновленный объект UserResponse.
+            
+        Raises:
+            HTTPException: Если пользователь не найден (404) или новый email уже занят другим пользователем (409).
+        """
+        user = UserRepository.get_user_by_id(db, user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Пользователь не найден."
+            )
+        
+        data_to_update = update_data.model_dump(exclude_unset=True) 
+
+        updated_user = UserRepository.update_user(db, user, data_to_update)
+
+        return UserService._map_user_to_response(updated_user)
     
 
     @staticmethod

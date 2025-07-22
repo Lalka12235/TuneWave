@@ -34,6 +34,16 @@ class UserCreate(UserBase):
     spotify_refresh_token: str | None = Field(None, description="Токен обновления Spotify")
     spotify_token_expires_at: int | None = Field(None, description="Время истечения токена Spotify (Unix timestamp)")
 
+class UserUpdate(BaseModel):
+    username: str | None = Field(None, min_length=3, max_length=50, description="Новое имя пользователя")
+    email: EmailStr | None = Field(None, description="Новый email пользователя")
+    is_email_verified: bool | None = Field(None, description="Новый статус подтверждения email")
+    google_image_url: str | None = Field(None, description="Новый URL изображения профиля Google")
+    spotify_profile_url: str | None = Field(None, description="Новый URL профиля Spotify")
+    spotify_image_url: str | None = Field(None, description="Новый URL изображения профиля Spotify")
+    spotify_access_token: str | None = Field(None, description="Новый токен доступа Spotify")
+    spotify_refresh_token: str | None = Field(None, description="Новый токен обновления Spotify")
+    spotify_token_expires_at: str | None = Field(None, description="Новое время истечения токена Spotify")
 
 
 # Схема для данных, полученных от Google OAuth (входные данные для сервиса)
