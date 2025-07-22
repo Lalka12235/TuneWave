@@ -100,6 +100,7 @@ class UserRepository:
         db.add(new_user)
         db.flush() # Используем flush, чтобы получить ID нового пользователя до коммита
         db.refresh(new_user) # Обновляем объект, чтобы убедиться, что все поля (включая ID) актуальны
+        db.commit()
         return new_user
 
 
@@ -136,4 +137,5 @@ class UserRepository:
         """
         stmt = delete(User).where(User.id == user_id)
         result = db.execute(stmt)
+        db.commit()
         return result.rowcount > 0 
