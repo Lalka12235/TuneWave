@@ -1,14 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-
-from app.logger.log_config import configure_logging
-
 from app.config.loggingMiddleware import LogMiddleware
 import logging
-#from app.config.cspmiddleware import csp_middleware
 
-configure_logging()
 logging.getLogger("watchfiles").setLevel(logging.WARNING)
 
 app = FastAPI(
