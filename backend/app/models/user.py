@@ -1,6 +1,6 @@
 from app.models.base import Base
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped,mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID 
 import uuid
 from typing import TYPE_CHECKING
@@ -30,5 +30,5 @@ class User(Base):
 
     room: Mapped[list['Room']] = relationship(back_populates='user')
     favorite_track: Mapped[list['FavoriteTrack']] = relationship(back_populates='user')
-    room_track: Mapped['RoomTrackAssociationModel'] = relationship(back_populates='user')
+    room_track: Mapped[list['RoomTrackAssociationModel']] = relationship(back_populates='user')
     member_room: Mapped[list['Member_room_association']] = relationship(back_populates='user')

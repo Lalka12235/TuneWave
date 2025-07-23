@@ -22,7 +22,7 @@ class RoomTrackAssociationModel(Base):
     track_id: Mapped[int] = mapped_column(ForeignKey('tracks.id'),nullable=False)
     order_in_queue: Mapped[int] = mapped_column(nullable=True)
     added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),nullable=False,server_default=func.now())
-    addded_by_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True),nullable=False)
+    addded_by_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True),ForeignKey('users.id'),nullable=False)
 
     user: Mapped['User'] = relationship(back_populates='room_track')
     room: Mapped['Room'] = relationship(back_populates='room_track')
