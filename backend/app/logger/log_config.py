@@ -18,7 +18,7 @@ def configure_logging(level=logging.INFO, log_file_prefix='app'):
     )
 
     current_date = datetime.now().strftime("%Y-%m-%d")
-    log_file_name = BASE_DIR / f'{log_file_prefix}_{current_date}.log'
+    log_file_name = BASE_DIR / 'logs' / f'{log_file_prefix}_{current_date}.log'
 
     file_handler = RotatingFileHandler(log_file_name, mode='a', maxBytes=5 * 1024 * 1024, backupCount=3)
     file_handler.setFormatter(formatter)
