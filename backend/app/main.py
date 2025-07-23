@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.loggingMiddleware import LogMiddleware
-import logging
+from app.api.v1.auth import auth
+from app.logger.log_config import configure_logging
 
-logging.getLogger("watchfiles").setLevel(logging.WARNING)
+configure_logging()
 
 app = FastAPI(
     title="TuneWave",
@@ -29,7 +30,8 @@ app = FastAPI(
     openapi_tags=[{
         "name": "music",
         "description": "Операции с музыкальными треками"
-    }]
+    }],
+    
 )
 
 @app.get('/ping')
@@ -38,7 +40,8 @@ async def ping():
 
 origins = [
     "http://localhost",  
-    "http://localhost:8080",  
+    "http://localhost:8080",
+    "http://127.0.0.1:5500",#test
 ]
 
 app.add_middleware(
@@ -50,3 +53,5 @@ app.add_middleware(
 )
 
 app.add_middleware(LogMiddleware)
+
+app.include_router(auth)

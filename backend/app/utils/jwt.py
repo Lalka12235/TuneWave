@@ -59,7 +59,7 @@ def decode_access_token(token: str) -> dict:
         return decoded_payload
     except ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, # Используем константу статуса
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired"
         )
     except InvalidTokenError:
