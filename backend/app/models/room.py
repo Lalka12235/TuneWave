@@ -15,14 +15,14 @@ class Room(Base):
     __tablename__ = 'rooms'
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
-    name: Mapped[str] = mapped_column(nullable=False)
+    name: Mapped[str] = mapped_column(index=True,nullable=False)
     max_members: Mapped[int] = mapped_column(nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True),ForeignKey('users.id'),nullable=False)
-    is_private: Mapped[bool] = mapped_column(nullable=True)
+    is_private: Mapped[bool] = mapped_column(default=False,nullable=True)
     password_hash: Mapped[str] = mapped_column(nullable=True)
-    current_track_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True),ForeignKey('tracks.id'),nullable=True)
-    current_track_position_ms: Mapped[int] = mapped_column(nullable=True)
-    is_playing: Mapped[bool] = mapped_column(nullable=False)
+    current_track_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True),ForeignKey('tracks.id'),nullable=True)
+    current_track_position_ms: Mapped[int | None] = mapped_column(nullable=True)
+    is_playing: Mapped[bool] = mapped_column(default=False,nullable=False)
 
     user: Mapped['User'] = relationship(back_populates='room')
     current_track: Mapped["Track | None"] = relationship("Track", lazy="joined")
