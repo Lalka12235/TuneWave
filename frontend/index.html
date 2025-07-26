@@ -47,6 +47,12 @@
             width: 20px;
             height: 20px;
         }
+        #spotify-button {
+            background-color: #1DB954; /* Цвет Spotify */
+        }
+        #spotify-button:hover {
+            background-color: #1AA34A;
+        }
         #response {
             margin-top: 20px;
             padding: 15px;
@@ -69,83 +75,16 @@
             <img src="https://img.icons8.com/color/48/000000/google-logo.png" alt="Google Logo">
             Войти с Google
         </button>
-        <!-- Здесь можно добавить кнопку Spotify, когда будете готовы -->
+        <button id="spotify-login-button" style="display: none;" onclick="loginWithSpotify()">
+            <img src="https://img.icons8.com/ios-filled/50/FFFFFF/spotify.png" alt="Spotify Logo" style="filter: invert(1);">
+            Войти с Spotify
+        </button>
 
         <h2>Ответ от бэкенда:</h2>
         <pre id="response">Загрузка конфигурации...</pre>
     </div>
 
-    <script>
-        let config = {}; // Объект для хранения конфигурации
-        const responseDiv = document.getElementById('response');
-        const googleLoginButton = document.getElementById('google-login-button');
-
-        // Функция для загрузки конфигурации с бэкенда
-        async function loadConfig() {
-            try {
-                const response = await fetch('http://localhost:8000/auth/config'); // Запрос к вашему новому эндпоинту
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                config = await response.json();
-                responseDiv.textContent = "Конфигурация загружена. Нажмите кнопку 'Войти с Google'.";
-                googleLoginButton.style.display = 'flex'; // Показываем кнопку после загрузки конфига
-            } catch (error) {
-                responseDiv.textContent = `Ошибка загрузки конфигурации: ${error.message}`;
-                console.error("Ошибка загрузки конфигурации:", error);
-            }
-        }
-
-        function loginWithGoogle() {
-            if (!config.google_client_id || !config.google_redirect_uri || !config.google_scopes) {
-                responseDiv.textContent = "Ошибка: Конфигурация Google не загружена или неполна.";
-                return;
-            }
-
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-                            `response_type=code&` +
-                            `client_id=${config.google_client_id}&` +
-                            `redirect_uri=${config.google_redirect_uri}&` +
-                            `scope=${encodeURIComponent(config.google_scopes)}&` +
-                            `access_type=offline&` +
-                            `prompt=consent`;
-            
-            window.location.href = authUrl;
-        }
-
-        // Функция, которая выполняется при загрузке страницы
-        window.onload = function() {
-            // Сначала проверяем URL на наличие токена (это может быть колбэк)
-            const urlParams = new URLSearchParams(window.location.search);
-            const accessToken = urlParams.get('access_token');
-            const error = urlParams.get('error');
-
-            if (accessToken) {
-                responseDiv.textContent = `Успешный логин!\nВаш токен доступа: ${accessToken}\n\n`;
-                localStorage.setItem('jwt_token', accessToken); // Сохраняем токен
-                // Очищаем URL, чтобы токен не оставался видимым
-                // window.history.replaceState({}, document.title, window.location.pathname);
-            } else if (error) {
-                responseDiv.textContent = `Ошибка логина: ${error}`;
-            } else {
-                // Если токена в URL нет, тогда загружаем конфигурацию
-                loadConfig(); 
-            }
-
-            // Также проверяем хэш в URL (если токен был передан в хэше)
-            if (window.location.hash) {
-                const hashParams = new URLSearchParams(window.location.hash.substring(1));
-                const hashAccessToken = hashParams.get('access_token');
-                if (hashAccessToken) {
-                    responseDiv.textContent = `Успешный логин (из хэша)!\nВаш токен доступа: ${hashAccessToken}\n\n`;
-                    localStorage.setItem('jwt_token', hashAccessToken); // Сохраняем токен
-                    // Очищаем хэш в URL
-                    // window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-                }
-            }
-
-            console.log("Access Token from URL:", accessToken); // Для отладки
-        };
-    </script>
+    <!-- Подключаем внешний JavaScript файл -->
+    <script src="script.js"></script>
 </body>
 </html>
