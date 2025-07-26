@@ -2,7 +2,7 @@ from fastapi import HTTPException,status
 from app.repositories.user import UserRepository
 from sqlalchemy.orm import Session
 from app.models.user import User
-from app.schemas.user import UserResponse, UserCreate, UserUpdate,Token,GoogleOAuthData
+from app.schemas.user import UserResponse, UserCreate, UserUpdate,Token,GoogleOAuthData, SpotifyOAuthData
 import uuid
 from typing import Any
 from app.config.settings import settings
@@ -286,5 +286,60 @@ class UserService:
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
+
+        return UserService._map_user_to_response(user), Token(access_token=access_token)
+    
+
+    @staticmethod
+    def authenticate_user_with_spotify(
+        db: Session,
+        spotify_data: SpotifyOAuthData
+    ) -> tuple[UserResponse,Token]:
+        """
+        Аутентифицирует пользователя через Spotify OAuth.
+        Создает или обновляет пользователя в БД и возвращает JWT-токен вашего приложения.
+        """
+        user = UserRepository.get_user_by_email(db,spotify_data.email)
+        if not user:
+            user = UserRepository.get_user_by_spotify_id(db,spotify_data.spotify_id)
+
+        if user:
+            update_data = {}
+            if not user.spotify_id:
+                update_data['spotify_id'] = spotify_data.spotify_id
+                update_data['spotify_image_url'] = spotify_data.spotify_image_url
+                update_data['spotify_profile_url'] = spotify_data.spotify_profile_url
+
+            # Всегда обновляем токены Spotify и время их истечения, так как они имеют срок годности
+            update_data['spotify_access_token'] = spotify_data.spotify_access_token
+            update_data['spotify_refresh_token'] = spotify_data.spotify_refresh_token
+            update_data['spotify_token_expires_at'] = spotify_data.spotify_token_expires_at
+
+
+            if update_data:
+                user = UserRepository.update_user(db,user,update_data)
+
+        else:
+            user_data = {
+                'username': spotify_data.username,
+                'email': spotify_data.email,
+                'is_email_verified': False,
+                'spotify_id': spotify_data.spotify_id,
+                'spotify_profile_url': spotify_data.spotify_profile_url,
+                'spotify_image_url': spotify_data.spotify_image_url,
+                'spotify_access_token': spotify_data.spotify_access_token,
+                'spotify_refresh_token': spotify_data.spotify_refresh_token,
+                'spotify_token_expires_at': spotify_data.spotify_token_expires_at
+            }
+
+            user = UserRepository.create_user(db,user_data)
+        
+        from datetime import timedelta
+        from app.utils.jwt import create_access_token
+
+        access_token = create_access_token(
+            payload={'sub': str(user.id)},
+            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        )
 
         return UserService._map_user_to_response(user), Token(access_token=access_token)
