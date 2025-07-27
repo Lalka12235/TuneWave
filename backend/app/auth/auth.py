@@ -1,7 +1,7 @@
 from app.utils.jwt import decode_access_token
 from fastapi import HTTPException,status,Depends
 from typing import Annotated
-from app.services.user import UserService
+from app.services.user_service import UserService
 from sqlalchemy.orm import Session
 #from fastapi.security import OAuth2PasswordBearer
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 

@@ -1,9 +1,10 @@
 from app.models.base import Base
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey,func,DateTime
 from sqlalchemy.orm import Mapped,mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID 
 import uuid
 from typing import TYPE_CHECKING
+from datetime import datetime
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -23,6 +24,8 @@ class Room(Base):
     current_track_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True),ForeignKey('tracks.id'),nullable=True)
     current_track_position_ms: Mapped[int | None] = mapped_column(nullable=True)
     is_playing: Mapped[bool] = mapped_column(default=False,nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
 
     user: Mapped['User'] = relationship(back_populates='room')
     current_track: Mapped["Track | None"] = relationship("Track", lazy="joined")

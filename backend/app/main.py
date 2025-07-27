@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.loggingMiddleware import LogMiddleware
-from app.api.v1.auth import auth
+from app.api.v1.auth_api import auth
+from app.api.v1.user_api import user
+from app.api.v1.room_api import room
 from app.logger.log_config import configure_logging
 
 configure_logging()
@@ -55,3 +57,5 @@ app.add_middleware(
 app.add_middleware(LogMiddleware)
 
 app.include_router(auth)
+app.include_router(user)
+app.include_router(room)
