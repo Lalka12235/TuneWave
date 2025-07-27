@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TuneWave - Управление Комнатами</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #555;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .button-group button {
+            flex-grow: 1;
+        }
+        #response-message, #api-response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: 'Courier New', Courier, monospace;
+            text-align: left;
+        }
+        #response-message {
+            background-color: #e9e9e9;
+            color: #333;
+        }
+        #api-response {
+            background-color: #f0f0f0;
+            color: #000;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+        }
+        .room-list {
+            margin-top: 20px;
+        }
+        .room-item {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .room-item strong {
+            color: #007bff;
+        }
+        .room-item p {
+            margin: 0;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .room-item .room-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        .room-item .room-actions button {
+            padding: 8px 12px;
+            font-size: 0.8em;
+            margin-top: 0;
+        }
+        .room-item .room-actions .delete-btn {
+            background-color: #dc3545;
+        }
+        .room-item .room-actions .delete-btn:hover {
+            background-color: #c82333;
+        }
+        .room-item .room-actions .update-btn {
+            background-color: #ffc107;
+            color: #333;
+        }
+        .room-item .room-actions .update-btn:hover {
+            background-color: #e0a800;
+        }
+        .room-item .room-actions .get-btn {
+            background-color: #28a745;
+        }
+        .room-item .room-actions .get-btn:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TuneWave - Управление Комнатами</h1>
+        <div class="section">
+            <h3>Статус Аутентификации</h3>
+            <p>Ваш JWT Токен: <span id="jwt-token">Загрузка...</span></p>
+            <button id="logout-button">Выйти</button>
+        </div>
+
+        <div class="section">
+            <h3>Создать Новую Комнату</h3>
+            <form id="create-room-form">
+                <label for="create-name">Название комнаты:</label>
+                <input type="text" id="create-name" required minlength="3" maxlength="50">
+
+                <label for="create-description">Описание (опционально):</label>
+                <textarea id="create-description" maxlength="255"></textarea>
+
+                <label for="create-max-members">Макс. участников:</label>
+                <input type="number" id="create-max-members" required min="1">
+
+                <div>
+                    <input type="checkbox" id="create-is-private">
+                    <label for="create-is-private" style="display: inline;">Приватная комната?</label>
+                </div>
+                
+                <div id="create-password-group" style="display: none;">
+                    <label for="create-password">Пароль:</label>
+                    <input type="password" id="create-password" minlength="6" maxlength="100">
+                </div>
+
+                <button type="submit">Создать Комнату</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h3>Получить Комнату по ID / Имени</h3>
+            <form id="get-room-form">
+                <label for="get-room-id">ID комнаты:</label>
+                <input type="text" id="get-room-id" placeholder="Введите UUID комнаты">
+                <label for="get-room-name">Или название комнаты:</label>
+                <input type="text" id="get-room-name" placeholder="Введите название комнаты">
+                <div class="button-group">
+                    <button type="button" id="get-by-id-btn">Получить по ID</button>
+                    <button type="button" id="get-by-name-btn">Получить по Имени</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="section">
+            <h3>Обновить Комнату</h3>
+            <form id="update-room-form">
+                <label for="update-room-id">ID комнаты для обновления:</label>
+                <input type="text" id="update-room-id" required placeholder="Введите UUID комнаты">
+
+                <label for="update-name">Новое название (опционально):</label>
+                <input type="text" id="update-name" minlength="3" maxlength="50">
+
+                <label for="update-description">Новое описание (опционально):</label>
+                <textarea id="update-description" maxlength="255"></textarea>
+
+                <label for="update-max-members">Новое макс. участников (опционально):</label>
+                <input type="number" id="update-max-members" min="1">
+
+                <div>
+                    <input type="checkbox" id="update-is-private">
+                    <label for="update-is-private" style="display: inline;">Приватная комната?</label>
+                </div>
+                
+                <div id="update-password-group" style="display: none;">
+                    <label for="update-password">Новый пароль (для приватной комнаты):</label>
+                    <input type="password" id="update-password" minlength="6" maxlength="100">
+                </div>
+
+                <button type="submit">Обновить Комнату</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h3>Удалить Комнату</h3>
+            <form id="delete-room-form">
+                <label for="delete-room-id">ID комнаты для удаления:</label>
+                <input type="text" id="delete-room-id" required placeholder="Введите UUID комнаты">
+                <button type="submit" class="delete-btn">Удалить Комнату</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h3>Список Всех Комнат</h3>
+            <button id="refresh-rooms-btn">Обновить Список Комнат</button>
+            <div id="rooms-list" class="room-list">
+                <!-- Комнаты будут загружаться сюда -->
+                <p>Загрузка комнат...</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Сообщения и Ответы API</h3>
+            <div id="response-message" style="background-color: #e9e9e9;"></div>
+            <pre id="api-response"></pre>
+        </div>
+    </div>
+
+    <script src="rooms.js"></script>
+</body>
+</html>
