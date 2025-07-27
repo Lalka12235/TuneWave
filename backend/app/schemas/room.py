@@ -16,7 +16,7 @@ class RoomCreate(RoomBase):
     """
     Схема для создания новой комнаты.
     Наследует поля из RoomBase.
-    password_hash опционален и нужен только если is_private=True.
+    password опционален и нужен только если is_private=True.
     """
     password: str | None = Field(None, min_length=6, max_length=100, description="Пароль для приватной комнаты (если is_private=True)")
 
@@ -30,7 +30,6 @@ class RoomUpdate(BaseModel):
     max_members: int | None = Field(None, gt=0, description="Новое максимальное количество участников")
     is_private: bool | None = Field(None, description="Изменить приватность комнаты")
     password: str | None = Field(None, min_length=6, max_length=100, description="Новый пароль для приватной комнаты")
-    description: str | None = Field(None, max_length=255, description="Новое описание комнаты")
 
 
 class RoomResponse(RoomBase):
