@@ -2,12 +2,10 @@ from fastapi import APIRouter,Depends, Query,HTTPException,status
 from sqlalchemy.orm import Session
 from fastapi.responses import RedirectResponse
 from typing import Annotated
-from app.schemas.user import UserResponse, Token, GoogleOAuthData, SpotifyOAuthData
+from app.schemas.user import GoogleOAuthData, SpotifyOAuthData
 from app.schemas.config_schemas import FrontendConfig
 from app.services.user import UserService
-from app.auth.auth import get_current_user
 from app.config.session import get_db
-from app.models.user import User
 import httpx
 from app.config.settings import settings
 import jwt
@@ -28,23 +26,10 @@ def get_frontend_config() -> FrontendConfig:
         google_client_id=settings.GOOGLE_CLIENT_ID,
         google_redirect_uri=settings.GOOGLE_REDIRECT_URI,
         google_scopes=settings.GOOGLE_SCOPES,
-        spotify_client_id=settings.SPOTIFY_CLIENT_ID, # Будет None, если не заполнен в .env
+        spotify_client_id=settings.SPOTIFY_CLIENT_ID,
         spotify_redirect_uri=settings.SPOTIFY_REDIRECT_URI,
         spotify_scopes=settings.SPOTIFY_SCOPES,
     )
-
-@auth.get('/me',response_model=UserResponse)
-async def get_me(
-    db: Annotated[Session,Depends(get_db)],
-    user: Annotated[User,Depends(get_current_user)]
-) -> UserResponse:
-    """
-    Получает профиль текущего аутентифицированного пользователя.
-    
-    Returns:
-        UserResponse: Pydantic-модель с данными профиля пользователя.
-    """
-    return UserService._map_user_to_response(user)
 
 
 @auth.get('/google/callback')
