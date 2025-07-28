@@ -4,7 +4,23 @@
 const responseMessageDiv = document.getElementById('response-message');
 const apiResponseDiv = document.getElementById('api-response');
 const jwtTokenSpan = document.getElementById('jwt-token');
-const roomsListDiv = document.getElementById('rooms-list');
+const roomsListDiv = document.getElementById('rooms-list'); // Для всех комнат
+const myRoomsListDiv = document.getElementById('my-rooms-list'); // Для моих комнат
+
+// Элементы модального окна для пароля
+const joinRoomPasswordModal = document.getElementById('join-room-password-modal');
+const modalRoomNameSpan = document.getElementById('modal-room-name');
+const modalRoomPasswordInput = document.getElementById('modal-room-password');
+const confirmJoinButton = document.getElementById('confirm-join-button');
+const joinModalCloseButton = joinRoomPasswordModal.querySelector('.close-button');
+
+// Элементы модального окна для участников
+const membersModal = document.getElementById('members-modal');
+const membersModalRoomNameSpan = document.getElementById('members-modal-room-name');
+const membersListDisplay = document.getElementById('members-list-display');
+const membersModalCloseButton = membersModal.querySelector('.members-close-button');
+
+let currentRoomToJoinId = null; // Для хранения ID комнаты, к которой пытаемся присоединиться
 
 function displayMessage(message, isError = false) {
     responseMessageDiv.textContent = message;
@@ -40,8 +56,8 @@ const BASE_URL = 'http://127.0.0.1:8000'; // Убедитесь, что это �
 
 let isFetchingRooms = false; // Флаг для предотвращения множественных одновременных вызовов fetchRooms
 
-async function fetchRooms() {
-    console.log('--- fetchRooms START ---');
+async function fetchRooms(targetDiv = roomsListDiv) {
+    console.log(`--- fetchRooms START for ${targetDiv.id} ---`);
     if (isFetchingRooms) {
         console.log('fetchRooms already in progress, skipping.');
         return;
@@ -59,9 +75,9 @@ async function fetchRooms() {
             throw new Error(data.detail || 'Ошибка при получении комнат');
         }
 
-        roomsListDiv.innerHTML = '';
+        targetDiv.innerHTML = ''; // Очищаем список перед обновлением
         if (data.length === 0) {
-            roomsListDiv.innerHTML = '<p>Пока нет доступных комнат.</p>';
+            targetDiv.innerHTML = '<p>Пока нет доступных комнат.</p>';
         } else {
             data.forEach(room => {
                 try {
@@ -81,32 +97,47 @@ async function fetchRooms() {
                             <button class="get-btn" data-room-id="${room.id}">Получить</button>
                             <button class="update-btn" data-room-id="${room.id}" data-room-name="${room.name}">Обновить</button>
                             <button class="delete-btn" data-room-id="${room.id}">Удалить</button>
+                            <button class="join-btn" data-room-id="${room.id}" data-room-name="${room.name}" data-is-private="${room.is_private}">Присоединиться</button>
+                            <button class="leave-btn" data-room-id="${room.id}">Выйти</button>
+                            <button class="members-btn" data-room-id="${room.id}" data-room-name="${room.name}">Участники</button>
                         </div>
                     `;
-                    roomsListDiv.appendChild(roomItem);
+                    targetDiv.appendChild(roomItem);
                 } catch (renderError) {
                     console.error('Error rendering room item:', room, renderError);
                 }
             });
 
-            roomsListDiv.querySelectorAll('.get-btn').forEach(button => {
+            // Добавляем обработчики событий для кнопок в списке
+            targetDiv.querySelectorAll('.get-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     document.getElementById('get-room-id').value = e.target.dataset.roomId;
                     document.getElementById('get-room-name').value = '';
                     displayMessage(`ID комнаты подставлен в форму "Получить по ID". Нажмите кнопку.`);
                 });
             });
-            roomsListDiv.querySelectorAll('.update-btn').forEach(button => {
+            targetDiv.querySelectorAll('.update-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     document.getElementById('update-room-id').value = e.target.dataset.roomId;
                     displayMessage(`ID комнаты ${e.target.dataset.roomName} подставлен в форму обновления.`);
                 });
             });
-            roomsListDiv.querySelectorAll('.delete-btn').forEach(button => {
+            targetDiv.querySelectorAll('.delete-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     document.getElementById('delete-room-id').value = e.target.dataset.roomId;
                     displayMessage(`ID комнаты подставлен в форму удаления. Нажмите "Удалить Комнату" для подтверждения.`);
                 });
+            });
+
+            // Новые обработчики для кнопок членства
+            targetDiv.querySelectorAll('.join-btn').forEach(button => {
+                button.addEventListener('click', handleJoinRoomClick);
+            });
+            targetDiv.querySelectorAll('.leave-btn').forEach(button => {
+                button.addEventListener('click', handleLeaveRoomClick);
+            });
+            targetDiv.querySelectorAll('.members-btn').forEach(button => {
+                button.addEventListener('click', handleViewMembersClick);
             });
         }
         displayMessage('Список комнат загружен.');
@@ -119,6 +150,78 @@ async function fetchRooms() {
     }
 }
 
+async function fetchMyRooms() {
+    console.log('--- fetchMyRooms START ---');
+    const token = getAuthToken();
+    if (!token) {
+        displayMessage('Вы не авторизованы. Невозможно получить список ваших комнат.', true);
+        myRoomsListDiv.innerHTML = '<p>Пожалуйста, войдите, чтобы увидеть ваши комнаты.</p>';
+        return;
+    }
+
+    try {
+        displayMessage('Загрузка списка ваших комнат...');
+        const response = await fetch(`${BASE_URL}/rooms/my-rooms`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || 'Ошибка при получении ваших комнат');
+        }
+
+        myRoomsListDiv.innerHTML = '';
+        if (data.length === 0) {
+            myRoomsListDiv.innerHTML = '<p>Вы пока не состоите ни в одной комнате.</p>';
+        } else {
+            data.forEach(room => {
+                const roomItem = document.createElement('div');
+                roomItem.className = 'room-item';
+                roomItem.innerHTML = `
+                    <strong>${room.name}</strong>
+                    <p>ID: ${room.id}</p>
+                    <p>Макс. участников: ${room.max_members}</p>
+                    <p>Приватная: ${room.is_private ? 'Да' : 'Нет'}</p>
+                    <p>Владелец ID: ${room.owner_id}</p>
+                    <p>Создана: ${new Date(room.created_at).toLocaleString()}</p>
+                    <p>Сейчас играет: ${room.current_track_id || 'Ничего'}</p>
+                    <p>Позиция: ${room.current_track_position_ms || '0'} мс</p>
+                    <p>Воспроизведение: ${room.is_playing ? 'Да' : 'Нет'}</p>
+                    <div class="room-actions">
+                        <button class="get-btn" data-room-id="${room.id}">Получить</button>
+                        <button class="leave-btn" data-room-id="${room.id}">Выйти</button>
+                        <button class="members-btn" data-room-id="${room.id}" data-room-name="${room.name}">Участники</button>
+                    </div>
+                `;
+                myRoomsListDiv.appendChild(roomItem);
+            });
+
+            // Добавляем обработчики событий для кнопок в списке "Мои Комнаты"
+            myRoomsListDiv.querySelectorAll('.get-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    document.getElementById('get-room-id').value = e.target.dataset.roomId;
+                    document.getElementById('get-room-name').value = '';
+                    displayMessage(`ID комнаты подставлен в форму "Получить по ID". Нажмите кнопку.`);
+                });
+            });
+            myRoomsListDiv.querySelectorAll('.leave-btn').forEach(button => {
+                button.addEventListener('click', handleLeaveRoomClick);
+            });
+            myRoomsListDiv.querySelectorAll('.members-btn').forEach(button => {
+                button.addEventListener('click', handleViewMembersClick);
+            });
+        }
+        displayMessage('Список ваших комнат загружен.');
+    } catch (error) {
+        displayMessage(`Ошибка загрузки ваших комнат: ${error.message}`, true);
+        console.error('Ошибка загрузки ваших комнат:', error);
+    }
+    console.log('--- fetchMyRooms END ---');
+}
+
+
 async function createRoom(event) {
     event.preventDefault();
 
@@ -129,14 +232,12 @@ async function createRoom(event) {
     }
 
     const name = document.getElementById('create-name').value;
-    // УДАЛЕНО: const description = document.getElementById('create-description').value;
     const maxMembers = parseInt(document.getElementById('create-max-members').value, 10);
     const isPrivate = document.getElementById('create-is-private').checked;
     const password = document.getElementById('create-password').value;
 
     const roomData = {
         name,
-        // УДАЛЕНО: description: description || null,
         max_members: maxMembers,
         is_private: isPrivate,
     };
@@ -173,7 +274,8 @@ async function createRoom(event) {
         displayMessage(`Комната "${data.name}" успешно создана! ID: ${data.id}`);
         displayApiResponse(data);
         clearForms();
-        fetchRooms();
+        fetchRooms(); // Обновляем список всех комнат
+        fetchMyRooms(); // Обновляем список моих комнат
     } catch (error) {
         displayMessage(`Ошибка создания комнаты: ${error.message}`, true);
         console.error('Ошибка создания комнаты:', error);
@@ -247,13 +349,11 @@ async function updateRoom(event) {
 
     const updateData = {};
     const name = document.getElementById('update-name').value;
-    // УДАЛЕНО: const description = document.getElementById('update-description').value;
     const maxMembers = document.getElementById('update-max-members').value;
     const isPrivateChecked = document.getElementById('update-is-private').checked;
     const password = document.getElementById('update-password').value;
 
     if (name) updateData.name = name;
-    // УДАЛЕНО: if (description) updateData.description = description;
     if (maxMembers) updateData.max_members = parseInt(maxMembers, 10);
     
     updateData.is_private = isPrivateChecked; 
@@ -297,7 +397,8 @@ async function updateRoom(event) {
         displayMessage(`Комната "${data.name}" успешно обновлена!`);
         displayApiResponse(data);
         clearForms();
-        fetchRooms();
+        fetchRooms(); // Обновляем список всех комнат
+        fetchMyRooms(); // Обновляем список моих комнат
     } catch (error) {
         displayMessage(`Ошибка обновления комнаты: ${error.message}`, true);
         console.error('Ошибка обновления комнаты:', error);
@@ -340,12 +441,142 @@ async function deleteRoom(event) {
         displayMessage(`Комната с ID ${roomId} успешно удалена.`);
         displayApiResponse(data);
         clearForms();
-        fetchRooms();
+        fetchRooms(); // Обновляем список всех комнат
+        fetchMyRooms(); // Обновляем список моих комнат
     } catch (error) {
         displayMessage(`Ошибка удаления комнаты: ${error.message}`, true);
         console.error('Ошибка удаления комнаты:', error);
     }
 }
+
+// --- НОВЫЕ ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ УЧАСТНИКАМИ ---
+
+function handleJoinRoomClick(event) {
+    const roomId = event.target.dataset.roomId;
+    const roomName = event.target.dataset.roomName;
+    const isPrivate = event.target.dataset.isPrivate === 'true'; // Преобразуем строку в boolean
+
+    currentRoomToJoinId = roomId; // Сохраняем ID комнаты для последующего использования
+
+    if (isPrivate) {
+        modalRoomNameSpan.textContent = roomName;
+        modalRoomPasswordInput.value = ''; // Очищаем поле пароля
+        joinRoomPasswordModal.style.display = 'flex'; // Показываем модальное окно
+    } else {
+        // Если комната не приватная, сразу вызываем joinRoom без пароля
+        joinRoom(roomId, null);
+    }
+}
+
+async function joinRoom(roomId, password) {
+    const token = getAuthToken();
+    if (!token) {
+        displayMessage('Вы не авторизованы. Пожалуйста, войдите.', true);
+        return;
+    }
+
+    const requestBody = password ? { password: password } : {};
+
+    try {
+        displayMessage(`Присоединение к комнате ${roomId}...`);
+        const response = await fetch(`${BASE_URL}/rooms/${roomId}/join`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || 'Ошибка при присоединении к комнате');
+        }
+
+        displayMessage(`Вы успешно присоединились к комнате "${data.name}"!`);
+        displayApiResponse(data);
+        joinRoomPasswordModal.style.display = 'none'; // Скрываем модальное окно
+        fetchRooms(); // Обновляем список всех комнат
+        fetchMyRooms(); // Обновляем список моих комнат
+    } catch (error) {
+        displayMessage(`Ошибка присоединения к комнате: ${error.message}`, true);
+        console.error('Ошибка присоединения к комнате:', error);
+    }
+}
+
+async function handleLeaveRoomClick(event) {
+    const roomId = event.target.dataset.roomId;
+    if (!confirm(`Вы уверены, что хотите покинуть комнату с ID: ${roomId}?`)) {
+        return;
+    }
+    leaveRoom(roomId);
+}
+
+async function leaveRoom(roomId) {
+    const token = getAuthToken();
+    if (!token) {
+        displayMessage('Вы не авторизованы. Пожалуйста, войдите.', true);
+        return;
+    }
+
+    try {
+        displayMessage(`Покидаю комнату ${roomId}...`);
+        const response = await fetch(`${BASE_URL}/rooms/${roomId}/leave`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || 'Ошибка при выходе из комнаты');
+        }
+
+        displayMessage(data.detail);
+        displayApiResponse(data);
+        fetchRooms(); // Обновляем список всех комнат
+        fetchMyRooms(); // Обновляем список моих комнат
+    } catch (error) {
+        displayMessage(`Ошибка выхода из комнаты: ${error.message}`, true);
+        console.error('Ошибка выхода из комнаты:', error);
+    }
+}
+
+async function handleViewMembersClick(event) {
+    const roomId = event.target.dataset.roomId;
+    const roomName = event.target.dataset.roomName;
+
+    membersModalRoomNameSpan.textContent = roomName;
+    membersListDisplay.innerHTML = '<p>Загрузка участников...</p>';
+    membersModal.style.display = 'flex'; // Показываем модальное окно
+
+    try {
+        const response = await fetch(`${BASE_URL}/rooms/${roomId}/members`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || 'Ошибка при получении участников комнаты');
+        }
+
+        membersListDisplay.innerHTML = '';
+        if (data.length === 0) {
+            membersListDisplay.innerHTML = '<p>В этой комнате пока нет участников.</p>';
+        } else {
+            const ul = document.createElement('ul');
+            data.forEach(member => {
+                const li = document.createElement('li');
+                li.textContent = `Имя: ${member.username || 'Неизвестно'}, ID: ${member.id}`;
+                ul.appendChild(li);
+            });
+            membersListDisplay.appendChild(ul);
+        }
+    } catch (error) {
+        membersListDisplay.innerHTML = `<p style="color: red;">Ошибка загрузки участников: ${error.message}</p>`;
+        console.error('Ошибка загрузки участников:', error);
+    }
+}
+
 
 // --- Инициализация и обработчики событий ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -366,23 +597,56 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = 'auth.html';
     });
 
+    // Обработчики для форм и кнопок CRUD комнат
     document.getElementById('create-room-form').addEventListener('submit', createRoom);
     document.getElementById('get-by-id-btn').addEventListener('click', getRoomById);
     document.getElementById('get-by-name-btn').addEventListener('click', getRoomByName);
     document.getElementById('update-room-form').addEventListener('submit', updateRoom);
     document.getElementById('delete-room-form').addEventListener('submit', deleteRoom);
     document.getElementById('refresh-rooms-btn').addEventListener('click', fetchRooms);
+    document.getElementById('my-rooms-btn').addEventListener('click', fetchMyRooms); // Новая кнопка "Мои Комнаты"
 
+    // Логика показа/скрытия поля пароля для создания комнаты
     document.getElementById('create-is-private').addEventListener('change', (e) => {
         document.getElementById('create-password-group').style.display = e.target.checked ? 'block' : 'none';
         document.getElementById('create-password').required = e.target.checked;
     });
 
+    // Логика показа/скрытия поля пароля для обновления комнаты
     document.getElementById('update-is-private').addEventListener('change', (e) => {
         document.getElementById('update-password-group').style.display = e.target.checked ? 'block' : 'none';
     });
 
-    // Инициализация: загружаем список комнат при загрузке страницы
+    // Обработчики для модального окна пароля при присоединении
+    joinModalCloseButton.addEventListener('click', () => {
+        joinRoomPasswordModal.style.display = 'none';
+    });
+    window.addEventListener('click', (event) => {
+        if (event.target == joinRoomPasswordModal) {
+            joinRoomPasswordModal.style.display = 'none';
+        }
+    });
+    confirmJoinButton.addEventListener('click', () => {
+        const password = modalRoomPasswordInput.value;
+        if (currentRoomToJoinId) {
+            joinRoom(currentRoomToJoinId, password);
+        }
+    });
+
+    // Обработчики для модального окна участников
+    membersModalCloseButton.addEventListener('click', () => {
+        membersModal.style.display = 'none';
+    });
+    window.addEventListener('click', (event) => {
+        if (event.target == membersModal) {
+            membersModal.style.display = 'none';
+        }
+    });
+
+
+    // Инициализация: загружаем список всех комнат при загрузке страницы
     fetchRooms();
+    // Также загружаем список моих комнат при загрузке страницы
+    fetchMyRooms(); 
     console.log('DOMContentLoaded finished');
 });
