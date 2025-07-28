@@ -1,7 +1,9 @@
 from fastapi import HTTPException,status
 from app.repositories.room_repo import RoomRepository
+from app.repositories.member_room_association_repo import MemberRoomAssociationRepository
 from sqlalchemy.orm import Session
 from app.schemas.room_schemas import RoomResponse, RoomCreate, RoomUpdate
+from app.schemas.user_schemas import UserResponse
 from app.models.room import Room
 import uuid
 from typing import Any
@@ -20,6 +22,13 @@ class RoomService:
         # Pydantic's model_validate() автоматически преобразует SQLAlchemy ORM-объект
         # в Pydantic-модель, благодаря Config.from_attributes = True в UserResponse.
         return RoomResponse.model_validate(room)
+    
+    @staticmethod
+    def _map_user_to_response(user: User) -> UserResponse:
+        """
+        Вспомогательный метод для преобразования объекта User SQLAlchemy в Pydantic UserResponse.
+        """
+        return UserResponse.model_validate(user)
     
 
     @staticmethod
@@ -198,3 +207,140 @@ class RoomService:
             return False 
 
         return verify_pass(password, room.password_hash)
+    
+    @staticmethod
+    def join_room(db: Session,user: User,room_id: uuid.UUID,password: str | None = None) -> RoomResponse:
+        """
+        Пользователь присоединяется к комнате.
+        
+        Args:
+            db (Session): Сессия базы данных SQLAlchemy.
+            room_id (uuid.UUID): ID комнаты, к которой присоединяется пользователь.
+            user (User): Объект текущего пользователя.
+            password (Optional[str]): Пароль для приватной комнаты.
+            
+        Returns:
+            RoomResponse: Объект комнаты, к которой присоединился пользователь.
+            
+        Raises:
+            HTTPException: Если комната не найдена, пользователь уже является участником,
+                           неверный пароль, или комната переполнена.
+        """
+        room = RoomRepository.get_room_by_id(db, room_id)
+        if not room:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Комната не найдена."
+            )
+        
+        existing_association = MemberRoomAssociationRepository.get_association_by_ids(db, user.id, room_id)
+        if existing_association:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Вы уже являетесь участником этой комнаты."
+            )
+        
+        if room.is_private:
+            if not password or not RoomService.verify_room_password(room, password):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Неверный пароль для приватной комнаты."
+                )
+            
+        current_members_count = len(MemberRoomAssociationRepository.get_members_by_room_id(db, room_id))
+        if current_members_count >= room.max_members:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Комната заполнена. Невозможно присоединиться."
+            )
+        
+        new_association = MemberRoomAssociationRepository.add_member(db,user.id,room_id)
+
+        db.commit()
+        db.refresh(new_association)
+
+        return RoomService._map_room_to_response(room)
+
+    @staticmethod
+    def leave_room(db: Session, room_id: uuid.UUID, user: User) -> dict[str, Any]:
+        """
+        Пользователь покидает комнату.
+        
+        Args:
+            db (Session): Сессия базы данных SQLAlchemy.
+            room_id (uuid.UUID): ID комнаты, которую покидает пользователь.
+            user (User): Объект текущего пользователя.
+            
+        Returns:
+            dict[str, Any]: Сообщение об успешном выходе.
+            
+        Raises:
+            HTTPException: Если пользователь не является участником комнаты.
+        """
+        existing_association = MemberRoomAssociationRepository.get_association_by_ids(db, user.id, room_id)
+        if not existing_association:
+            raise HTTPException(
+                status_code=status.HTTP_404_CONFLICT,
+                detail="Вы не являетесь участником этой комнаты."
+            )
+        
+        deleted_successfully = MemberRoomAssociationRepository.remove_member(db,user.id,room_id)
+
+        db.commit()
+
+        if deleted_successfully:
+            return {
+                'status': 'success',
+                'detail': f"Вы успешно покинули комнату с ID: {room_id}.",
+                'user_id': str(user.id),
+                'room_id': str(room_id)
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Не удалось покинуть комнату."
+            )
+        
+    
+    @staticmethod
+    def get_room_members(db: Session,room_id: uuid.UUID) -> list[UserResponse]:
+        """
+        Получает список участников комнаты.
+        
+        Args:
+            db (Session): Сессия базы данных SQLAlchemy.
+            room_id (uuid.UUID): ID комнаты.
+            
+        Returns:
+            List[UserResponse]: Список объектов UserResponse, являющихся участниками комнаты.
+            
+        Raises:
+            HTTPException: Если комната не найдена.
+        """
+        room = RoomRepository.get_room_by_id(db, room_id)
+        if not room:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Комната не найдена."
+            )
+        
+        members = MemberRoomAssociationRepository.get_members_by_room_id(db,room_id)
+        
+        return [RoomService._map_user_to_response(member) for member in members]
+    
+
+    @staticmethod
+    def get_user_rooms(db: Session,user: User) -> list[RoomResponse]:
+        """
+        Получает список всех комнат, в которых состоит данный пользователь.
+        
+        Args:
+            db (Session): Сессия базы данных SQLAlchemy.
+            user (User): Объект текущего пользователя.
+            
+        Returns:
+            List[RoomResponse]: Список объектов RoomResponse, в которых состоит пользователь.
+        """
+        rooms = MemberRoomAssociationRepository.get_rooms_by_user_id(db,user.id)
+        return [RoomService._map_room_to_response(room) for room in rooms]
+    
