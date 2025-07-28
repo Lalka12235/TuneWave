@@ -314,6 +314,7 @@ class UserService:
             update_data['spotify_access_token'] = spotify_data.spotify_access_token
             update_data['spotify_refresh_token'] = spotify_data.spotify_refresh_token
             update_data['spotify_token_expires_at'] = spotify_data.spotify_token_expires_at
+            update_data['spotify_scope'] = spotify_data.spotify_scope
 
 
             if update_data:
@@ -329,7 +330,8 @@ class UserService:
                 'spotify_image_url': spotify_data.spotify_image_url,
                 'spotify_access_token': spotify_data.spotify_access_token,
                 'spotify_refresh_token': spotify_data.spotify_refresh_token,
-                'spotify_token_expires_at': spotify_data.spotify_token_expires_at
+                'spotify_token_expires_at': spotify_data.spotify_token_expires_at,
+                'spotify_scope': spotify_data.spotify_scope
             }
 
             user = UserRepository.create_user(db,user_data)

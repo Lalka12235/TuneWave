@@ -164,6 +164,7 @@ async def spotify_callback(
     spotify_access_token = spotify_tokens.get('access_token')
     spotify_refresh_token = spotify_tokens.get('refresh_token')
     expires_in = spotify_tokens.get('expires_in')
+    spotify_scope = spotify_tokens.get('scope')
     
     if not spotify_access_token:
         raise HTTPException(
@@ -218,7 +219,8 @@ async def spotify_callback(
         spotify_image_url=spotify_image_url,
         spotify_access_token=spotify_access_token,
         spotify_refresh_token=spotify_refresh_token,
-        spotify_token_expires_at=spotify_token_expires_at
+        spotify_token_expires_at=spotify_token_expires_at,
+        spotify_scope=spotify_scope
     )
 
     user_response, app_token = UserService.authenticate_user_with_spotify(db, spotify_oauth_data)

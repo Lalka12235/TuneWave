@@ -64,6 +64,7 @@ class SpotifyOAuthData(BaseModel):
     spotify_access_token: str = Field(..., description="Токен доступа Spotify")
     spotify_refresh_token: str = Field(..., description="Токен обновления Spotify")
     spotify_token_expires_at: int = Field(..., description="Время истечения токена Spotify (Unix timestamp)")
+    spotify_scope: str = Field(..., description="Предоставленные скоупы Spotify")
 
 
 class Token(BaseModel):
