@@ -9,7 +9,8 @@ from app.models.user import User
 
 
 user = APIRouter(
-    tags=['User']
+    tags=['User'],
+    prefix='/users'
 )
 
 @user.get('/me',response_model=UserResponse)

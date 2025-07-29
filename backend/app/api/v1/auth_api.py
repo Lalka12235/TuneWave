@@ -52,8 +52,8 @@ async def google_callback(
     }
 
     try:
-        with httpx.Client() as client:
-            response = client.post(token_url,data=token_data)
+        async with httpx.AsyncClient() as client:
+            response = await client.post(token_url,data=token_data)
             response.raise_for_status()
             google_tokens = response.json()
     except httpx.HTTPStatusError as e:
@@ -146,8 +146,8 @@ async def spotify_callback(
     }
 
     try:
-        with httpx.Client() as client:
-            response = client.post(token_url, headers=token_headers, data=token_data)
+        async with httpx.AsyncClient() as client:
+            response = await client.post(token_url, headers=token_headers, data=token_data)
             response.raise_for_status()
             spotify_tokens = response.json()
     except httpx.HTTPStatusError as e:
@@ -181,8 +181,8 @@ async def spotify_callback(
     }
 
     try:
-        with httpx.Client() as client:
-            user_profile_response = client.get(user_profile_url, headers=user_profile_headers)
+        async with httpx.AsyncClient() as client:
+            user_profile_response = await client.get(user_profile_url, headers=user_profile_headers)
             user_profile_response.raise_for_status()
             spotify_user_data = user_profile_response.json()
     except httpx.HTTPStatusError as e:
