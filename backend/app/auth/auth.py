@@ -1,7 +1,7 @@
 from app.utils.jwt import decode_access_token
 from fastapi import HTTPException,status,Depends
 from typing import Annotated
-from app.services.user_service import UserService
+from app.repositories.user_repo import UserRepository
 from sqlalchemy.orm import Session
 #from fastapi.security import OAuth2PasswordBearer
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 
@@ -76,10 +76,11 @@ def get_current_user(
     Raises:
         HTTPException: Если пользователь не найден в БД или неактивен (401 Unauthorized).
     """
-    user = UserService.get_user_by_id(db,user_id)
+    user = UserRepository.get_user_by_id(db, user_id)
 
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Пользователь не найден или неактивен."
+        )
     return user
-
-
-def login_user():
-    pass

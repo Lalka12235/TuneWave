@@ -135,14 +135,14 @@
             margin-top: 10px;
             display: flex;
             gap: 5px;
-            flex-wrap: wrap; /* Для кнопок в несколько рядов на маленьких экранах */
+            flex-wrap: wrap;
         }
         .room-item .room-actions button {
             padding: 8px 12px;
             font-size: 0.8em;
             margin-top: 0;
-            flex-grow: 1; /* Чтобы кнопки занимали доступное пространство */
-            min-width: 100px; /* Минимальная ширина для кнопок */
+            flex-grow: 1;
+            min-width: 100px;
         }
         .room-item .room-actions .delete-btn {
             background-color: #dc3545;
@@ -164,19 +164,19 @@
             background-color: #218838;
         }
         .room-item .room-actions .join-btn {
-            background-color: #6f42c1; /* Пурпурный */
+            background-color: #6f42c1;
         }
         .room-item .room-actions .join-btn:hover {
             background-color: #5a32a3;
         }
         .room-item .room-actions .leave-btn {
-            background-color: #fd7e14; /* Оранжевый */
+            background-color: #fd7e14;
         }
         .room-item .room-actions .leave-btn:hover {
             background-color: #e66a00;
         }
         .room-item .room-actions .members-btn {
-            background-color: #17a2b8; /* Голубой */
+            background-color: #17a2b8;
         }
         .room-item .room-actions .members-btn:hover {
             background-color: #138496;
@@ -184,15 +184,15 @@
 
         /* Стили для модального окна пароля */
         .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1; /* Sit on top */
+            display: none;
+            position: fixed;
+            z-index: 1;
             left: 0;
             top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
             justify-content: center;
             align-items: center;
         }
@@ -239,6 +239,42 @@
         }
         #members-list-display li:last-child {
             border-bottom: none;
+        }
+
+        /* Стили для Spotify Search */
+        .spotify-search-results {
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        .spotify-track-item {
+            display: flex;
+            align-items: center;
+            background-color: #e6f7ff; /* Светло-голубой фон */
+            border: 1px solid #b3e0ff;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 8px;
+            gap: 10px;
+        }
+        .spotify-track-item img {
+            width: 60px;
+            height: 60px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        .spotify-track-info {
+            flex-grow: 1;
+        }
+        .spotify-track-info strong {
+            display: block;
+            color: #0056b3;
+            font-size: 1.1em;
+        }
+        .spotify-track-info p {
+            margin: 0;
+            font-size: 0.85em;
+            color: #333;
         }
     </style>
 </head>
@@ -328,6 +364,18 @@
             <button id="my-rooms-btn">Показать Мои Комнаты</button>
             <div id="my-rooms-list" class="room-list">
                 <!-- Мои комнаты будут загружаться сюда -->
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Поиск Музыки на Spotify</h3>
+            <form id="spotify-search-form">
+                <label for="spotify-search-query">Поиск треков:</label>
+                <input type="text" id="spotify-search-query" placeholder="Введите название трека или исполнителя" required>
+                <button type="submit" id="search-spotify-btn">Найти Треки</button>
+            </form>
+            <div id="spotify-search-results" class="spotify-search-results">
+                <!-- Результаты поиска Spotify будут здесь -->
             </div>
         </div>
 

@@ -6,6 +6,7 @@ const apiResponseDiv = document.getElementById('api-response');
 const jwtTokenSpan = document.getElementById('jwt-token');
 const roomsListDiv = document.getElementById('rooms-list'); // Для всех комнат
 const myRoomsListDiv = document.getElementById('my-rooms-list'); // Для моих комнат
+const spotifySearchResultsDiv = document.getElementById('spotify-search-results'); // Для результатов поиска Spotify
 
 // Элементы модального окна для пароля
 const joinRoomPasswordModal = document.getElementById('join-room-password-modal');
@@ -43,6 +44,7 @@ function clearForms() {
     document.getElementById('get-room-form').reset();
     document.getElementById('update-room-form').reset();
     document.getElementById('delete-room-form').reset();
+    document.getElementById('spotify-search-form').reset(); // Очищаем форму поиска Spotify
     // Скрываем поля пароля
     document.getElementById('create-password-group').style.display = 'none';
     document.getElementById('update-password-group').style.display = 'none';
@@ -454,16 +456,15 @@ async function deleteRoom(event) {
 function handleJoinRoomClick(event) {
     const roomId = event.target.dataset.roomId;
     const roomName = event.target.dataset.roomName;
-    const isPrivate = event.target.dataset.isPrivate === 'true'; // Преобразуем строку в boolean
+    const isPrivate = event.target.dataset.isPrivate === 'true';
 
-    currentRoomToJoinId = roomId; // Сохраняем ID комнаты для последующего использования
+    currentRoomToJoinId = roomId;
 
     if (isPrivate) {
         modalRoomNameSpan.textContent = roomName;
-        modalRoomPasswordInput.value = ''; // Очищаем поле пароля
-        joinRoomPasswordModal.style.display = 'flex'; // Показываем модальное окно
+        modalRoomPasswordInput.value = '';
+        joinRoomPasswordModal.style.display = 'flex';
     } else {
-        // Если комната не приватная, сразу вызываем joinRoom без пароля
         joinRoom(roomId, null);
     }
 }
@@ -475,7 +476,7 @@ async function joinRoom(roomId, password) {
         return;
     }
 
-    const requestBody = password ? { password: password } : {};
+    const requestBody = { password: password }; 
 
     try {
         displayMessage(`Присоединение к комнате ${roomId}...`);
@@ -490,14 +491,18 @@ async function joinRoom(roomId, password) {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.detail || 'Ошибка при присоединении к комнате');
+            let errorMessage = data.detail || 'Ошибка при присоединении к комнате';
+            if (Array.isArray(data.detail) && data.detail.length > 0 && data.detail[0].msg) {
+                errorMessage = data.detail[0].msg;
+            }
+            throw new Error(errorMessage);
         }
 
         displayMessage(`Вы успешно присоединились к комнате "${data.name}"!`);
         displayApiResponse(data);
-        joinRoomPasswordModal.style.display = 'none'; // Скрываем модальное окно
-        fetchRooms(); // Обновляем список всех комнат
-        fetchMyRooms(); // Обновляем список моих комнат
+        joinRoomPasswordModal.style.display = 'none';
+        fetchRooms();
+        fetchMyRooms();
     } catch (error) {
         displayMessage(`Ошибка присоединения к комнате: ${error.message}`, true);
         console.error('Ошибка присоединения к комнате:', error);
@@ -535,8 +540,8 @@ async function leaveRoom(roomId) {
 
         displayMessage(data.detail);
         displayApiResponse(data);
-        fetchRooms(); // Обновляем список всех комнат
-        fetchMyRooms(); // Обновляем список моих комнат
+        fetchRooms();
+        fetchMyRooms();
     } catch (error) {
         displayMessage(`Ошибка выхода из комнаты: ${error.message}`, true);
         console.error('Ошибка выхода из комнаты:', error);
@@ -549,7 +554,7 @@ async function handleViewMembersClick(event) {
 
     membersModalRoomNameSpan.textContent = roomName;
     membersListDisplay.innerHTML = '<p>Загрузка участников...</p>';
-    membersModal.style.display = 'flex'; // Показываем модальное окно
+    membersModal.style.display = 'flex';
 
     try {
         const response = await fetch(`${BASE_URL}/rooms/${roomId}/members`);
@@ -575,6 +580,82 @@ async function handleViewMembersClick(event) {
         membersListDisplay.innerHTML = `<p style="color: red;">Ошибка загрузки участников: ${error.message}</p>`;
         console.error('Ошибка загрузки участников:', error);
     }
+}
+
+// --- НОВЫЕ ФУНКЦИИ SPOTIFY ---
+
+async function searchSpotifyTracks(event) {
+    event.preventDefault(); // Предотвращаем перезагрузку страницы
+
+    const token = getAuthToken();
+    if (!token) {
+        displayMessage('Вы не авторизованы. Пожалуйста, войдите.', true);
+        return;
+    }
+
+    const query = document.getElementById('spotify-search-query').value;
+    if (!query) {
+        displayMessage('Пожалуйста, введите поисковый запрос.', true);
+        return;
+    }
+
+    spotifySearchResultsDiv.innerHTML = '<p>Поиск треков на Spotify...</p>';
+    displayApiResponse({}); // Очищаем предыдущий ответ API
+
+    try {
+        const response = await fetch(`${BASE_URL}/spotify/search/tracks?query=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            let errorMessage = data.detail || 'Ошибка при поиске треков Spotify';
+            if (Array.isArray(data.detail) && data.detail.length > 0 && data.detail[0].msg) {
+                errorMessage = data.detail[0].msg;
+            }
+            throw new Error(errorMessage);
+        }
+
+        displayMessage('Результаты поиска Spotify загружены.');
+        displayApiResponse(data); // Показываем полный ответ API
+
+        renderSpotifySearchResults(data); // Рендерим результаты в отдельной секции
+
+    } catch (error) {
+        displayMessage(`Ошибка поиска треков Spotify: ${error.message}`, true);
+        console.error('Ошибка поиска треков Spotify:', error);
+        spotifySearchResultsDiv.innerHTML = `<p style="color: red;">Ошибка: ${error.message}</p>`;
+    }
+}
+
+function renderSpotifySearchResults(data) {
+    spotifySearchResultsDiv.innerHTML = ''; // Очищаем предыдущие результаты
+
+    if (!data.tracks || !data.tracks.items || data.tracks.items.length === 0) {
+        spotifySearchResultsDiv.innerHTML = '<p>По вашему запросу ничего не найдено.</p>';
+        return;
+    }
+
+    data.tracks.items.forEach(track => {
+        const trackItem = document.createElement('div');
+        trackItem.className = 'spotify-track-item';
+
+        const imageUrl = track.album.images.length > 0 ? track.album.images[0].url : 'https://placehold.co/60x60/cccccc/333333?text=No+Image';
+        const artists = track.artists.map(artist => artist.name).join(', ');
+
+        trackItem.innerHTML = `
+            <img src="${imageUrl}" alt="Album Art for ${track.name}" onerror="this.onerror=null;this.src='https://placehold.co/60x60/cccccc/333333?text=No+Image';">
+            <div class="spotify-track-info">
+                <strong>${track.name}</strong>
+                <p>${artists} - ${track.album.name}</p>
+            </div>
+            <!-- Здесь можно добавить кнопку "Добавить в очередь" -->
+        `;
+        spotifySearchResultsDiv.appendChild(trackItem);
+    });
 }
 
 
@@ -604,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('update-room-form').addEventListener('submit', updateRoom);
     document.getElementById('delete-room-form').addEventListener('submit', deleteRoom);
     document.getElementById('refresh-rooms-btn').addEventListener('click', fetchRooms);
-    document.getElementById('my-rooms-btn').addEventListener('click', fetchMyRooms); // Новая кнопка "Мои Комнаты"
+    document.getElementById('my-rooms-btn').addEventListener('click', fetchMyRooms);
 
     // Логика показа/скрытия поля пароля для создания комнаты
     document.getElementById('create-is-private').addEventListener('change', (e) => {
@@ -642,6 +723,9 @@ document.addEventListener('DOMContentLoaded', () => {
             membersModal.style.display = 'none';
         }
     });
+
+    // НОВЫЙ ОБРАБОТЧИК ДЛЯ ПОИСКА SPOTIFY
+    document.getElementById('spotify-search-form').addEventListener('submit', searchSpotifyTracks);
 
 
     // Инициализация: загружаем список всех комнат при загрузке страницы

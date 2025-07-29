@@ -225,6 +225,6 @@ async def spotify_callback(
 
     user_response, app_token = UserService.authenticate_user_with_spotify(db, spotify_oauth_data)
 
-    redirect_url = f"http://127.0.0.1:5500/frontend/index.html?access_token={app_token.access_token}"
+    redirect_url = f"http://127.0.0.1:5500/frontend/auth.html?access_token={app_token.access_token}"
 
     return RedirectResponse(url=redirect_url)
