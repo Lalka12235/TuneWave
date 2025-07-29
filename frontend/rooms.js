@@ -728,3 +728,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('spotify-search-form').addEventListener('submit', searchSpotifyTracks);
 
 
+    // Инициализация: загружаем список всех комнат при загрузке страницы
+    fetchRooms();
+    // Также загружаем список моих комнат при загрузке страницы
+    fetchMyRooms(); 
+    console.log('DOMContentLoaded finished');
+});
