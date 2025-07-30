@@ -75,7 +75,7 @@ async def google_callback(
         )
     
     try:
-        decoded_google_id_token = jwt.decode(
+        decoded_google_id_token: dict = jwt.decode(
             id_token,
             options={'verify_signature': False},
             algorithms=['RS256']
@@ -184,7 +184,7 @@ async def spotify_callback(
         async with httpx.AsyncClient() as client:
             user_profile_response = await client.get(user_profile_url, headers=user_profile_headers)
             user_profile_response.raise_for_status()
-            spotify_user_data = user_profile_response.json()
+            spotify_user_data: dict = user_profile_response.json()
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -204,7 +204,6 @@ async def spotify_callback(
     spotify_image_url = None
     if spotify_user_data.get('images'):
         spotify_image_url = spotify_user_data['images'][0].get('url')
-
     if not email or not username or not spotify_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
