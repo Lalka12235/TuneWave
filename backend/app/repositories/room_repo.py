@@ -1,8 +1,10 @@
 from app.models.room import Room
 from sqlalchemy import select,delete
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session,joinedload
 import uuid
 from typing import Any
+from app.models.member_room_association import Member_room_association
+from app.models.room_track_association import RoomTrackAssociationModel
 
 
 class RoomRepository:
@@ -23,9 +25,14 @@ class RoomRepository:
         Returns:
             Room | None: Объект комнаты, если найден, иначе None.
         """
-        stmt = select(Room).where(Room.id == room_id)
+        stmt = select(Room).options(
+            joinedload(Room.user), # Загружаем владельца
+            joinedload(Room.member_room).joinedload(Member_room_association.user), # Загружаем участников и их пользователей
+            joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track) # Загружаем очередь и связанные треки
+        ).filter(Room.id == room_id)
         result = db.execute(stmt)
-        return result.scalar_one_or_none()
+        # КРИТИЧНО: .unique() для joinedload с коллекциями
+        return result.unique().scalar_one_or_none()
     
     @staticmethod
     def get_room_by_name(db: Session, name: str) -> Room | None:
@@ -39,9 +46,13 @@ class RoomRepository:
         Returns:
             Room | None: Объект комнаты, если найден, иначе None.
         """
-        stmt = select(Room).where(Room.name == name)
+        stmt = select(Room).options(
+            joinedload(Room.user),
+            joinedload(Room.member_room).joinedload(Member_room_association.user),
+            joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
+        ).filter(Room.name == name)
         result = db.execute(stmt)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
     @staticmethod
     def get_all_rooms(db: Session) -> list[Room]:
@@ -54,9 +65,13 @@ class RoomRepository:
         Returns:
             List[Room]: Список объектов Room.
         """
-        stmt = select(Room)
+        stmt = select(Room).options(
+            joinedload(Room.user),
+            joinedload(Room.member_room).joinedload(Member_room_association.user),
+            joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
+        )
         result = db.execute(stmt)
-        return result.scalars().all()
+        return result.unique().scalars().all()
     
 
 
