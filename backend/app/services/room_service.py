@@ -1,14 +1,19 @@
 from fastapi import HTTPException,status
 from app.repositories.room_repo import RoomRepository
 from app.repositories.member_room_association_repo import MemberRoomAssociationRepository
-from sqlalchemy.orm import Session
-from app.schemas.room_schemas import RoomResponse, RoomCreate, RoomUpdate
+from sqlalchemy.orm import Session,joinedload
+from app.schemas.room_schemas import RoomResponse, RoomCreate, RoomUpdate,TrackInQueueResponse
 from app.schemas.user_schemas import UserResponse
+from app.services.user_service import UserService
 from app.models.room import Room
 import uuid
 from typing import Any
 from app.utils.hash import make_hash_pass,verify_pass
 from app.models.user import User
+from app.models.room_track_association import RoomTrackAssociationModel
+from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
+from app.services.track_service import TrackService
+from app.exceptions.exception import TrackNotFoundException, TrackAlreadyInQueueException
 
 
 class RoomService:
@@ -16,12 +21,46 @@ class RoomService:
     @staticmethod
     def _map_room_to_response(room: Room) -> RoomResponse:
         """
-        Вспомогательный метод для преобразования объекта User SQLAlchemy в Pydantic UserResponse.
-        Это централизованное место для форматирования данных, возвращаемых клиенту.
+        Преобразует объект модели Room в Pydantic-схему RoomResponse,
+        включая информацию об участниках и очереди треков.
         """
-        # Pydantic's model_validate() автоматически преобразует SQLAlchemy ORM-объект
-        # в Pydantic-модель, благодаря Config.from_attributes = True в UserResponse.
-        return RoomResponse.model_validate(room)
+        owner_response = UserService._map_user_to_response(room.user) if room.owner_id else None
+        
+        members_response = []
+        if room.member_room:
+            for member_association in room.member_room:
+                if member_association.user:
+                    members_response.append(UserService._map_user_to_response(member_association.user))
+
+        queue_response = []
+        if room.room_track:
+            sorted_associations = sorted(room.room_track, key=lambda x: x.order_in_queue)
+            for assoc in sorted_associations:
+                if assoc.track:
+                    queue_response.append(
+                        TrackInQueueResponse(
+                            track=TrackService._map_track_to_response(assoc.track),
+                            order_in_queue=assoc.order_in_queue,
+                            association_id=assoc.id
+                        )
+                    )
+
+        room_data = RoomResponse(
+            id=room.id,
+            name=room.name,
+            owner_id=room.owner_id,
+            max_members=room.max_members,
+            current_members_count=room.max_members, 
+            is_private=room.is_private,
+            created_at=room.created_at.isoformat() if room.created_at else None,
+            current_track_id=room.current_track_id,
+            current_track_position_ms=room.current_track_position_ms,
+            is_playing=room.is_playing,
+            owner=owner_response,
+            members=members_response,
+            queue=queue_response
+        )
+        return room_data
     
     @staticmethod
     def _map_user_to_response(user: User) -> UserResponse:
@@ -280,7 +319,7 @@ class RoomService:
         existing_association = MemberRoomAssociationRepository.get_association_by_ids(db, user.id, room_id)
         if not existing_association:
             raise HTTPException(
-                status_code=status.HTTP_404_CONFLICT,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="Вы не являетесь участником этой комнаты."
             )
         
@@ -343,4 +382,6 @@ class RoomService:
         """
         rooms = MemberRoomAssociationRepository.get_rooms_by_user_id(db,user.id)
         return [RoomService._map_room_to_response(room) for room in rooms]
+    
+
     
