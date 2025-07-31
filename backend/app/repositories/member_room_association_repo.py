@@ -1,9 +1,11 @@
 from sqlalchemy import select,delete
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session,joinedload
 from app.models.member_room_association import Member_room_association
 from app.models.user import User
 from app.models.room import Room
 import uuid
+from app.models.member_room_association import Member_room_association
+from app.models.room_track_association import RoomTrackAssociationModel
 
 
 class MemberRoomAssociationRepository:
@@ -108,8 +110,12 @@ class MemberRoomAssociationRepository:
             List[Room]: Список объектов Room, в которых состоит пользователь.
         """
         # ДОБАВЛЕНО: Этот метод аналогичен get_members_by_room_id, но выбирает Room.
-        stmt = select(Room).join(Member_room_association).where(
+        stmt = select(Room).join(Member_room_association).filter(
             Member_room_association.user_id == user_id
+        ).options(
+            joinedload(Room.user),
+            joinedload(Room.member_room).joinedload(Member_room_association.user),
+            joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         )
         result = db.execute(stmt)
-        return result.scalars().all()
+        return result.unique().scalars().all()
