@@ -6,14 +6,22 @@ from app.schemas.room_schemas import RoomResponse, RoomCreate, RoomUpdate,TrackI
 from app.schemas.user_schemas import UserResponse
 from app.services.user_service import UserService
 from app.models.room import Room
+from app.models.track import Track
 import uuid
 from typing import Any
 from app.utils.hash import make_hash_pass,verify_pass
 from app.models.user import User
 from app.models.room_track_association import RoomTrackAssociationModel
+from app.models.room_track_association import RoomTrackAssociationModel
 from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
 from app.services.track_service import TrackService
-from app.exceptions.exception import TrackNotFoundException, TrackAlreadyInQueueException
+from app.exceptions.exception import (
+    TrackNotFoundException, 
+    TrackAlreadyInQueueException, 
+    RoomNotFoundException,
+    UnauthorizedRoomActionException
+)
+
 
 
 class RoomService:
@@ -62,12 +70,6 @@ class RoomService:
         )
         return room_data
     
-    @staticmethod
-    def _map_user_to_response(user: User) -> UserResponse:
-        """
-        Вспомогательный метод для преобразования объекта User SQLAlchemy в Pydantic UserResponse.
-        """
-        return UserResponse.model_validate(user)
     
 
     @staticmethod
@@ -365,7 +367,7 @@ class RoomService:
         
         members = MemberRoomAssociationRepository.get_members_by_room_id(db,room_id)
         
-        return [RoomService._map_user_to_response(member) for member in members]
+        return [UserService._map_user_to_response(member) for member in members]
     
 
     @staticmethod
@@ -384,4 +386,129 @@ class RoomService:
         return [RoomService._map_room_to_response(room) for room in rooms]
     
 
+    @staticmethod
+    def add_track_to_queue(
+        db: Session, 
+        room_id: uuid.UUID,
+        track_spotify_id: str, 
+        current_user_id: uuid.UUID
+) -> RoomTrackAssociationModel:
+        """
+        Добавляет трек в очередь конкретной комнаты.
+        """
+        room = RoomRepository.get_room_by_id(db,room_id)
+        if not room:
+            raise HTTPException(
+                status_code=404,
+                detail='Комната не найдена'
+            )
+        
+        if room.owner_id != current_user_id:
+            raise UnauthorizedRoomActionException()
+        
+        track = TrackService.get_track_by_Spotify_id(db,track_spotify_id)
+        if not track:
+            raise TrackNotFoundException()
+        
+        dublicate_in_queue = RoomTrackAssociationRepository.get_association_by_room_and_track(db,room_id,track.id)
+        if dublicate_in_queue:
+            raise TrackAlreadyInQueueException()
+        
+        order_in_queue = RoomTrackAssociationRepository.get_last_order_in_queue(db,room_id)
+
+        add_track = RoomTrackAssociationRepository.add_track_to_queue(db,room_id,track.id,order_in_queue)
+
+        db.commit()
+        db.refresh(add_track)
+
+        return add_track
     
+
+    @staticmethod
+    def get_room_queue(db: Session,room_id: uuid.UUID) -> list[TrackInQueueResponse]:
+        """
+        Получает текущую очередь треков для комнаты.
+        """
+        room = RoomRepository.get_room_by_id(db,room_id)
+        if not room:
+            raise RoomNotFoundException()
+        
+        queue_response = []
+        if not room.room_track:
+            return queue_response
+
+        for assoc in room.room_track:
+            if assoc.track:
+                res = TrackInQueueResponse(
+                    track=TrackService._map_track_to_response(assoc.track),
+                    order_in_queue=assoc.order_in_queue,
+                    association_id=assoc.id
+                )
+                queue_response.append(res)
+        
+
+        return queue_response
+    
+
+    @staticmethod
+    def remove_track_from_queue(
+        db: Session,
+        room_id: uuid.UUID,
+        association_id: uuid.UUID,
+        current_user_id: uuid.UUID,
+) -> bool:
+        """
+        Удаляет конкретный трек из очереди комнаты по ID ассоциации.
+        """
+        room = RoomRepository.get_room_by_id(db,room_id)
+        if not room:
+            raise RoomNotFoundException()
+        
+
+        if room.owner_id != current_user_id:
+            raise UnauthorizedRoomActionException()
+        
+        db_association = RoomTrackAssociationRepository.get_association_by_id(db,association_id)
+        if not db_association or str(db_association.room_id) != str(room_id):
+            raise ValueError("Ассоциация не найдена или не принадлежит этой комнате.")
+        
+        deleted_successfully = RoomTrackAssociationRepository.remove_track_from_queue_by_association_id(
+            db,
+            association_id
+        )
+        if deleted_successfully:
+            RoomService._reorder_queue(db, room_id)
+            db.commit()
+
+            return {
+                'status': 'success',
+                'detail': 'remove track from queue',
+                'response': deleted_successfully
+            }
+        else:
+            return {
+                'status': 'failed',
+                'detail': 'remove track from queue',
+                'response': deleted_successfully
+            }
+
+        
+
+        
+
+        
+    @staticmethod
+    def _reorder_queue(db: Session,room_id: uuid.UUID):
+        """
+        Переупорядочивает order_in_queue для всех оставшихся треков в очереди.
+        """
+        queue_association = db.query(RoomTrackAssociationModel).where(
+            RoomTrackAssociationModel.room_id == room_id,
+        ).order_by(RoomTrackAssociationModel.order_in_queue).all()
+
+
+        for index,assoc in enumerate(queue_association):
+            assoc.order_in_queue = index
+            db.add(assoc)
+
+        db.flush()
