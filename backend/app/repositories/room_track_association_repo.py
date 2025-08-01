@@ -58,13 +58,27 @@ class RoomTrackAssociationRepository:
     @staticmethod
     def get_association_by_id(db: Session, association_id: uuid.UUID) -> RoomTrackAssociationModel | None:
         """Получает ассоциацию трека с комнатой по её ID."""
-        stmt = select(RoomTrackAssociationModel).where(RoomTrackAssociationModel.id == association_id)
+        stmt = select(RoomTrackAssociationModel).where(
+            RoomTrackAssociationModel.id == association_id
+        )
         return db.execute(stmt).scalars().first()
 
 
     @staticmethod
     def remove_track_from_queue_by_association_id(db: Session, association_id: uuid.UUID) -> bool:
         """Удаляет трек из очереди по ID ассоциации."""
-        stmt = delete(RoomTrackAssociationModel).where(RoomTrackAssociationModel.id == association_id)
+        stmt = delete(RoomTrackAssociationModel).where(
+            RoomTrackAssociationModel.id == association_id
+        )
         result = db.execute(stmt)
         return result.rowcount > 0
+    
+
+    @staticmethod
+    def get_association_by_room_and_track(db: Session, room_id: uuid.UUID,track_id: uuid.UUID) -> RoomTrackAssociationModel | None:
+        """Получает ассоциацию трека с комнатой по её ID."""
+        stmt = select(RoomTrackAssociationModel).where(
+            RoomTrackAssociationModel.room_id == room_id,
+            RoomTrackAssociationModel.track_id == track_id,
+        )
+        return db.execute(stmt).scalars().first()
