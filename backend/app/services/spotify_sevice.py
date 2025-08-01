@@ -17,6 +17,47 @@ class SpotifyService:
         self.user = user
         self._check_user_spotify_credentials()
 
+    
+    async def _get_device_id(self, access_token: str) -> str | None:
+        """
+        Получает ID активного устройства пользователя Spotify.
+
+        Args:
+            access_token (str): Токен доступа Spotify.
+
+        Returns:
+            str | None: ID активного устройства или None, если оно не найдено.
+        """
+        device_url = f'{self.SPOTIFY_API_BASE_URL}/me/player/devices'
+        headers = {
+            'Authorization': f'Bearer {access_token}'
+        }
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url=device_url, headers=headers)
+                response.raise_for_status()
+                
+                devices_data: dict = response.json()
+                devices_list = devices_data.get('devices', [])
+
+                if not devices_list:
+                    return None
+
+                for device in devices_list:
+                    if device.get('is_active'):
+                        return device.get('id')
+
+        except httpx.HTTPStatusError as e:
+            print(f"Ошибка HTTP: {e.response.status_code} - {e.response.text}")
+            return None
+        except Exception as e:
+            print(f"Произошла непредвиденная ошибка: {e}")
+            return None
+
+        return None
+
+
 
     def _check_user_spotify_credentials(self):
         """
@@ -137,3 +178,21 @@ class SpotifyService:
         Ищет треки на Spotify.
         """
         return await self._make_spotify_request('GET','/search',params={'q':query,'type':'track','limit':str(limit)})
+    
+
+
+    async def play(self, access_token: str, device_id: str, track_uri: str = None):
+        """Запускает воспроизведение трека на указанном устройстве."""
+        # Отправить запрос на Spotify API: PUT /me/player/play
+        # В теле запроса можно указать URI трека, чтобы начать играть с него.
+        pass
+
+    async def pause(self, access_token: str, device_id: str):
+        """Ставит воспроизведение на паузу."""
+        # Отправить запрос на Spotify API: PUT /me/player/pause
+        pass
+
+    async def skip(self, access_token: str, device_id: str):
+        """Переключает на следующий трек."""
+        # Отправить запрос на Spotify API: POST /me/player/next
+        pass
