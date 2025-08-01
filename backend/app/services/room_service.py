@@ -1,12 +1,13 @@
 from fastapi import HTTPException,status
 from app.repositories.room_repo import RoomRepository
 from app.repositories.member_room_association_repo import MemberRoomAssociationRepository
-from sqlalchemy.orm import Session,joinedload
+from sqlalchemy.orm import Session
 from app.schemas.room_schemas import RoomResponse, RoomCreate, RoomUpdate,TrackInQueueResponse
 from app.schemas.user_schemas import UserResponse
 from app.services.user_service import UserService
 from app.models.room import Room
 from app.models.track import Track
+from app.services.spotify_sevice import SpotifyService
 import uuid
 from typing import Any
 from app.utils.hash import make_hash_pass,verify_pass
@@ -21,6 +22,13 @@ from app.exceptions.exception import (
     RoomNotFoundException,
     UnauthorizedRoomActionException
 )
+from enum import Enum
+
+
+class ControlAction(Enum):
+    PLAY = 'play'
+    PAUSE = 'pause'
+    SKIP = 'skip'
 
 
 
@@ -493,10 +501,6 @@ class RoomService:
             }
 
         
-
-        
-
-        
     @staticmethod
     def _reorder_queue(db: Session,room_id: uuid.UUID):
         """
@@ -512,3 +516,135 @@ class RoomService:
             db.add(assoc)
 
         db.flush()
+
+
+    @staticmethod
+    def move_track_in_queue(db: Session,room_id: uuid.UUID,association_id: uuid.UUID,current_user: User,new_position: int,) -> RoomTrackAssociationModel:
+        """Перемещает трек в очереди."""
+        room = RoomRepository.get_room_by_id(db,room_id)
+        if not room:
+            raise RoomNotFoundException()
+        
+        if room.owner_id != current_user.id:
+            raise  UnauthorizedRoomActionException()
+        
+        queue = RoomTrackAssociationRepository.get_queue_for_room(db,room_id)
+        if not queue:
+            raise ValueError("Очередь комнаты пуста.")
+        
+        track_to_move = None
+        for assoc in queue:
+            if assoc.id == association_id:
+                track_to_move = assoc
+                break
+        
+        current_length = len(queue)
+        if not track_to_move:
+            raise ValueError(f"Трек с ассоциацией ID {association_id} не найден в очереди.")
+        
+        if not (0 <= new_position < current_length):
+            raise ValueError(f"Некорректная позиция: {new_position}. Допустимый диапазон от 0 до {current_length - 1}.")
+    
+        queue.remove(track_to_move)
+
+        queue.insert(new_position, track_to_move)
+
+        for index, assoc in enumerate(queue):
+            assoc.order_in_queue = index
+        
+        db.commit()
+        
+        return track_to_move
+    
+
+    @staticmethod
+    async def control_player(db: Session,room_id: uuid.UUID,action: str,current_user: User):
+        """
+        Отправляет команды управления плеером Spotify.
+        """
+        room = RoomRepository.get_room_by_id(db,room_id)
+        if not room:
+            raise RoomNotFoundException()
+        
+        if room.owner_id != current_user.id:
+            raise  UnauthorizedRoomActionException()
+        
+        if not current_user.spotify_access_token:
+            raise HTTPException(
+                status_code=401,
+                detail='Пользователь не авторизован в Spotify.'
+            )
+        
+        
+        
+        spotify = SpotifyService(db,current_user)
+        
+        device_id = await spotify._get_device_id(current_user.spotify_access_token)
+        if not device_id:
+            raise HTTPException(
+                status_code=400,
+                detail='Активное устройство Spotify не найдено.'
+            )
+
+        try:
+            if action == ControlAction.PLAY.value:
+
+                if not room.current_track_id:
+                
+                    first_track_in_queue = RoomTrackAssociationRepository.get_first_track_in_queue(db, room_id)
+                    if first_track_in_queue:
+                        # Обновляем комнату
+                        room.current_track_id = first_track_in_queue.track_id
+                        room.is_playing = True
+                        db.commit() # Сохраняем изменения до вызова Spotify API
+                if room.current_track_id:
+                    track = room.current_track
+                    if track:
+                        spotify.play(
+                            current_user.spotify_access_token,
+                            track_uri=track.spotify_uri,
+                            device_id=device_id
+                        )
+                    else:
+                        raise ValueError("Трек не найден в базе данных.")
+                else:
+                    raise ValueError("В очереди нет треков для воспроизведения.")
+                
+                db.commit()
+
+            elif action == ControlAction.PAUSE.value:
+                await spotify.pause(
+                    current_user.spotify_access_token,
+                    device_id=device_id
+                )
+                room.is_playing = False
+                db.commit()
+
+            if room.current_track_id:
+                current_association_to_remove = RoomTrackAssociationRepository.get_association_by_room_and_track(
+                    db, 
+                    room_id=room_id,
+                    track_id=room.current_track_id
+                )
+
+            if current_association_to_remove:
+                RoomTrackAssociationRepository.remove_track_from_queue_by_association_id(
+                    db, 
+                    association_id=current_association_to_remove.id
+                )
+            
+                RoomService._reorder_queue(db, room_id)
+    
+            room.current_track_id = None
+            room.is_playing = False
+            db.commit()
+
+        except HTTPException as e:
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=f"Ошибка Spotify: {e.detail}"
+        )
+    
+        
+
+        return {"detail": f"Команда '{action}' успешно выполнена."}
