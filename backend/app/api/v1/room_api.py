@@ -1,5 +1,11 @@
-from fastapi import APIRouter,Depends,status,Path,Query,Body
-from app.schemas.room_schemas import RoomCreate, RoomUpdate, RoomResponse
+from fastapi import APIRouter,Depends,status,Path,Query,Body,HTTPException
+from app.schemas.room_schemas import (
+    RoomCreate, 
+    RoomUpdate, 
+    RoomResponse,
+    TrackInQueueResponse,
+    AddTrackToQueueRequest
+)
 from app.schemas.user_schemas import UserResponse
 from app.schemas.room_member_schemas import JoinRoomRequest
 from typing import Annotated
@@ -9,6 +15,10 @@ from app.services.room_service import RoomService
 from app.config.session import get_db
 from sqlalchemy.orm import Session
 import uuid
+from app.exceptions.exception import (
+    RoomNotFoundException,
+    UnauthorizedRoomActionException,
+)
 
 
 room = APIRouter(
@@ -145,3 +155,50 @@ def get_room_by_id(
     """
     return RoomService.get_room_by_id(db, room_id)
 
+
+@room.post('/{room_id}/queue', response_model=TrackInQueueResponse, status_code=status.HTTP_201_CREATED)
+async def add_track_to_queue(
+    db: db_dependencies,
+    current_user: user_dependencies,
+    request: AddTrackToQueueRequest,
+    room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')]
+) -> TrackInQueueResponse:
+    """
+    Добавляет трек в очередь комнаты. Только владелец комнаты может это сделать.
+    """
+    association = RoomService.add_track_to_queue(
+            db=db,
+            room_id=room_id,
+            track_spotify_id=request.spotify_id,
+            current_user_id=current_user.id
+        )
+    response_track = TrackInQueueResponse(
+            association_id=association.id,
+            track=association.track,
+            order_in_queue=association.order_in_queue
+        )
+    return response_track
+
+
+@room.get('/{room_id}/queue/{association_id}',response_model=list[TrackInQueueResponse])
+async def get_room_queue(
+    db: db_dependencies,
+    room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')]
+) -> list[TrackInQueueResponse]:
+    """
+    Получает текущую очередь треков для комнаты.
+    """
+    return RoomService.get_room_queue(db,room_id)
+
+
+@room.delete('/{room_id}/queue')
+async def remove_track_from_queue(
+    db: db_dependencies,
+    current_user: user_dependencies,
+    room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
+    association_id: Annotated[uuid.UUID, Path(..., description="ID ассоциации трека в очереди")],
+) -> dict:
+    """
+    Удаляет трек из очереди комнаты по ID ассоциации. Только владелец комнаты может это сделать.
+    """
+    return RoomService.remove_track_from_queue(db,room_id,association_id,current_user.id)
