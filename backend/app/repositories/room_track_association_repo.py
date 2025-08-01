@@ -82,3 +82,20 @@ class RoomTrackAssociationRepository:
             RoomTrackAssociationModel.track_id == track_id,
         )
         return db.execute(stmt).scalars().first()
+    
+
+    @staticmethod
+    def get_first_track_in_queue(db: Session,room_id: uuid.UUID) -> RoomTrackAssociationModel | None:
+        """_summary_
+
+        Args:
+            db (Session): _description_
+            room_id (uuid.UUID): _description_
+
+        Returns:
+            RoomTrackAssociationModel: _description_
+        """
+        stmt = select(RoomTrackAssociationModel).where(
+            RoomTrackAssociationModel.room_id == room_id,
+        ).order_by(RoomTrackAssociationModel.order_in_queue.asc())
+        return db.execute(stmt).scalars().first()
