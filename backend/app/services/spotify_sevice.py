@@ -79,7 +79,6 @@ class SpotifyService:
            self.user.spotify_token_expires_at <= (current_time + 300):
             await self._refresh_access_token()
 
-        # Возвращаем актуальный токен доступа
         return {
             "Authorization": f"Bearer {self.user.spotify_access_token}"
         }
@@ -187,12 +186,53 @@ class SpotifyService:
         # В теле запроса можно указать URI трека, чтобы начать играть с него.
         pass
 
+
     async def pause(self, access_token: str, device_id: str):
         """Ставит воспроизведение на паузу."""
         # Отправить запрос на Spotify API: PUT /me/player/pause
         pass
 
+
     async def skip(self, access_token: str, device_id: str):
         """Переключает на следующий трек."""
         # Отправить запрос на Spotify API: POST /me/player/next
         pass
+
+
+    async def get_playback_state(self) -> dict[str, Any] | None:
+        """
+        Получает текущее состояние плеера Spotify для авторизованного пользователя.
+
+        Returns:
+            dict[str, Any] | None: Словарь с состоянием плеера или None в случае ошибки.
+        """
+        state_url = f'{self.SPOTIFY_API_BASE_URL}/me/player'
+        headers = {
+            'Authorization': f'Bearer {self.current_user.spotify_access_token}'
+        }
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url=state_url, headers=headers)
+                response.raise_for_status()
+
+                state_response: dict = response.json()
+                
+                progress_ms = state_response.get('progress_ms')
+                is_playing = state_response.get('is_playing')
+                duration_ms = state_response.get('item', {}).get('duration_ms')
+
+                return {
+                    "progress_ms": progress_ms,
+                    "is_playing": is_playing,
+                    "duration_ms": duration_ms
+                }
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 204:
+                return None
+            else:
+                print(f"Ошибка HTTP: {e.response.status_code} - {e.response.text}")
+                return None
+        except Exception as e:
+            print(f"Произошла непредвиденная ошибка: {e}")
+            return None
