@@ -23,6 +23,8 @@ from app.exceptions.exception import (
     UnauthorizedRoomActionException
 )
 from enum import Enum
+from app.ws.connection_manager import manager
+import json
 
 
 class ControlAction(Enum):
@@ -395,7 +397,7 @@ class RoomService:
     
 
     @staticmethod
-    def add_track_to_queue(
+    async def add_track_to_queue(
         db: Session, 
         room_id: uuid.UUID,
         track_spotify_id: str, 
@@ -428,6 +430,25 @@ class RoomService:
 
         db.commit()
         db.refresh(add_track)
+        try:
+            updated_queue = RoomTrackAssociationRepository.get_queue_for_room(db, room_id)
+            update_message = {
+                "action": "add",
+                "queue": [
+                    {
+                        "id": str(assoc.id),
+                        "track_id": str(assoc.track_id),
+                        "order": assoc.order_in_queue,
+                        "title": assoc.track.title,
+                        "artist": assoc.track.artist_name,
+                        "album_art_url": assoc.track.album_art_url
+                    } for assoc in updated_queue
+                ]
+            }
+            await manager.broadcast(room_id, json.dumps(update_message))
+        except Exception as e:
+            print(f"Ошибка при отправке WebSocket-сообщения: {e}")
+
 
         return add_track
     
@@ -459,7 +480,7 @@ class RoomService:
     
 
     @staticmethod
-    def remove_track_from_queue(
+    async def remove_track_from_queue(
         db: Session,
         room_id: uuid.UUID,
         association_id: uuid.UUID,
@@ -487,6 +508,24 @@ class RoomService:
         if deleted_successfully:
             RoomService._reorder_queue(db, room_id)
             db.commit()
+            try:
+                updated_queue = RoomTrackAssociationRepository.get_queue_for_room(db, room_id)
+                update_message = {
+                    "action": "remove",
+                    "queue": [
+                        {
+                            "id": str(assoc.id),
+                            "track_id": str(assoc.track_id),
+                            "order": assoc.order_in_queue,
+                            "title": assoc.track.title,
+                            "artist": assoc.track.artist_name,
+                            "album_art_url": assoc.track.album_art_url
+                        } for assoc in updated_queue
+                    ]
+                }
+                await manager.broadcast(room_id, json.dumps(update_message))
+            except Exception as e:
+                print(f"Ошибка при отправке WebSocket-сообщения: {e}")
 
             return {
                 'status': 'success',
@@ -519,7 +558,7 @@ class RoomService:
 
 
     @staticmethod
-    def move_track_in_queue(db: Session,room_id: uuid.UUID,association_id: uuid.UUID,current_user: User,new_position: int,) -> RoomTrackAssociationModel:
+    async def move_track_in_queue(db: Session,room_id: uuid.UUID,association_id: uuid.UUID,current_user: User,new_position: int,) -> RoomTrackAssociationModel:
         """Перемещает трек в очереди."""
         room = RoomRepository.get_room_by_id(db,room_id)
         if not room:
@@ -553,98 +592,125 @@ class RoomService:
             assoc.order_in_queue = index
         
         db.commit()
-        
-        return track_to_move
-    
-
-    @staticmethod
-    async def control_player(db: Session,room_id: uuid.UUID,action: str,current_user: User):
-        """
-        Отправляет команды управления плеером Spotify.
-        """
-        room = RoomRepository.get_room_by_id(db,room_id)
-        if not room:
-            raise RoomNotFoundException()
-        
-        if room.owner_id != current_user.id:
-            raise  UnauthorizedRoomActionException()
-        
-        if not current_user.spotify_access_token:
-            raise HTTPException(
-                status_code=401,
-                detail='Пользователь не авторизован в Spotify.'
-            )
-        
-        
-        
-        spotify = SpotifyService(db,current_user)
-        
-        device_id = await spotify._get_device_id(current_user.spotify_access_token)
-        if not device_id:
-            raise HTTPException(
-                status_code=400,
-                detail='Активное устройство Spotify не найдено.'
-            )
 
         try:
-            if action == ControlAction.PLAY.value:
+            updated_queue = RoomTrackAssociationRepository.get_queue_for_room(db, room_id)
+            update_message = {
+                "action": "move",
+                "queue": [
+                    {
+                        "id": str(assoc.id),
+                        "track_id": str(assoc.track_id),
+                        "order": assoc.order_in_queue,
+                        "title": assoc.track.title,
+                        "artist": assoc.track.artist_name,
+                        "album_art_url": assoc.track.album_art_url
+                    } for assoc in updated_queue
+                ]
+            }
+            await manager.broadcast(room_id, json.dumps(update_message))
+        except Exception as e:
+            print(f"Ошибка при отправке WebSocket-сообщения: {e}")
 
-                if not room.current_track_id:
-                
-                    first_track_in_queue = RoomTrackAssociationRepository.get_first_track_in_queue(db, room_id)
-                    if first_track_in_queue:
-                        # Обновляем комнату
-                        room.current_track_id = first_track_in_queue.track_id
-                        room.is_playing = True
-                        db.commit() # Сохраняем изменения до вызова Spotify API
-                if room.current_track_id:
-                    track = room.current_track
-                    if track:
-                        spotify.play(
-                            current_user.spotify_access_token,
-                            track_uri=track.spotify_uri,
-                            device_id=device_id
-                        )
-                    else:
-                        raise ValueError("Трек не найден в базе данных.")
+        return {"message": "Трек успешно перемещён."}
+    
+
+@staticmethod
+async def control_player(db: Session, room_id: uuid.UUID, action: str, current_user: User):
+    """
+    Отправляет команды управления плеером Spotify и оповещает клиентов через WebSocket.
+    """
+    room = RoomRepository.get_room_by_id(db, room_id)
+    if not room:
+        raise RoomNotFoundException()
+    
+    if room.owner_id != current_user.id:
+        raise UnauthorizedRoomActionException()
+    
+    if not current_user.spotify_access_token:
+        raise HTTPException(
+            status_code=401,
+            detail='Пользователь не авторизован в Spotify.'
+        )
+    
+    spotify = SpotifyService(db, current_user)
+    
+    device_id = await spotify._get_device_id(current_user.spotify_access_token)
+    if not device_id:
+        raise HTTPException(
+            status_code=400,
+            detail='Активное устройство Spotify не найдено.'
+        )
+
+    try:
+        if action == ControlAction.PLAY.value:
+            if not room.current_track_id:
+                first_track_in_queue = RoomTrackAssociationRepository.get_first_track_in_queue(db, room_id)
+                if first_track_in_queue:
+                    room.current_track_id = first_track_in_queue.track_id
+                    room.is_playing = True
                 else:
                     raise ValueError("В очереди нет треков для воспроизведения.")
-                
-                db.commit()
+            
+            if room.current_track_id:
+                track = room.current_track
+                if track:
+                    await spotify.play(
+                        track_uri=track.spotify_uri,
+                        device_id=device_id
+                    )
+                else:
+                    raise ValueError("Трек не найден в базе данных.")
+            
+            db.commit()
 
-            elif action == ControlAction.PAUSE.value:
-                await spotify.pause(
-                    current_user.spotify_access_token,
-                    device_id=device_id
-                )
-                room.is_playing = False
-                db.commit()
+        elif action == ControlAction.PAUSE.value:
+            await spotify.pause(current_user.spotify_access_token,device_id=device_id)
+            room.is_playing = False
+            
+            db.commit()
 
+        elif action == ControlAction.SKIP.value:
+            await spotify.skip(current_user.spotify_access_token,device_id=device_id)
+            
             if room.current_track_id:
                 current_association_to_remove = RoomTrackAssociationRepository.get_association_by_room_and_track(
                     db, 
                     room_id=room_id,
                     track_id=room.current_track_id
                 )
-
-            if current_association_to_remove:
-                RoomTrackAssociationRepository.remove_track_from_queue_by_association_id(
-                    db, 
-                    association_id=current_association_to_remove.id
-                )
+                if current_association_to_remove:
+                    RoomTrackAssociationRepository.remove_track_from_queue_by_association_id(
+                        db, 
+                        association_id=current_association_to_remove.id
+                    )
+                    RoomService._reorder_queue(db, room_id)
             
-                RoomService._reorder_queue(db, room_id)
-    
             room.current_track_id = None
             room.is_playing = False
+            
             db.commit()
 
-        except HTTPException as e:
-            raise HTTPException(
-                status_code=e.status_code,
-                detail=f"Ошибка Spotify: {e.detail}"
+        else:
+            raise ValueError(f"Неизвестное действие: {action}")
+
+        update_message = {
+            "action": action,
+            "is_playing": room.is_playing,
+            "current_track_id": str(room.current_track_id) if room.current_track_id else None
+        }
+        await manager.broadcast(room_id, json.dumps(update_message))
+
+    except HTTPException as e:
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=f"Ошибка Spotify: {e.detail}"
+        )
+    except Exception as e:
+        print(f"Непредвиденная ошибка: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Внутренняя ошибка сервера: {e}"
         )
     
-        
-
-        return {"detail": f"Команда '{action}' успешно выполнена."}
+    return {"detail": f"Команда '{action}' успешно выполнена."}

@@ -56,6 +56,7 @@ async def lifespan(app: FastAPI):
 async def ping():
     return 'Server is running'
 
+
 origins = [
     "http://localhost",  
     "http://localhost:8080",
