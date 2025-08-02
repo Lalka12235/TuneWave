@@ -5,6 +5,7 @@ import uuid
 from typing import Any
 from app.models.member_room_association import Member_room_association
 from app.models.room_track_association import RoomTrackAssociationModel
+from app.models.user import User
 
 
 class RoomRepository:
@@ -125,3 +126,39 @@ class RoomRepository:
         stmt = delete(Room).where(Room.id == room_id)
         result = db.execute(stmt)
         return result.rowcount > 0
+    
+
+    @staticmethod
+    def get_active_rooms(db: Session) -> list[Room]:
+        """
+        Возвращает список комнат, в которых сейчас играет музыка.
+        Связанные объекты current_track загружаются одним запросом.
+        """
+        stmt = select(Room).where(
+            Room.is_playing == True,
+        ).options(
+            joinedload(Room.room_track),
+        )
+        result = db.execute(stmt)
+        return result.scalars().all()
+    
+
+    @staticmethod
+    def get_owner_room(db: Session,room_id: uuid.UUID) -> User | None:
+        """_summary_
+
+        Args:
+            db (Session): _description_
+            room_id (uuid.UUID): _description_
+
+        Returns:
+            User: _description_
+        """
+        stmt = select(Room).where(
+            Room.id == room_id,
+        ).options(
+            joinedload(Room.user),
+        )
+        result = db.execute(stmt)
+        return result.scalar_one_or_none()
+    
