@@ -6,6 +6,8 @@ from app.api.v1.user_api import user
 from app.api.v1.room_api import room
 from app.api.v1.spotify_api import spotify
 from app.logger.log_config import configure_logging
+from app.services.scheduler_service import SchedulerService
+from contextlib import asynccontextmanager
 
 configure_logging()
 
@@ -34,8 +36,21 @@ app = FastAPI(
         "name": "music",
         "description": "Операции с музыкальными треками"
     }],
-    
 )
+
+scheduler_service = SchedulerService()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Контекстный менеджер для управления жизненным циклом приложения.
+    """
+    scheduler_service.start()
+    
+    yield  # Здесь приложение начинает обрабатывать запросы
+
+    scheduler_service.scheduler.shutdown()
+
 
 @app.get('/ping')
 async def ping():
