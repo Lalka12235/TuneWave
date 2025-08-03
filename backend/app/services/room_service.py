@@ -7,6 +7,7 @@ from app.schemas.user_schemas import UserResponse
 from app.services.user_service import UserService
 from app.models.room import Room
 from app.models.track import Track
+from app.services.track_service import TrackService
 from app.services.spotify_sevice import SpotifyService
 import uuid
 from typing import Any
@@ -15,7 +16,6 @@ from app.models.user import User
 from app.models.room_track_association import RoomTrackAssociationModel
 from app.models.room_track_association import RoomTrackAssociationModel
 from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
-from app.services.track_service import TrackService
 from app.exceptions.exception import (
     TrackNotFoundException, 
     TrackAlreadyInQueueException, 
@@ -417,7 +417,7 @@ class RoomService:
         
         if room.owner_id != current_user.id:
             raise UnauthorizedRoomActionException()
-                
+        
         track = TrackService.get_track_by_Spotify_id(db,track_spotify_id)
         if not track:
             raise TrackNotFoundException()
@@ -442,8 +442,8 @@ class RoomService:
                         "track_id": str(assoc.track_id),
                         "order": assoc.order_in_queue,
                         "title": assoc.track.title,
-                        "artist": assoc.track.artist_name,
-                        "album_art_url": assoc.track.album_art_url
+                        "artist": assoc.track.artist,
+                        "album_art_url": assoc.track.album
                     } for assoc in updated_queue
                 ]
             }
@@ -520,8 +520,8 @@ class RoomService:
                             "track_id": str(assoc.track_id),
                             "order": assoc.order_in_queue,
                             "title": assoc.track.title,
-                            "artist": assoc.track.artist_name,
-                            "album_art_url": assoc.track.album_art_url
+                            "artist": assoc.track.artist,
+                            "album_art_url": assoc.track.album
                         } for assoc in updated_queue
                     ]
                 }
@@ -605,8 +605,8 @@ class RoomService:
                         "track_id": str(assoc.track_id),
                         "order": assoc.order_in_queue,
                         "title": assoc.track.title,
-                        "artist": assoc.track.artist_name,
-                        "album_art_url": assoc.track.album_art_url
+                        "artist": assoc.track.artist,
+                        "album_art_url": assoc.track.album
                     } for assoc in updated_queue
                 ]
             }
@@ -718,24 +718,4 @@ class RoomService:
         return {"detail": f"Команда '{action}' успешно выполнена."}
 
 
-    @staticmethod
-    async def search_track_by_query(db: Session,query: str,limit: int = 10) -> list:
-        """
-        Ищет треки на Spotify, используя публичный API.
-
-        Этот метод использует SpotifyPublicService для выполнения
-        поиска без привязки к конкретному пользователю.
-
-        Args:
-            query (str): Поисковый запрос (название трека или исполнителя).
-
-        Returns:
-            list: Список найденных треков.
-        """
-        spotify = SpotifyPublicService()
-        if not query:
-            return []
-        
-        return await spotify.search_public_track(query=query,limit=limit)
-    
     

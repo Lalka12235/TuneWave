@@ -5,6 +5,7 @@ from time import time
 from typing import Any
 import httpx
 from app.config.settings import settings
+from app.services.spotify_public_service import SpotifyPublicService
 
 
 class SpotifyService:
@@ -12,10 +13,11 @@ class SpotifyService:
     SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
     SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com/api"
 
-    def __init__(self,db: Session,user: User):
+    def __init__(self,db: Session,user: User,spotify_public: SpotifyPublicService):
         self.db = db
         self.user = user
         self._check_user_spotify_credentials()
+        self.spotify_public_service = spotify_public
 
     
     async def _get_device_id(self, access_token: str) -> str | None:
@@ -235,3 +237,15 @@ class SpotifyService:
         except Exception as e:
             print(f"Произошла непредвиденная ошибка: {e}")
             return None
+        
+    
+    async def smart_search_tracks(self, query: str, limit: int = 10) -> dict:
+        """
+        Умный поиск треков.
+        Сначала пытается использовать токен пользователя.
+        Если токена нет, использует публичный поиск.
+        """
+        if self.user.spotify_access_token and self.user.spotify_token_expires_at > time.time():
+            return await self.search_track(query, limit)
+        else:
+            return await self.spotify_public_service.search_public_track(query, limit)
