@@ -273,6 +273,9 @@ class UserService:
                 'is_email_verified': google_data.is_email_verified,
                 'google_id': google_data.google_id,
                 'google_image_url': google_data.google_image_url,
+                'google_access_token': google_data.google_access_token,
+                'google_refresh_token': google_data.google_refresh_token,
+                'google_token_expires_at': google_data.google_token_expires_at
             }
 
             user = UserRepository.create_user(db,user_data)

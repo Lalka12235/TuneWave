@@ -55,7 +55,7 @@ async def google_callback(
         async with httpx.AsyncClient() as client:
             response = await client.post(token_url,data=token_data)
             response.raise_for_status()
-            google_tokens = response.json()
+            google_tokens: dict = response.json()
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -68,11 +68,18 @@ async def google_callback(
         )
     
     id_token = google_tokens.get('id_token')
-    if not id_token:
+    google_access_token = google_tokens.get('access_token')
+    google_refresh_token = google_tokens.get('refresh_token')
+    expires_in = google_tokens.get('expires_in')
+    
+    if not id_token or not google_access_token or not expires_in:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="ID-токен Google не получен."
+            detail="Недостаточно данных токенов Google."
         )
+    
+    import time
+    google_token_expires_at = int(time.time()) + expires_in
     
     try:
         decoded_google_id_token: dict = jwt.decode(
@@ -104,7 +111,10 @@ async def google_callback(
         username=username,
         google_id=google_id,
         google_image_url=google_image_url,
-        is_email_verified=is_email_verified
+        is_email_verified=is_email_verified,
+        google_access_token=google_access_token,
+        google_refresh_token=google_refresh_token,
+        google_token_expires_at=google_token_expires_at
     )
 
     user_response, app_token = UserService.authenticate_user_with_google(db,google_oauth_data)

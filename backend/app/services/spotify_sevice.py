@@ -112,7 +112,6 @@ class SpotifyService:
                 self.user.spotify_token_expires_at = None
                 self.db.add(self.user)
                 self.db.commit()
-                # userRepository.update_user(self.db,self.user.id,{'spotify_access_token':None...})
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Токен обновления Spotify недействителен. Пожалуйста, переавторизуйтесь в Spotify."
