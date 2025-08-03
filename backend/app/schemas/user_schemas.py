@@ -53,6 +53,9 @@ class GoogleOAuthData(BaseModel):
     google_id: str = Field(..., description="Google ID пользователя")
     google_image_url: str | None = Field(None, description="URL изображения профиля Google")
     is_email_verified: bool = Field(False, description="Подтвержден ли email от Google")
+    google_access_token: str = Field(...,description='Токен доступа Google')
+    google_refresh_token: str = Field(...,description='Токен обновления Google')
+    google_token_expires_at: int = Field(...,description='Время истечения токена Google (Unix timestamp)')
 
 # Схема для данных, полученных от Spotify OAuth (входные данные для сервиса)
 class SpotifyOAuthData(BaseModel):

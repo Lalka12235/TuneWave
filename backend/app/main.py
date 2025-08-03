@@ -5,6 +5,8 @@ from app.api.v1.auth_api import auth
 from app.api.v1.user_api import user
 from app.api.v1.room_api import room
 from app.api.v1.spotify_api import spotify
+from app.api.v1.ws_api import ws
+from app.api.v1.spotify_public_api import spotify_public
 from app.logger.log_config import configure_logging
 from app.services.scheduler_service import SchedulerService
 from contextlib import asynccontextmanager
@@ -77,3 +79,5 @@ app.include_router(auth)
 app.include_router(user)
 app.include_router(room)
 app.include_router(spotify)
+app.include_router(ws)
+app.include_router(spotify_public)

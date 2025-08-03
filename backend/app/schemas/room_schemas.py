@@ -14,7 +14,7 @@ class TrackInQueueResponse(BaseModel):
 
 
 class AddTrackToQueueRequest(BaseModel):
-    track_spotify_id: str = Field(..., description="Spotify ID трека для добавления в очередь")
+    spotify_id: str = Field(..., description="Spotify ID трека для добавления в очередь")
 
 
 class RemoveTrackFromQueueRequest(BaseModel):
