@@ -250,22 +250,27 @@ class UserService:
         Аутентифицирует пользователя через Google OAuth.
         Создает или обновляет пользователя в БД и возвращает JWT-токен вашего приложения.
         """
-        user = UserRepository.get_user_by_email(db,google_data.email)
-        if not user:
-            user = UserRepository.get_user_by_google_id(db,google_data.google_id)
 
-        
+        user = UserRepository.get_user_by_email(db, google_data.email)
+        if not user:
+            user = UserRepository.get_user_by_google_id(db, google_data.google_id)
+
         if user:
-            update_data = {}
+            update_data = {
+                'google_access_token': google_data.google_access_token,
+                'google_token_expires_at': google_data.google_token_expires_at
+            }
+            
+            if google_data.google_refresh_token:
+                update_data['google_refresh_token'] = google_data.google_refresh_token
+
             if not user.google_id:
                 update_data['google_id'] = google_data.google_id
                 update_data['google_image_url'] = google_data.google_image_url
             if google_data.is_email_verified and not user.is_email_verified:
                 update_data['is_email_verified'] = True
             
-            if update_data:
-                user = UserRepository.update_user(db,user,update_data)
-
+            user = UserRepository.update_user(db, user, update_data)
         else:
             user_data = {
                 'username': google_data.username,
@@ -278,9 +283,8 @@ class UserService:
                 'google_token_expires_at': google_data.google_token_expires_at
             }
 
-            user = UserRepository.create_user(db,user_data)
-
-        
+            user = UserRepository.create_user(db, user_data)
+            
         from datetime import timedelta
         from app.utils.jwt import create_access_token
 
@@ -288,7 +292,6 @@ class UserService:
             payload={'sub': str(user.id)},
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
-
 
         return UserService._map_user_to_response(user), Token(access_token=access_token)
     

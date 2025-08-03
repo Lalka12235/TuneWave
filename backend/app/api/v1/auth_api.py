@@ -1,3 +1,4 @@
+from urllib.parse import urlencode
 from fastapi import APIRouter,Depends, Query,HTTPException,status
 from sqlalchemy.orm import Session
 from fastapi.responses import RedirectResponse
@@ -31,6 +32,19 @@ def get_frontend_config() -> FrontendConfig:
         spotify_scopes=settings.SPOTIFY_SCOPES,
     )
 
+
+@auth.get('/google/login')
+async def google_login():
+    params = {
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": settings.GOOGLE_SCOPES,
+        "access_type": "offline", 
+        "prompt": "consent"
+    }
+    google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
+    return RedirectResponse(url=google_auth_url)
 
 @auth.get('/google/callback')
 async def google_callback(

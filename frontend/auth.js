@@ -45,13 +45,13 @@ function loginWithGoogle() {
         return;
     }
 
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    const authUrl = `${BASE_URL}/auth/google/login?` +
                     `response_type=code&` +
                     `client_id=${config.google_client_id}&` +
                     `redirect_uri=${config.google_redirect_uri}&` +
-                    `scope=${encodeURIComponent(config.google_scopes)}&` +
-                    `access_type=offline&` +
-                    `prompt=consent`;
+                    `scope=${encodeURIComponent(config.google_scopes)}&`
+                    //`access_type=offline&` +
+                    //`prompt=consent`;
     
     window.location.href = authUrl;
 }
