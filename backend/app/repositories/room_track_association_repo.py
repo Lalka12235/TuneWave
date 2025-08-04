@@ -12,13 +12,15 @@ class RoomTrackAssociationRepository:
         db: Session,
         room_id: uuid.UUID,
         track_id: uuid.UUID,
-        order_in_queue: int
+        order_in_queue: int,
+        user_id: uuid.UUID,
 ) -> RoomTrackAssociationModel:
         """Добавляет новый трек в очередь конкретной комнаты."""
         new_room_track = RoomTrackAssociationModel(
             room_id=room_id,
             track_id=track_id,
-            order_in_queue=order_in_queue
+            order_in_queue=order_in_queue,
+            added_by_user_id=user_id,
         )
         db.add(new_room_track)
         db.flush()

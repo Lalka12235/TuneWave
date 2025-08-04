@@ -167,17 +167,12 @@ async def add_track_to_queue(
     Добавляет трек в очередь комнаты. Только владелец комнаты может это сделать.
     """
     association = await RoomService.add_track_to_queue(
-            db=db,
-            room_id=room_id,
-            track_spotify_id=request.spotify_id,
-            current_user=current_user
-        )
-    response_track = TrackInQueueResponse(
-            association_id=association.id,
-            track=association.track,
-            order_in_queue=association.order_in_queue
-        )
-    return response_track
+        db=db,
+        room_id=room_id,
+        track_spotify_id=request.spotify_id,
+        current_user=current_user
+    )
+    return association
 
 
 @room.get('/{room_id}/queue/{association_id}',response_model=list[TrackInQueueResponse])
@@ -191,7 +186,7 @@ async def get_room_queue(
     return RoomService.get_room_queue(db,room_id)
 
 
-@room.delete('/{room_id}/queue')
+@room.delete('/{room_id}/queue{association_id}')
 async def remove_track_from_queue(
     db: db_dependencies,
     current_user: user_dependencies,
