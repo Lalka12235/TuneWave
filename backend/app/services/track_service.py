@@ -1,4 +1,4 @@
-from fastapi import HTTPException,status
+from fastapi import HTTPException
 from app.repositories.track_repo import TrackRepository
 from app.schemas.track_schemas import TrackResponse,TrackCreate
 from sqlalchemy.orm import Session
@@ -52,12 +52,12 @@ class TrackService:
     
 
     @staticmethod
-    def get_or_create_track_from_spotify_data(db: Session,spotify_track_data: dict) -> Track:
+    def get_or_create_track_from_spotify_data(db: Session,spotify_track_data: TrackCreate) -> Track:
         """
         Получает трек по Spotify ID. Если трек не существует, создает его.
         Возвращает существующий или новый трек.
         """
-        spotify_id = spotify_track_data.get('id')
+        spotify_id = spotify_track_data.spotify_track_id
         if not spotify_id:
             raise ValueError("Данные Spotify трека не содержат 'id'.")
         
@@ -65,17 +65,15 @@ class TrackService:
         if existing_track:
             return existing_track
         
-        artists = ", ".join([artist['name'] for artist in spotify_track_data.get('artists', [])])
-        album_image_url = spotify_track_data.get('album', {}).get('images', [])[0].get('url') if spotify_track_data.get('album', {}).get('images') else None
-        
         track_create_data = TrackCreate(
-            spotify_id=spotify_id,
-            title=spotify_track_data.get('name'),
-            artist=artists,
-            album=spotify_track_data.get('album', {}).get('name'),
-            album_image_url=album_image_url,
-            duration_ms=spotify_track_data.get('duration_ms'),
-            external_url=spotify_track_data.get('external_urls', {}).get('spotify')
+            spotify_track_id=spotify_track_data.spotify_track_id,
+            title=spotify_track_data.title,
+            artist=spotify_track_data.artist,
+            album=spotify_track_data.album,
+            image_url=spotify_track_data.image_url,
+            duration_ms=spotify_track_data.duration_ms,
+            spotify_track_url=spotify_track_data.spotify_track_url,
+            spotify_uri=spotify_track_data.spotify_uri
         )
         return TrackService.create_track(db, track_create_data)
     
