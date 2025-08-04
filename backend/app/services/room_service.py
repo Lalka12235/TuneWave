@@ -61,7 +61,8 @@ class RoomService:
                         TrackInQueueResponse(
                             track=TrackService._map_track_to_response(assoc.track),
                             order_in_queue=assoc.order_in_queue,
-                            association_id=assoc.id
+                            id=assoc.id,
+                            added_at=assoc.added_at,
                         )
                     )
 
@@ -428,7 +429,7 @@ class RoomService:
         
         order_in_queue = RoomTrackAssociationRepository.get_last_order_in_queue(db,room_id)
 
-        add_track = RoomTrackAssociationRepository.add_track_to_queue(db,room_id,track.id,order_in_queue)
+        add_track = RoomTrackAssociationRepository.add_track_to_queue(db,room_id,track.id,order_in_queue,current_user.id)
 
         db.commit()
         db.refresh(add_track)
@@ -473,7 +474,8 @@ class RoomService:
                 res = TrackInQueueResponse(
                     track=TrackService._map_track_to_response(assoc.track),
                     order_in_queue=assoc.order_in_queue,
-                    association_id=assoc.id
+                    id=assoc.id,
+                    added_at=assoc.added_at
                 )
                 queue_response.append(res)
         
