@@ -8,7 +8,8 @@ from app.schemas.track_schemas import TrackResponse
 class TrackInQueueResponse(BaseModel):
     track: TrackResponse = Field(..., description="Информация о треке")
     order_in_queue: int = Field(..., description="Позиция трека в очереди")
-    association_id: uuid.UUID = Field(..., description="ID ассоциации трека с комнатой")
+    association_id: uuid.UUID = Field(..., description="ID ассоциации трека с комнатой", alias="id")
+    added_at: datetime = Field(...,description='Время создания трека в очереди')
 
     model_config = ConfigDict(from_attributes=True)
 
