@@ -8,6 +8,8 @@ from app.api.v1.spotify_api import spotify
 from app.api.v1.ws_api import ws
 from app.api.v1.spotify_public_api import spotify_public
 from app.api.v1.track_api import track
+from app.api.v1.ws_chat_api import chat_ws
+from app.api.v1.chat_api import chat
 from app.logger.log_config import configure_logging
 from app.services.scheduler_service import SchedulerService
 from contextlib import asynccontextmanager
@@ -80,6 +82,8 @@ app.include_router(auth)
 app.include_router(user)
 app.include_router(room)
 app.include_router(spotify)
-app.include_router(ws)
+#app.include_router(ws)
 app.include_router(spotify_public)
 app.include_router(track)
+app.include_router(chat_ws)
+app.include_router(chat)

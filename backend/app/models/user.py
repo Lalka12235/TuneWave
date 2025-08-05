@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.favorite_track import FavoriteTrack
     from app.models.room_track_association import RoomTrackAssociationModel
     from app.models.member_room_association import Member_room_association
+    from app.models.message import Message
 
 
 class User(Base):
@@ -37,3 +38,4 @@ class User(Base):
     favorite_track: Mapped[list['FavoriteTrack']] = relationship(back_populates='user')
     room_track: Mapped[list['RoomTrackAssociationModel']] = relationship(back_populates='user')
     member_room: Mapped[list['Member_room_association']] = relationship(back_populates='user')
+    message: Mapped[list['Message']] = relationship(back_populates='user')

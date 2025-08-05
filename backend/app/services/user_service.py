@@ -6,6 +6,8 @@ from app.schemas.user_schemas import UserResponse, UserCreate, UserUpdate,Token,
 import uuid
 from typing import Any
 from app.config.settings import settings
+from app.utils.jwt import decode_access_token
+from jwt import exceptions
 
 
 
@@ -351,3 +353,31 @@ class UserService:
         )
 
         return UserService._map_user_to_response(user), Token(access_token=access_token)
+    
+
+    @staticmethod
+    def get_user_by_token(db: Session,token: str) -> User:
+        """_summary_
+
+        Args:
+            db (Session): _description_
+            token (str): _description_
+
+        Returns:
+            User: _description_
+        """
+        try:
+            payload = decode_access_token(token)
+            user_id = payload.get('sub')
+            if not user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail='Невалидный токен: отсутствует ID пользователя'
+                )
+            user = UserService.get_user_by_id(db,user_id)
+            return user
+        except exceptions.DecodeError:
+            raise HTTPException(
+                status_code=401,
+                detail='Невалидный токен'
+            )
