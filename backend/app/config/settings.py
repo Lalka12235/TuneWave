@@ -65,11 +65,11 @@ class Settings(BaseSettings):
     # Если вы планируете отправлять email (например, для подтверждения email),
     # эти настройки будут необходимы.
     SMTP_HOST: str = Field("smtp.example.com", env="SMTP_HOST", description="SMTP хост для отправки email")
-    #SMTP_PORT: int = Field(587, env="SMTP_PORT", description="SMTP порт для отправки email")
+    SMTP_PORT: int = Field(587, env="SMTP_PORT", description="SMTP порт для отправки email")
     SMTP_USER: str = Field("user@example.com", env="SMTP_USER", description="Имя пользователя SMTP")
     SMTP_PASSWORD: str = Field("password", env="SMTP_PASSWORD", description="Пароль SMTP")
     SMTP_FROM_EMAIL: str = Field("noreply@example.com", env="SMTP_FROM_EMAIL", description="Email отправителя")
-    #SMTP_USE_TLS: bool = Field(True, env="SMTP_USE_TLS", description="Использовать TLS для SMTP")
+    SMTP_USE_TLS: bool = Field(True, env="SMTP_USE_TLS", description="Использовать TLS для SMTP")
 
 
     @property

@@ -8,7 +8,7 @@ from typing import Any
 from app.config.settings import settings
 from app.utils.jwt import decode_access_token
 from jwt import exceptions
-
+from app.utils.email import send_email
 
 
 class UserService:
@@ -163,7 +163,7 @@ class UserService:
 
 
     @staticmethod
-    def create_user(db: Session,user_data: UserCreate) -> UserResponse:
+    async def create_user(db: Session,user_data: UserCreate) -> UserResponse:
         """Создание пользователя
 
         Args:
@@ -173,14 +173,34 @@ class UserService:
         Returns:
             UserResponse: Информация о создании
         """
-        user = UserService._check_for_existing_user_and_raise_if_found(
+        UserService._check_for_existing_user_and_raise_if_found(
             db,
             user_data.email,
             user_data.google_id,
             user_data.spotify_id
         )
+        try:
+            new_user = UserRepository.create_user(db,user_data.model_dump())
+            subject = "Добро пожаловать в TuneWave!"
+            body = f"""
+            Привет, {user_data.username}!
 
-        new_user = UserRepository.create_user(db,user_data.model_dump())
+            Спасибо за регистрацию в TuneWave. Мы рады видеть тебя в нашем музыкальном сообществе.
+            Начни создавать комнаты и делиться музыкой с друзьями!
+
+            С уважением,
+            Команда TuneWave
+            """
+            email_sent = await send_email(user_data.email, subject, body)
+            if not email_sent:
+                pass
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при создании пользователя: {e}"
+            )
+        
 
         return UserService._map_user_to_response(new_user)
     
@@ -209,8 +229,14 @@ class UserService:
             )
         
         data_to_update = update_data.model_dump(exclude_unset=True) 
-
-        updated_user = UserRepository.update_user(db, user, data_to_update)
+        try:
+            updated_user = UserRepository.update_user(db, user, data_to_update)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при обновлении пользователя: {e}"
+            )
 
         return UserService._map_user_to_response(updated_user)
     
@@ -236,8 +262,14 @@ class UserService:
                 status_code=404,
                 detail='User not found'
             )
-        
-        del_user = UserRepository.hard_delete_user(db,user_id)
+        try:
+            UserRepository.hard_delete_user(db,user_id)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при удаление пользователя: {e}"
+            )
 
         return {
             'detail': 'delete user',
@@ -247,7 +279,7 @@ class UserService:
     
 
     @staticmethod
-    def authenticate_user_with_google(db: Session, google_data: GoogleOAuthData) -> tuple[UserResponse, Token]:
+    async def authenticate_user_with_google(db: Session, google_data: GoogleOAuthData) -> tuple[UserResponse, Token]:
         """
         Аутентифицирует пользователя через Google OAuth.
         Создает или обновляет пользователя в БД и возвращает JWT-токен вашего приложения.
@@ -271,8 +303,14 @@ class UserService:
                 update_data['google_image_url'] = google_data.google_image_url
             if google_data.is_email_verified and not user.is_email_verified:
                 update_data['is_email_verified'] = True
-            
-            user = UserRepository.update_user(db, user, update_data)
+            try:
+                user = UserRepository.update_user(db, user, update_data)
+            except Exception as e:
+                db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Ошибка при обновлении пользователя: {e}"
+                )
         else:
             user_data = {
                 'username': google_data.username,
@@ -284,8 +322,27 @@ class UserService:
                 'google_refresh_token': google_data.google_refresh_token,
                 'google_token_expires_at': google_data.google_token_expires_at
             }
+            try:
+                user = UserRepository.create_user(db, user_data)
+                subject = "Добро пожаловать в TuneWave!"
+                body = f"""
+                Привет, {google_data.username}!
 
-            user = UserRepository.create_user(db, user_data)
+                Спасибо за регистрацию в TuneWave. Мы рады видеть тебя в нашем музыкальном сообществе.
+                Начни создавать комнаты и делиться музыкой с друзьями!
+
+                С уважением,
+                Команда TuneWave
+                """
+                email_sent = await send_email(google_data.email, subject, body)
+                if not email_sent:
+                    pass
+            except Exception as e:
+                db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Ошибка при обновлении пользователя: {e}"
+                )
             
         from datetime import timedelta
         from app.utils.jwt import create_access_token
@@ -299,7 +356,7 @@ class UserService:
     
 
     @staticmethod
-    def authenticate_user_with_spotify(
+    async def authenticate_user_with_spotify(
         db: Session,
         spotify_data: SpotifyOAuthData
     ) -> tuple[UserResponse,Token]:
@@ -324,9 +381,15 @@ class UserService:
             update_data['spotify_token_expires_at'] = spotify_data.spotify_token_expires_at
             update_data['spotify_scope'] = spotify_data.spotify_scope
 
-
-            if update_data:
-                user = UserRepository.update_user(db,user,update_data)
+            try:
+                if update_data:
+                    user = UserRepository.update_user(db,user,update_data)
+            except Exception as e:
+                db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Ошибка при обновлении пользователя: {e}"
+                )
 
         else:
             user_data = {
@@ -342,7 +405,27 @@ class UserService:
                 'spotify_scope': spotify_data.spotify_scope
             }
 
-            user = UserRepository.create_user(db,user_data)
+            try:
+                user = UserRepository.create_user(db,user_data)
+                subject = "Добро пожаловать в TuneWave!"
+                body = f"""
+                Привет, {spotify_data.username}!
+
+                Спасибо за регистрацию в TuneWave. Мы рады видеть тебя в нашем музыкальном сообществе.
+                Начни создавать комнаты и делиться музыкой с друзьями!
+
+                С уважением,
+                Команда TuneWave
+                """
+                email_sent = await send_email(spotify_data.email, subject, body)
+                if not email_sent:
+                    pass
+            except Exception as e:
+                db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Ошибка при обновлении пользователя: {e}"
+                )
         
         from datetime import timedelta
         from app.utils.jwt import create_access_token
