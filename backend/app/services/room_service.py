@@ -6,14 +6,12 @@ from app.schemas.room_schemas import RoomResponse, RoomCreate, RoomUpdate,TrackI
 from app.schemas.user_schemas import UserResponse
 from app.services.user_service import UserService
 from app.models.room import Room
-from app.models.track import Track
 from app.services.track_service import TrackService
 from app.services.spotify_sevice import SpotifyService
 import uuid
 from typing import Any
 from app.utils.hash import make_hash_pass,verify_pass
 from app.models.user import User
-from app.models.room_track_association import RoomTrackAssociationModel
 from app.models.room_track_association import RoomTrackAssociationModel
 from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
 from app.exceptions.exception import (
@@ -25,8 +23,6 @@ from app.exceptions.exception import (
 from enum import Enum
 from app.ws.connection_manager import manager
 import json
-from app.services.google_service import GoogleService
-from app.services.spotify_public_service import SpotifyPublicService
 
 
 class ControlAction(Enum):
@@ -157,10 +153,17 @@ class RoomService:
             )
         
         room_data_dict.pop('password', None)
-        new_room = RoomRepository.create_room(db,room_data_dict)
-        db.commit()
-        db.refresh(new_room)
-        return RoomService._map_room_to_response(new_room)
+        try:
+            new_room = RoomRepository.create_room(db,room_data_dict)
+            db.commit()
+            db.refresh(new_room)
+            return RoomService._map_room_to_response(new_room)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при создании комнаты: {e}"
+            )
     
 
     @staticmethod
@@ -201,12 +204,19 @@ class RoomService:
         elif 'password' in data_to_update and data_to_update['password'] is None:
             data_to_update['password_hash'] = None
         
-        updated_room_db = RoomRepository.update_room(db, room, data_to_update)
-        
-        db.commit()
-        db.refresh(updated_room_db)
+        try:
+            updated_room_db = RoomRepository.update_room(db, room, data_to_update)
+            
+            db.commit()
+            db.refresh(updated_room_db)
 
-        return RoomService._map_room_to_response(updated_room_db)
+            return RoomService._map_room_to_response(updated_room_db)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при обновлении комнаты: {e}"
+            )
     
 
     @staticmethod
@@ -234,21 +244,22 @@ class RoomService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="У вас нет прав для обновления этой комнаты."
             )
-        
-        deleted_successfully = RoomRepository.delete_room(db,room_id)
+        try:
+            deleted_successfully = RoomRepository.delete_room(db,room_id)
 
-        db.commit()
+            db.commit()
 
-        if deleted_successfully:
-            return {
-                'status': 'success',
-                'detail': 'Комната успешно удалена.',
-                'id': str(room_id),
-            }
-        else:
+            if deleted_successfully:
+                return {
+                    'status': 'success',
+                    'detail': 'Комната успешно удалена.',
+                    'id': str(room_id),
+                }
+        except Exception as e:
+            db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Не удалось удалить комнату."
+                detail=f"Не удалось удалить комнату. {e}"
             )
         
     
@@ -307,13 +318,19 @@ class RoomService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Комната заполнена. Невозможно присоединиться."
             )
-        
-        new_association = MemberRoomAssociationRepository.add_member(db,user.id,room_id)
+        try:
+            new_association = MemberRoomAssociationRepository.add_member(db,user.id,room_id)
 
-        db.commit()
-        db.refresh(new_association)
+            db.commit()
+            db.refresh(new_association)
 
-        return RoomService._map_room_to_response(room)
+            return RoomService._map_room_to_response(room)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Не удалось присоединиться к комнате. {e}"
+            )
 
     @staticmethod
     def leave_room(db: Session, room_id: uuid.UUID, user: User) -> dict[str, Any]:
@@ -337,22 +354,23 @@ class RoomService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Вы не являетесь участником этой комнаты."
             )
-        
-        deleted_successfully = MemberRoomAssociationRepository.remove_member(db,user.id,room_id)
+        try:
+            deleted_successfully = MemberRoomAssociationRepository.remove_member(db,user.id,room_id)
 
-        db.commit()
+            db.commit()
 
-        if deleted_successfully:
-            return {
-                'status': 'success',
-                'detail': f"Вы успешно покинули комнату с ID: {room_id}.",
-                'user_id': str(user.id),
-                'room_id': str(room_id)
-            }
-        else:
+            if deleted_successfully:
+                return {
+                    'status': 'success',
+                    'detail': f"Вы успешно покинули комнату с ID: {room_id}.",
+                    'user_id': str(user.id),
+                    'room_id': str(room_id)
+                }
+        except Exception as e:
+            db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Не удалось покинуть комнату."
+                detail=f"Не удалось покинуть комнату.{e}"
             )
         
     
@@ -429,10 +447,17 @@ class RoomService:
         
         order_in_queue = RoomTrackAssociationRepository.get_last_order_in_queue(db,room_id)
 
-        add_track = RoomTrackAssociationRepository.add_track_to_queue(db,room_id,track.id,order_in_queue,current_user.id)
+        try:
+            add_track = RoomTrackAssociationRepository.add_track_to_queue(db,room_id,track.id,order_in_queue,current_user.id)
 
-        db.commit()
-        db.refresh(add_track)
+            db.commit()
+            db.refresh(add_track)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Не удалось добавить трек в очередь{e}."
+            )
         try:
             updated_queue = RoomTrackAssociationRepository.get_queue_for_room(db, room_id)
             update_message = {
@@ -505,43 +530,45 @@ class RoomService:
         if not db_association or str(db_association.room_id) != str(room_id):
             raise ValueError("Ассоциация не найдена или не принадлежит этой комнате.")
         
-        deleted_successfully = RoomTrackAssociationRepository.remove_track_from_queue_by_association_id(
-            db,
-            association_id
-        )
-        if deleted_successfully:
-            RoomService._reorder_queue(db, room_id)
-            db.commit()
-            try:
-                updated_queue = RoomTrackAssociationRepository.get_queue_for_room(db, room_id)
-                update_message = {
-                    "action": "remove",
-                    "queue": [
-                        {
-                            "id": str(assoc.id),
-                            "track_id": str(assoc.track_id),
-                            "order": assoc.order_in_queue,
-                            "title": assoc.track.title,
-                            "artist": assoc.track.artist,
-                            "album_art_url": assoc.track.album
-                        } for assoc in updated_queue
-                    ]
-                }
-                await manager.broadcast(room_id, json.dumps(update_message))
-            except Exception as e:
-                print(f"Ошибка при отправке WebSocket-сообщения: {e}")
+        try:
+            deleted_successfully = RoomTrackAssociationRepository.remove_track_from_queue_by_association_id(
+                db,
+                association_id
+            )
+            if deleted_successfully:
+                RoomService._reorder_queue(db, room_id)
+                db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Не удалось удалить трек из очередь{e}."
+            )
+        try:
+            updated_queue = RoomTrackAssociationRepository.get_queue_for_room(db, room_id)
+            update_message = {
+                "action": "remove",
+                "queue": [
+                    {
+                        "id": str(assoc.id),
+                        "track_id": str(assoc.track_id),
+                        "order": assoc.order_in_queue,
+                        "title": assoc.track.title,
+                        "artist": assoc.track.artist,
+                        "album_art_url": assoc.track.album
+                    } for assoc in updated_queue
+                ]
+            }
+            await manager.broadcast(room_id, json.dumps(update_message))
+        except Exception as e:
+            print(f"Ошибка при отправке WebSocket-сообщения: {e}")
 
-            return {
-                'status': 'success',
-                'detail': 'remove track from queue',
-                'response': deleted_successfully
-            }
-        else:
-            return {
-                'status': 'failed',
-                'detail': 'remove track from queue',
-                'response': deleted_successfully
-            }
+        return {
+            'status': 'success',
+            'detail': 'remove track from queue',
+            'response': deleted_successfully
+        }
+        
 
         
     @staticmethod
@@ -553,12 +580,18 @@ class RoomService:
             RoomTrackAssociationModel.room_id == room_id,
         ).order_by(RoomTrackAssociationModel.order_in_queue).all()
 
+        try:
+            for index,assoc in enumerate(queue_association):
+                assoc.order_in_queue = index
+                db.add(assoc)
 
-        for index,assoc in enumerate(queue_association):
-            assoc.order_in_queue = index
-            db.add(assoc)
-
-        db.flush()
+            db.flush()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f'Не удалось перепорядочить очередь.{e}'
+            )
 
 
     @staticmethod
@@ -588,14 +621,21 @@ class RoomService:
         if not (0 <= new_position < current_length):
             raise ValueError(f"Некорректная позиция: {new_position}. Допустимый диапазон от 0 до {current_length - 1}.")
     
-        queue.remove(track_to_move)
+        try:
+            queue.remove(track_to_move)
 
-        queue.insert(new_position, track_to_move)
+            queue.insert(new_position, track_to_move)
 
-        for index, assoc in enumerate(queue):
-            assoc.order_in_queue = index
-        
-        db.commit()
+            for index, assoc in enumerate(queue):
+                assoc.order_in_queue = index
+            
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f'Не удалось перепорядочить очередь.{e}'
+            )
 
         try:
             updated_queue = RoomTrackAssociationRepository.get_queue_for_room(db, room_id)
@@ -706,12 +746,13 @@ class RoomService:
             await manager.broadcast(room_id, json.dumps(update_message))
 
         except HTTPException as e:
+            db.rollback()
             raise HTTPException(
                 status_code=e.status_code,
                 detail=f"Ошибка Spotify: {e.detail}"
             )
         except Exception as e:
-            print(f"Непредвиденная ошибка: {e}")
+            db.rollback()
             raise HTTPException(
                 status_code=500,
                 detail=f"Внутренняя ошибка сервера: {e}"
