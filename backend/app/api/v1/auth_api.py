@@ -12,6 +12,7 @@ from app.config.settings import settings
 import jwt
 import base64
 import time
+from fastapi_limiter.depends import RateLimiter
 
 auth = APIRouter(
     tags=['auth'],
@@ -19,7 +20,9 @@ auth = APIRouter(
 )
 
 @auth.get('/config', response_model=FrontendConfig)
-def get_frontend_config() -> FrontendConfig:
+def get_frontend_config(
+    dependencies=[Depends(RateLimiter(times=15, seconds=60))]
+) -> FrontendConfig:
     """
     Возвращает публичные конфигурационные данные, необходимые фронтенду.
     """

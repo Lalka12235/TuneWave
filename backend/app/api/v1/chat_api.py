@@ -8,6 +8,7 @@ from app.models.user import User
 from app.schemas.message_schemas import MessageResponse, MessageCreate
 from app.services.chat_service import ChatService
 from datetime import datetime
+from fastapi_limiter.depends import RateLimiter
 
 
 chat = APIRouter(
@@ -28,6 +29,7 @@ async def get_message_for_room(
     before_timestamp: Annotated[datetime | None, Query(
         description='Метка времени последнего сообщения, для пагинации'
     )] = None,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 ) -> list[MessageResponse]:
     """
     Получает историю сообщений для указанной комнаты.
@@ -54,7 +56,8 @@ async def create_message(
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
     db: db_dependencies,
     user: user_dependencies,
-    message: MessageCreate
+    message: MessageCreate,
+    dependencies=[Depends(RateLimiter(times=5, seconds=5))]
 ) -> MessageResponse:
     """
     Создает новое сообщение в комнате.

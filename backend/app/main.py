@@ -12,6 +12,9 @@ from app.api.v1.chat_api import chat
 from app.logger.log_config import configure_logging
 from app.services.scheduler_service import SchedulerService
 from contextlib import asynccontextmanager
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+import redis.asyncio as redis
 
 configure_logging()
 
@@ -50,6 +53,8 @@ async def lifespan(app: FastAPI):
     Контекстный менеджер для управления жизненным циклом приложения.
     """
     scheduler_service.start()
+    r = redis.from_url("redis://localhost", encoding="utf-8", decode_responses=True)
+    await FastAPILimiter.init(r)
     
     yield  # Здесь приложение начинает обрабатывать запросы
 

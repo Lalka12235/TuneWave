@@ -15,6 +15,7 @@ from app.services.room_service import RoomService
 from app.config.session import get_db
 from sqlalchemy.orm import Session
 import uuid
+from fastapi_limiter.depends import RateLimiter
 
 
 room = APIRouter(
@@ -33,6 +34,7 @@ async def create_room(
     room_data: RoomCreate,
     db: db_dependencies,
     current_user: user_dependencies,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 ) -> RoomResponse:
     """
     Создает новую комнату.
@@ -46,7 +48,8 @@ def update_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для обновления")],
     update_data: RoomUpdate,
     db: db_dependencies,
-    current_user: user_dependencies
+    current_user: user_dependencies,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> RoomResponse:
     """
     Обновляет информацию о комнате по ее ID.
@@ -59,7 +62,8 @@ def update_room(
 def delete_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для удаления")],
     db: db_dependencies,
-    current_user: user_dependencies
+    current_user: user_dependencies,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> dict:
     """
     Удаляет комнату по ее ID.
@@ -72,7 +76,8 @@ async def join_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты, к которой присоединяется пользователь")],
     db: db_dependencies,
     current_user: user_dependencies,
-    request_data: JoinRoomRequest
+    request_data: JoinRoomRequest,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> RoomResponse:
     """
     Пользователь присоединяется к комнате.
@@ -98,6 +103,7 @@ async def leave_room(
 async def get_room_members(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для получения списка участников")],
     db: db_dependencies,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> list[UserResponse]:
     """
     Получает список всех участников комнаты.
@@ -109,7 +115,8 @@ async def get_room_members(
 @room.get("/by-name/", response_model=RoomResponse)
 def get_room_by_name(
     name: Annotated[str, Query(..., description="Название комнаты")], 
-    db: db_dependencies
+    db: db_dependencies,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> RoomResponse:
     """
     Получает информацию о комнате по ее названию.
@@ -122,6 +129,7 @@ def get_room_by_name(
 async def get_my_rooms(
     db: db_dependencies,
     current_user: user_dependencies,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> list[RoomResponse]:
     """
     Получает список всех комнат, в которых состоит текущий аутентифицированный пользователь.
@@ -131,7 +139,8 @@ async def get_my_rooms(
 
 @room.get("/", response_model=list[RoomResponse])
 def get_all_rooms(
-    db: db_dependencies
+    db: db_dependencies,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> list[RoomResponse]:
     """
     Получает список всех доступных комнат.
@@ -143,7 +152,8 @@ def get_all_rooms(
 @room.get("/{room_id}", response_model=RoomResponse)
 def get_room_by_id(
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")], 
-    db: db_dependencies
+    db: db_dependencies,
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> RoomResponse:
     """
     Получает информацию о комнате по ее ID.
@@ -157,7 +167,8 @@ async def add_track_to_queue(
     db: db_dependencies,
     current_user: user_dependencies,
     request: AddTrackToQueueRequest,
-    room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')]
+    room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
+    dependencies=[Depends(RateLimiter(times=10, seconds=30))]
 ) -> TrackInQueueResponse:
     """
     Добавляет трек в очередь комнаты. Только владелец комнаты может это сделать.
@@ -174,7 +185,8 @@ async def add_track_to_queue(
 @room.get('/{room_id}/queue/{association_id}',response_model=list[TrackInQueueResponse])
 async def get_room_queue(
     db: db_dependencies,
-    room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')]
+    room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> list[TrackInQueueResponse]:
     """
     Получает текущую очередь треков для комнаты.
@@ -182,12 +194,13 @@ async def get_room_queue(
     return RoomService.get_room_queue(db,room_id)
 
 
-@room.delete('/{room_id}/queue{association_id}')
+@room.delete('/{room_id}/queue/{association_id}')
 async def remove_track_from_queue(
     db: db_dependencies,
     current_user: user_dependencies,
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
     association_id: Annotated[uuid.UUID, Path(..., description="ID ассоциации трека в очереди")],
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> dict:
     """
     Удаляет трек из очереди комнаты по ID ассоциации. Только владелец комнаты может это сделать.
