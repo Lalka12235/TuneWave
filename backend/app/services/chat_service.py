@@ -41,7 +41,7 @@ class ChatService():
         Returns:
             list[MessageResponse]: Список объектов Pydantic, представляющих сообщения.
         """
-        room = RoomService.get_room_by_id(db,room_id)
+        RoomService.get_room_by_id(db,room_id)
         
         if before_timestamp:
             messages = ChatRepository.get_message_for_room(db,room_id,limit,before_timestamp)
@@ -68,7 +68,7 @@ class ChatService():
         Returns:
             MessageResponse: Pydantic-схема созданного сообщения.
         """
-        room = RoomService.get_room_by_id(db,room_id)
+        RoomService.get_room_by_id(db,room_id)
 
         user_in_room = RoomService.get_room_members(db,room_id)
 
@@ -77,8 +77,18 @@ class ChatService():
                 status_code=403,
                 detail='Вы не находитесь в комнате'
             )
-
-        new_message = ChatRepository.create_message(db,room_id,user_id,message.text)
+        try:
+            new_message = ChatRepository.create_message(db,room_id,user_id,message.text)
+            db.commit()
+            db.refresh(new_message)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при создании сообщения: {e}"
+            )
+            
+        
 
         return ChatService._map_message_to_response(new_message)
     
