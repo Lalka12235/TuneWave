@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException,status
 from app.repositories.track_repo import TrackRepository
 from app.schemas.track_schemas import TrackResponse,TrackCreate
 from sqlalchemy.orm import Session
@@ -45,10 +45,17 @@ class TrackService:
     @staticmethod
     def create_track(db: Session,track_data: TrackCreate) -> Track:
         """Создает новый трек в базе данных."""
-        db_track = TrackRepository.create_track(db,track_data)
-        db.commit()
-        db.refresh(db_track)
-        return db_track
+        try:
+            db_track = TrackRepository.create_track(db,track_data)
+            db.commit()
+            db.refresh(db_track)
+            return db_track
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при создании трека: {e}"
+            )
     
 
     @staticmethod
@@ -81,7 +88,14 @@ class TrackService:
     @staticmethod
     def delete_track(db: Session, track_id: uuid.UUID) -> bool:
         """Удаляет трек по его UUID."""
-        return TrackRepository.delete_track(db, track_id)
+        try:
+            return TrackRepository.delete_track(db, track_id)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при удаление трека: {e}"
+            )
 
 
     @staticmethod
