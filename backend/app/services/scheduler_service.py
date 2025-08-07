@@ -69,7 +69,7 @@ class SchedulerService:
                             room.is_playing = False
                             room.current_track_id = None
                             db.commit()
-                    except Exception as e:
+                    except Exception:
                         try:
                             await spotify.pause(device_id=device_id)
                         except:

@@ -6,7 +6,6 @@ from app.auth.auth import get_current_user
 from app.models.user import User
 from app.services.spotify_sevice import SpotifyService
 from app.services.spotify_public_service import SpotifyPublicService
-import uuid
 
 
 spotify = APIRouter(

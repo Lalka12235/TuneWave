@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends,Path,Query
+from fastapi import APIRouter, Depends,Path
 from app.services.track_service import TrackService
-from typing import Annotated, Any
+from typing import Annotated
 from app.config.session import get_db
 from sqlalchemy.orm import Session
 from app.schemas.track_schemas import TrackBase,TrackCreate

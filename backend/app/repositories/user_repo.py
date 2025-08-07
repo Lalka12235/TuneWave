@@ -1,4 +1,4 @@
-from sqlalchemy import select,delete,update
+from sqlalchemy import select,delete
 from app.models.user import User
 from sqlalchemy.orm import Session
 import uuid

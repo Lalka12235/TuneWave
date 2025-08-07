@@ -4,7 +4,6 @@ from app.models.member_room_association import Member_room_association
 from app.models.user import User
 from app.models.room import Room
 import uuid
-from app.models.member_room_association import Member_room_association
 from app.models.room_track_association import RoomTrackAssociationModel
 
 

@@ -1,5 +1,5 @@
 from app.models.base import Base
-from sqlalchemy import ForeignKey,DateTime,func,PrimaryKeyConstraint
+from sqlalchemy import ForeignKey,DateTime,func
 from sqlalchemy.orm import Mapped,mapped_column,relationship
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID 

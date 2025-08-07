@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Depends,status,Path,Query,Body,HTTPException
+from fastapi import APIRouter,Depends,status,Path,Query
 from app.schemas.room_schemas import (
     RoomCreate, 
     RoomUpdate, 
@@ -15,10 +15,6 @@ from app.services.room_service import RoomService
 from app.config.session import get_db
 from sqlalchemy.orm import Session
 import uuid
-from app.exceptions.exception import (
-    RoomNotFoundException,
-    UnauthorizedRoomActionException,
-)
 
 
 room = APIRouter(

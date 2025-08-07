@@ -135,7 +135,7 @@ class RoomRepository:
         Связанные объекты current_track загружаются одним запросом.
         """
         stmt = select(Room).where(
-            Room.is_playing == True,
+            Room.is_playing,
         ).options(
             joinedload(Room.room_track),
         )
