@@ -1,7 +1,6 @@
-from sqlalchemy import select,delete
+from sqlalchemy import select
 from sqlalchemy.orm import Session,joinedload
 from app.models.message import Message
-from app.models.room import Room
 from datetime import datetime
 import uuid
 
@@ -51,6 +50,5 @@ class ChatRepository:
             text=text,
         )
         db.add(new_message)
-        db.commit()
         db.refresh(new_message)
         return new_message
