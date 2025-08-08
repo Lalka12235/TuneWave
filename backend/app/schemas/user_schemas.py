@@ -9,6 +9,8 @@ class UserBase(BaseModel):
 
 class UserResponse(UserBase):
     id: uuid.UUID = Field(..., description="Уникальный ID пользователя")
+    bio: str | None = Field(None,description='Описание профиля пользователя')
+    avatar_url: str | None = Field(None,description='Аватар пользователя в профиле')
     google_id: str | None = Field(None, description="Google ID пользователя")
     google_image_url: str | None = Field(None, description="URL изображения профиля Google")
     spotify_id: str | None = Field(None, description="Spotify ID пользователя")
@@ -38,6 +40,8 @@ class UserUpdate(BaseModel):
     username: str | None = Field(None, min_length=3, max_length=50, description="Новое имя пользователя")
     email: EmailStr | None = Field(None, description="Новый email пользователя")
     is_email_verified: bool | None = Field(None, description="Новый статус подтверждения email")
+    bio: str | None = Field(None,description='Описание профиля пользователя',max_length=1000)
+    avatar_url: str | None = Field(None,description='Аватар пользователя в профиле')
     google_image_url: str | None = Field(None, description="Новый URL изображения профиля Google")
     spotify_profile_url: str | None = Field(None, description="Новый URL профиля Spotify")
     spotify_image_url: str | None = Field(None, description="Новый URL изображения профиля Spotify")
