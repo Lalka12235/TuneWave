@@ -1,7 +1,7 @@
-from fastapi import APIRouter,Depends
+from fastapi import APIRouter,Depends, UploadFile, HTTPException,status
 from sqlalchemy.orm import Session
 from typing import Annotated
-from app.schemas.user_schemas import UserResponse
+from app.schemas.user_schemas import UserResponse,UserUpdate
 from app.services.user_service import UserService
 from app.auth.auth import get_current_user
 from app.config.session import get_db
@@ -14,10 +14,13 @@ user = APIRouter(
     prefix='/users'
 )
 
+db_dependencies = Annotated[Session,Depends(get_db)]
+user_dependencies = Annotated[User,Depends(get_current_user)]
+
 @user.get('/me',response_model=UserResponse)
 async def get_me(
-    db: Annotated[Session,Depends(get_db)],
-    user: Annotated[User,Depends(get_current_user)],
+    db: db_dependencies,
+    user: user_dependencies,
     dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> UserResponse:
     """
@@ -27,3 +30,43 @@ async def get_me(
         UserResponse: Pydantic-модель с данными профиля пользователя.
     """
     return UserService._map_user_to_response(user)
+
+
+@user.put('/{user_id}',response_model=UserResponse)
+async def update_profile(
+    db: db_dependencies,
+    user: user_dependencies,
+    update_data: UserUpdate
+) -> UserResponse:
+    """_summary_
+
+    Args:
+        db (db_dependencies): _description_
+        user (user_dependencies): _description_
+        update_data (UserUpdate): _description_
+
+    Returns:
+        UserResponse: _description_
+    """
+    return UserService.update_user_profile(db,user.id,update_data)
+
+
+@user.post('/me/avatar',response_model=UserResponse)
+async def load_avatar(
+    db:db_dependencies,
+    user: user_dependencies,
+    avatar_file: UploadFile,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
+) -> UserResponse:
+    """
+    Загружает новую аватарку для текущего пользователя.
+
+    Args:
+        db (Session): Сессия базы данных.
+        user (User): Объект текущего аутентифицированного пользователя.
+        avatar_file (UploadFile): Загружаемый файл изображения.
+
+    Returns:
+        UserResponse: Обновленный профиль пользователя с новым URL аватарки.
+    """
+    return await UserService.load_avatar(db,user,avatar_file) 
