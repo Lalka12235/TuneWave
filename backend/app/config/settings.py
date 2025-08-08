@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     Класс настроек приложения, загружающий переменные из окружения.
     Использует Pydantic-Settings для безопасной и удобной работы с конфигурацией.
     """
-
+    BASE_URL: str = 'http://127.0.0.1:8000'
     # --- Настройки базы данных ---
     DB_HOST: str = Field(..., description="Хост базы данных PostgreSQL")
     DB_PORT: int = Field(..., description="Порт базы данных PostgreSQL")
@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = Field(..., env="JWT_SECRET_KEY", description="Секретный ключ для подписи JWT-токенов")
     ALGORITHM: str = Field("HS256", description="Алгоритм шифрования для JWT")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(15, description="Время жизни токена доступа JWT в минутах")
+
+    # --- Настройки Профиля ---
+    MAX_AVATAR_SIZE_BYTES: int = 5 * 1024 * 1024 
+    BACKEND_ROOT: Path = Path(__file__).resolve().parent.parent.parent
+    AVATARS_STORAGE_DIR: Path = BACKEND_ROOT / "avatars"
+
 
 
     # --- Настройки Google OAuth2 ---

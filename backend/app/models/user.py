@@ -19,6 +19,8 @@ class User(Base):
     username: Mapped[str] = mapped_column(unique=True,index=True,nullable=False)
     email: Mapped[str] = mapped_column(unique=True,nullable=False)
     is_email_verified: Mapped[bool] = mapped_column(nullable=False)
+    avatar_url: Mapped[str] = mapped_column(nullable=True,default=None)
+    bio: Mapped[str] = mapped_column(nullable=True,default="")
     #google
     google_id: Mapped[str] = mapped_column(unique=True,nullable=True)
     google_image_url: Mapped[str] = mapped_column(nullable=True)
