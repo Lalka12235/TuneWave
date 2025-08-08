@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.config.loggingMiddleware import LogMiddleware
 from app.api.v1.auth_api import auth
 from app.api.v1.user_api import user
@@ -15,6 +16,8 @@ from contextlib import asynccontextmanager
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
 import redis.asyncio as redis
+from app.config.settings import settings
+import os
 
 configure_logging()
 
@@ -52,6 +55,7 @@ async def lifespan(app: FastAPI):
     """
     Контекстный менеджер для управления жизненным циклом приложения.
     """
+    os.makedirs(settings.AVATARS_STORAGE_DIR,exist_ok=True)
     scheduler_service.start()
     r = redis.from_url("redis://localhost", encoding="utf-8", decode_responses=True)
     await FastAPILimiter.init(r)
@@ -91,3 +95,5 @@ app.include_router(spotify_public)
 app.include_router(track)
 app.include_router(chat_ws)
 app.include_router(chat)
+
+app.mount("/avatars", StaticFiles(directory=settings.AVATARS_STORAGE_DIR), name="avatars")

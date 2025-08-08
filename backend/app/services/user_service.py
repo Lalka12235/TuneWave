@@ -1,4 +1,4 @@
-from fastapi import HTTPException,status
+from fastapi import HTTPException,status, UploadFile
 from app.repositories.user_repo import UserRepository
 from sqlalchemy.orm import Session
 from app.models.user import User
@@ -9,7 +9,7 @@ from app.config.settings import settings
 from app.utils.jwt import decode_access_token
 from jwt import exceptions
 from app.utils.email import send_email
-
+import os
 
 class UserService:
 
@@ -320,7 +320,7 @@ class UserService:
                 'google_image_url': google_data.google_image_url,
                 'google_access_token': google_data.google_access_token,
                 'google_refresh_token': google_data.google_refresh_token,
-                'google_token_expires_at': google_data.google_token_expires_at
+                'google_token_expires_at': google_data.google_token_expires_at,
             }
             try:
                 user = UserRepository.create_user(db, user_data)
@@ -463,4 +463,63 @@ class UserService:
             raise HTTPException(
                 status_code=401,
                 detail='Невалидный токен'
+            )
+        
+
+    
+    @staticmethod
+    async def load_avatar(db: Session,user: User,avatar_file: UploadFile) -> UserResponse:
+        """
+        Загружает файл аватарки, сохраняет его и обновляет URL в профиле пользователя.
+
+        Args:
+            db (Session): Сессия базы данных.
+            user (User): Объект текущего пользователя.
+            avatar_file (UploadFile): Загруженный файл изображения.
+
+        Raises:
+            HTTPException: Если файл не соответствует требованиям (тип, размер).
+            Exception: В случае внутренней ошибки сервера при сохранении/обновлении.
+
+        Returns:
+            UserResponse: Обновленный объект пользователя с новым URL аватарки.
+        """
+        allowed_types = ['image/jpeg', 'image/png', 'image/gif']
+        if avatar_file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=400,
+                detail='Изображение не соответстует нужному типу'
+            )
+        
+        content = await avatar_file.read()
+        if len(content) > settings.MAX_AVATAR_SIZE_BYTES:
+            raise HTTPException(
+                status_code=400,
+                detail='Ограничения размера файла 5мб'
+            )
+        file_extension = avatar_file.filename.split('.')[-1] if '.' in avatar_file.filename else 'png'
+        unique_filename = f"{uuid.uuid4()}.{file_extension}"
+        
+        file_path = settings.AVATARS_STORAGE_DIR / unique_filename
+
+        try:
+            with open(f"{file_path}", 'wb') as f:
+                f.write(content)
+
+            new_avatar_url = f"{settings.BASE_URL}/avatars/{unique_filename}"
+            
+            updated_user = await UserService.update_user_profile(
+                db, 
+                user.id, 
+                UserUpdate(avatar_url=new_avatar_url)
+            )
+            return updated_user
+            
+        except Exception as e:
+            db.rollback()
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка сервера при загрузке аватара: {e}"
             )
