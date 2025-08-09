@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Depends, UploadFile, HTTPException,status
+from fastapi import APIRouter,Depends, UploadFile,Path
 from sqlalchemy.orm import Session
 from typing import Annotated
 from app.schemas.user_schemas import UserResponse,UserUpdate
@@ -7,6 +7,7 @@ from app.auth.auth import get_current_user
 from app.config.session import get_db
 from app.models.user import User
 from fastapi_limiter.depends import RateLimiter
+import uuid
 
 
 user = APIRouter(
@@ -70,3 +71,19 @@ async def load_avatar(
         UserResponse: Обновленный профиль пользователя с новым URL аватарки.
     """
     return await UserService.load_avatar(db,user,avatar_file) 
+
+
+@user.get(
+    "/{user_id}",
+    response_model=UserResponse,
+    dependencies=[Depends(RateLimiter(times=20, seconds=60))]
+)
+def get_user_by_id(
+    user_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID пользователя")],
+    db: db_dependencies,
+) -> UserResponse:
+    """
+    Получает публичную информацию о пользователе по его ID.
+    Не требует аутентификации, если предназначен для публичного просмотра.
+    """
+    return UserService.get_user_by_id(db, user_id)

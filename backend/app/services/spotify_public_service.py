@@ -95,3 +95,14 @@ class SpotifyPublicService:
             '/search',
             params={'q':query,'type':'track','limit':str(limit)}
         )
+    
+    async def search_track_by_spotify_id(self,spotify_id: str) -> dict[str, Any]:
+        """
+        Ищет треки на Spotify по Spotify ID
+        """
+        await self._get_access_token_client()
+        return await self._make_spotify_request(
+            'GET',
+            '/tracks',
+            params={'q':spotify_id,'type':'track'}
+        )

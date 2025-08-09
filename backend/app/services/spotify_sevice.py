@@ -13,7 +13,7 @@ class SpotifyService:
     SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
     SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com/api"
 
-    def __init__(self,db: Session,user: User,spotify_public: SpotifyPublicService):
+    def __init__(self,db: Session,user: User,spotify_public: SpotifyPublicService | None = None):
         self.db = db
         self.user = user
         self._check_user_spotify_credentials()
@@ -209,7 +209,7 @@ class SpotifyService:
         """
         state_url = f'{self.SPOTIFY_API_BASE_URL}/me/player'
         headers = {
-            'Authorization': f'Bearer {self.current_user.spotify_access_token}'
+            'Authorization': f'Bearer {self.user.spotify_access_token}'
         }
 
         try:
@@ -249,3 +249,14 @@ class SpotifyService:
             return await self.search_track(query, limit)
         else:
             return await self.spotify_public_service.search_public_track(query, limit)
+        
+    
+    async def search_track_by_spotify_id(self,spotify_id: str) -> dict[str, Any]:
+        """
+        Ищет треки на Spotify по Spotify ID
+        """
+        return await self._make_spotify_request(
+            'GET',
+            '/tracks',
+            params={'q':spotify_id,'type':'track'}
+        )

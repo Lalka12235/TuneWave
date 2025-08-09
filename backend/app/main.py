@@ -10,6 +10,7 @@ from app.api.v1.spotify_public_api import spotify_public
 from app.api.v1.track_api import track
 from app.api.v1.ws_chat_api import chat_ws
 from app.api.v1.chat_api import chat
+from app.api.v1.favorite_track_api import ft
 from app.logger.log_config import configure_logging
 from app.services.scheduler_service import SchedulerService
 from contextlib import asynccontextmanager
@@ -95,5 +96,6 @@ app.include_router(spotify_public)
 app.include_router(track)
 app.include_router(chat_ws)
 app.include_router(chat)
+app.include_router(ft)
 
 app.mount("/avatars", StaticFiles(directory=settings.AVATARS_STORAGE_DIR), name="avatars")
