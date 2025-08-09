@@ -18,11 +18,10 @@ user = APIRouter(
 db_dependencies = Annotated[Session,Depends(get_db)]
 user_dependencies = Annotated[User,Depends(get_current_user)]
 
-@user.get('/me',response_model=UserResponse)
+@user.get('/me',response_model=UserResponse,dependencies=[Depends(RateLimiter(times=10, seconds=60))])
 async def get_me(
     db: db_dependencies,
     user: user_dependencies,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> UserResponse:
     """
     Получает профиль текущего аутентифицированного пользователя.
@@ -52,12 +51,11 @@ async def update_profile(
     return UserService.update_user_profile(db,user.id,update_data)
 
 
-@user.post('/me/avatar',response_model=UserResponse)
+@user.post('/me/avatar',response_model=UserResponse,dependencies=[Depends(RateLimiter(times=5, seconds=60))])
 async def load_avatar(
     db:db_dependencies,
     user: user_dependencies,
     avatar_file: UploadFile,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 ) -> UserResponse:
     """
     Загружает новую аватарку для текущего пользователя.

@@ -19,9 +19,8 @@ auth = APIRouter(
     prefix='/auth'
 )
 
-@auth.get('/config', response_model=FrontendConfig)
+@auth.get('/config', response_model=FrontendConfig,dependencies=[Depends(RateLimiter(times=15, seconds=60))])
 def get_frontend_config(
-    dependencies=[Depends(RateLimiter(times=15, seconds=60))]
 ) -> FrontendConfig:
     """
     Возвращает публичные конфигурационные данные, необходимые фронтенду.

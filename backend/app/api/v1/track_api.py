@@ -16,11 +16,10 @@ track = APIRouter(
 db_dependencies = Annotated[Session,Depends(get_db)]
 
 
-@track.get('/{spotify_id}',response_model=TrackBase)
+@track.get('/{spotify_id}',response_model=TrackBase,dependencies=[Depends(RateLimiter(times=15, seconds=60))])
 async def get_track_by_id(
     spotify_id: Annotated[str,Path(...,description='Уникальный ID трека')],
     db: db_dependencies,
-    dependencies=[Depends(RateLimiter(times=15, seconds=60))]
 ) -> TrackBase:
     """
     Находит трек по ID в базе данных
@@ -28,11 +27,10 @@ async def get_track_by_id(
     return TrackService.get_track_by_Spotify_id(db,spotify_id)
 
 
-@track.post('/',response_model=TrackCreate)
+@track.post('/',response_model=TrackCreate,dependencies=[Depends(RateLimiter(times=10, seconds=60))])
 async def create_track_from_spotify_data(
     db: db_dependencies,
     spotify_data: TrackCreate,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 ) -> TrackCreate:
     """
     Создает трек в базе данных на основе Spotify data

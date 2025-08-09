@@ -20,7 +20,7 @@ db_dependencies = Annotated[Session,Depends(get_db)]
 user_dependencies = Annotated[User,Depends(get_current_user)]
 
 
-@chat.get('/{room_id}',response_model=list[MessageResponse])
+@chat.get('/{room_id}',response_model=list[MessageResponse],dependencies=[Depends(RateLimiter(times=10, seconds=60))])
 async def get_message_for_room(
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
     user: user_dependencies,
@@ -29,7 +29,6 @@ async def get_message_for_room(
     before_timestamp: Annotated[datetime | None, Query(
         description='Метка времени последнего сообщения, для пагинации'
     )] = None,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 ) -> list[MessageResponse]:
     """
     Получает историю сообщений для указанной комнаты.
@@ -51,13 +50,12 @@ async def get_message_for_room(
     return ChatService.get_message_for_room(db,room_id,limit,before_timestamp)
 
 
-@chat.post('/{room_id}',response_model=MessageResponse, status_code=201)
+@chat.post('/{room_id}',response_model=MessageResponse, status_code=201,dependencies=[Depends(RateLimiter(times=5, seconds=5))])
 async def create_message(
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
     db: db_dependencies,
     user: user_dependencies,
     message: MessageCreate,
-    dependencies=[Depends(RateLimiter(times=5, seconds=5))]
 ) -> MessageResponse:
     """
     Создает новое сообщение в комнате.
