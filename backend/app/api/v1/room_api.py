@@ -7,6 +7,7 @@ from app.schemas.room_schemas import (
     AddTrackToQueueRequest
 )
 from app.schemas.user_schemas import UserResponse
+from app.schemas.room_member_schemas import RoomMemberResponse,RoomMemberRoleUpdate
 from app.schemas.room_member_schemas import JoinRoomRequest
 from typing import Annotated
 from app.auth.auth import get_current_user
@@ -194,3 +195,30 @@ async def remove_track_from_queue(
     Удаляет трек из очереди комнаты по ID ассоциации. Только владелец комнаты может это сделать.
     """
     return await RoomService.remove_track_from_queue(db,room_id,association_id,current_user.id)
+
+
+@room.put('/{room_id}/members/{target_user_id}/role',response_model=RoomMemberResponse,dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+async def update_member_role(
+    room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты, к которой присоединяется пользователь")],
+    db: db_dependencies,
+    target_user_id: Annotated[uuid.UUID, Path(..., description="ID пользователя, чью роль нужно изменить")],
+    user: user_dependencies,
+    new_role: RoomMemberRoleUpdate
+) -> RoomMemberResponse:
+    """
+    Изменяет роль члена комнаты. Доступно только владельцу комнаты.
+
+    Args:
+        room_id (uuid.UUID): Уникальный ID комнаты.
+        target_user_id (uuid.UUID): Уникальный ID пользователя, чью роль нужно изменить.
+        new_role_data (RoomMemberRoleUpdate): Pydantic-модель, содержащая новую роль ('member', 'moderator', 'owner').
+        db (Session): Сессия базы данных.
+        current_user (User): Текущий аутентифицированный пользователь, который пытается изменить роль.
+
+    Returns:
+        RoomMemberResponse: Обновленная информация о члене комнаты с новой ролью.
+
+    Raises:
+        HTTPException: Если комната не найдена, у пользователя нет прав, или произошла ошибка.
+    """
+    return RoomService.update_member_role(db,room_id,target_user_id,new_role.role,user)
