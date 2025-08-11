@@ -1,6 +1,8 @@
 from fastapi import HTTPException,status
 from app.repositories.room_repo import RoomRepository
 from app.repositories.member_room_association_repo import MemberRoomAssociationRepository
+from app.schemas.room_member_schemas import RoomMemberResponse
+from app.models.member_room_association import Member_room_association
 from sqlalchemy.orm import Session
 from app.schemas.room_schemas import RoomResponse, RoomCreate, RoomUpdate,TrackInQueueResponse
 from app.schemas.user_schemas import UserResponse
@@ -29,6 +31,13 @@ class ControlAction(Enum):
     PLAY = 'play'
     PAUSE = 'pause'
     SKIP = 'skip'
+
+
+class Role(Enum):
+    OWNER = 'owner'
+    MODERATOR = 'moderator'
+    MEMBER = 'member'
+    
 
 
 
@@ -78,6 +87,15 @@ class RoomService:
             queue=queue_response
         )
         return room_data
+    
+    
+    @staticmethod
+    def _map_member_to_response(member: Member_room_association) -> RoomMemberResponse:
+        """
+        Вспомогательный метод для маппинга Member_room_association (включая загруженный User)
+        в Pydantic RoomMemberResponse.
+        """
+        return RoomMemberResponse.model_validate(member)
     
     
 
@@ -155,6 +173,13 @@ class RoomService:
         room_data_dict.pop('password', None)
         try:
             new_room = RoomRepository.create_room(db,room_data_dict)
+            db.flush()
+            MemberRoomAssociationRepository.add_member(
+                db,
+                owner.id,
+                new_room.id,
+                role=Role.OWNER.value
+            )
             db.commit()
             db.refresh(new_room)
             return RoomService._map_room_to_response(new_room)
@@ -319,7 +344,7 @@ class RoomService:
                 detail="Комната заполнена. Невозможно присоединиться."
             )
         try:
-            new_association = MemberRoomAssociationRepository.add_member(db,user.id,room_id)
+            new_association = MemberRoomAssociationRepository.add_member(db,user.id,room_id,role=Role.MEMBER.value)
 
             db.commit()
             db.refresh(new_association)
@@ -397,6 +422,8 @@ class RoomService:
             )
         
         members = MemberRoomAssociationRepository.get_members_by_room_id(db,room_id)
+        if not members:
+            return []
         
         return [UserService._map_user_to_response(member) for member in members]
     
@@ -434,8 +461,19 @@ class RoomService:
                 detail='Комната не найдена'
             )
         
-        if room.owner_id != current_user.id:
-            raise UnauthorizedRoomActionException()
+        user_assoc = MemberRoomAssociationRepository.get_association_by_ids(db,current_user.id,room_id)
+
+        if not user_assoc:
+            raise HTTPException(
+                status_code=404,
+                detail=''
+            )
+
+        is_owner = (room.owner_id == current_user.id)
+        is_moderator = (user_assoc and user_assoc.role == Role.MODERATOR.value)
+
+        if not is_owner and not is_moderator:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="У вас недостаточно прав.")
         
         track = TrackService.get_track_by_Spotify_id(db,track_spotify_id)
         if not track:
@@ -514,7 +552,7 @@ class RoomService:
         room_id: uuid.UUID,
         association_id: uuid.UUID,
         current_user_id: uuid.UUID,
-) -> bool:
+) -> dict[str,Any]:
         """
         Удаляет конкретный трек из очереди комнаты по ID ассоциации.
         """
@@ -522,9 +560,20 @@ class RoomService:
         if not room:
             raise RoomNotFoundException()
         
+        user_assoc = MemberRoomAssociationRepository.get_association_by_ids(db,current_user_id,room_id)
 
-        if room.owner_id != current_user_id:
-            raise UnauthorizedRoomActionException()
+        if not user_assoc:
+            raise HTTPException(
+                status_code=404,
+                detail=''
+            )
+
+        is_owner = (room.owner_id == current_user_id)
+        is_moderator = (user_assoc and user_assoc.role == Role.MODERATOR.value)
+
+        if not is_owner and not is_moderator:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="У вас недостаточно прав.")
+
         
         db_association = RoomTrackAssociationRepository.get_association_by_id(db,association_id)
         if not db_association or str(db_association.room_id) != str(room_id):
@@ -762,3 +811,108 @@ class RoomService:
 
 
     
+    @staticmethod
+    def update_member_role(
+        db: Session,
+        room_id: uuid.UUID,
+        target_user_id: uuid.UUID,
+        new_role: Role,
+        current_user: User,
+    ) -> RoomMemberResponse:
+        """
+        Изменяет роль члена комнаты. Только владелец комнаты может это делать.
+
+        Args:
+            db (Session): Сессия базы данных.
+            room_id (uuid.UUID): ID комнаты.
+            target_user_id (uuid.UUID): ID пользователя, чью роль нужно изменить.
+            new_role (str): Новая роль для пользователя.
+            current_user_id (uuid.UUID): ID текущего аутентифицированного пользователя (владельца).
+
+        Returns:
+            RoomMemberResponse: Обновленная информация о члене комнаты.
+
+        Raises:
+            HTTPException: Если комната не найдена, пользователь не авторизован,
+                           целевой пользователь не является членом комнаты,
+                           или роль недействительна.
+        """
+        room = RoomRepository.get_room_by_id(db, room_id)
+        if not room:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Комната не найдена.")
+
+
+        current_user_association = MemberRoomAssociationRepository.get_association_by_ids(
+            db, current_user.id, room_id
+        )
+        if not current_user_association or current_user_association.role != Role.OWNER.value:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="У вас нет прав для изменения ролей в этой комнате. Только владелец может это делать."
+            )
+        
+            
+        target_user_association = MemberRoomAssociationRepository.get_association_by_ids(
+            db, target_user_id, room_id
+        )
+        if not target_user_association:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Целевой пользователь не является членом этой комнаты."
+            )
+        
+        
+        if target_user_id == current_user.id and new_role != Role.OWNER:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Владелец не может изменить свою собственную роль на не-владельца напрямую через этот метод."
+            )
+            
+
+        if target_user_id == room.owner_id and new_role != Role.OWNER:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Нельзя разжаловать создателя комнаты."
+            )
+            
+
+        if target_user_association.role == new_role.value: 
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Пользователь уже имеет такую роль.'
+            )
+        
+        try:
+            updated_association = MemberRoomAssociationRepository.update_role(
+                db, target_user_id, room_id, new_role.value
+            )
+            
+            if not updated_association:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Не удалось обновить роль члена комнаты."
+                )
+
+            db.commit() 
+            
+            final_association_for_response = MemberRoomAssociationRepository.get_association_by_ids(
+                db, target_user_id, room_id
+            )
+
+            if not final_association_for_response:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Ошибка при формировании ответа после обновления роли."
+                )
+
+            return RoomService._map_member_to_response(final_association_for_response)
+
+        except HTTPException as e:
+            db.rollback()
+            raise e
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка сервера при изменении роли: {e}"
+            )
