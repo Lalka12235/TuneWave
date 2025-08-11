@@ -21,6 +21,7 @@ class Member_room_association(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True),ForeignKey('users.id'),nullable=False)
     room_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True),ForeignKey('rooms.id'),nullable=False)
+    role: Mapped[str] = mapped_column(nullable=False,default='member')
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),nullable=False,server_default=func.now())
 
     user: Mapped['User'] = relationship(back_populates='member_room')
