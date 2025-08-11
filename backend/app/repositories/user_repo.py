@@ -17,7 +17,9 @@ class UserRepository:
         Returns:
             User | None: Объект User, если найден, иначе None.
         """
-        stmt = select(User).where(User.id == user_id)
+        stmt = select(User).where(
+            User.id == user_id
+        )
         result = db.execute(stmt)
         return result.scalar_one_or_none()
 
