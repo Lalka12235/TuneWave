@@ -22,22 +22,12 @@ from app.exceptions.exception import (
     RoomNotFoundException,
     UnauthorizedRoomActionException
 )
-from enum import Enum
 from app.ws.connection_manager import manager
 import json
+from app.schemas.enum import ControlAction,Role
 
 
-class ControlAction(Enum):
-    PLAY = 'play'
-    PAUSE = 'pause'
-    SKIP = 'skip'
 
-
-class Role(Enum):
-    OWNER = 'owner'
-    MODERATOR = 'moderator'
-    MEMBER = 'member'
-    
 
 
 
