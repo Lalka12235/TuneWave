@@ -1,4 +1,4 @@
-from sqlalchemy import select,delete
+from sqlalchemy import select,delete,update
 from sqlalchemy.orm import Session,joinedload
 from app.models.member_room_association import Member_room_association
 from app.models.user import User
@@ -14,7 +14,7 @@ class MemberRoomAssociationRepository:
     """
 
     @staticmethod
-    def add_member(db: Session,user_id: uuid.UUID,room_id: uuid.UUID) -> Member_room_association:
+    def add_member(db: Session,user_id: uuid.UUID,room_id: uuid.UUID,role: str) -> Member_room_association:
         """
         Добавляет пользователя в комнату (создает запись о членстве).
         
@@ -29,6 +29,7 @@ class MemberRoomAssociationRepository:
         new_member_room = Member_room_association(
             user_id=user_id,
             room_id=room_id,
+            role=role,
         )
         db.add(new_member_room)
         return new_member_room
@@ -78,7 +79,7 @@ class MemberRoomAssociationRepository:
     
 
     @staticmethod
-    def get_members_by_room_id(db: Session, room_id: uuid.UUID) -> list[User]:
+    def get_members_by_room_id(db: Session, room_id: uuid.UUID) -> list[Member_room_association]:
         """
         Получает список объектов User, которые являются участниками данной комнаты.
         
@@ -89,8 +90,10 @@ class MemberRoomAssociationRepository:
         Returns:
             List[User]: Список объектов User, являющихся участниками комнаты.
         """
-        stmt = select(User).join(Member_room_association).where(
-            Member_room_association.room_id == room_id
+        stmt = select(Member_room_association).where(
+            Member_room_association.room_id == room_id,
+        ).options(
+            joinedload(Member_room_association.user)
         )
         result = db.execute(stmt)
         return result.scalars().all()
@@ -100,15 +103,13 @@ class MemberRoomAssociationRepository:
     def get_rooms_by_user_id(db: Session, user_id: uuid.UUID) -> list[Room]:
         """
         Получает список объектов Room, в которых состоит данный пользователь.
-        
-        Args:
+        /        Args:
             db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя.
             
         Returns:
             List[Room]: Список объектов Room, в которых состоит пользователь.
         """
-        # ДОБАВЛЕНО: Этот метод аналогичен get_members_by_room_id, но выбирает Room.
         stmt = select(Room).join(Member_room_association).filter(
             Member_room_association.user_id == user_id
         ).options(
@@ -118,3 +119,25 @@ class MemberRoomAssociationRepository:
         )
         result = db.execute(stmt)
         return result.unique().scalars().all()
+    
+
+    @staticmethod
+    def update_role(db: Session,room_id: uuid.UUID,user_id: uuid.UUID,role: str) -> Member_room_association | None:
+        """
+        Обновляет роль члена комнаты в базе данных.
+        
+        Args:
+            db (Session): Сессия базы данных SQLAlchemy.
+            user_id (uuid.UUID): ID пользователя, чью роль нужно обновить.
+            room_id (uuid.UUID): ID комнаты, в которой нужно обновить роль.
+            new_role (str): Новая роль для пользователя.
+            
+        Returns:
+            Member_room_association | None: Обновленный объект ассоциации, если найден и обновлен, иначе None.
+        """
+        stmt = update(Member_room_association).where(
+                Member_room_association.user_id == user_id,
+                Member_room_association.room_id == room_id,
+            ).values(role=role).returning(Member_room_association)
+        result = db.execute(stmt)
+        return result.scalar_one_or_none()
