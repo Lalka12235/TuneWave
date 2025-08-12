@@ -9,7 +9,7 @@ from app.schemas.room_schemas import (
 from app.schemas.user_schemas import UserResponse
 from app.schemas.room_member_schemas import RoomMemberResponse,RoomMemberRoleUpdate
 from app.schemas.room_member_schemas import JoinRoomRequest
-from typing import Annotated
+from typing import Annotated,Any
 from app.auth.auth import get_current_user
 from app.models.user import User
 from app.services.room_service import RoomService
@@ -17,7 +17,7 @@ from app.config.session import get_db
 from sqlalchemy.orm import Session
 import uuid
 from fastapi_limiter.depends import RateLimiter
-
+from app.schemas.ban_schemas import BanCreate,BanResponse,BanRemove
 
 room = APIRouter(
     tags=['Room'],
@@ -222,3 +222,65 @@ async def update_member_role(
         HTTPException: Если комната не найдена, у пользователя нет прав, или произошла ошибка.
     """
     return RoomService.update_member_role(db,room_id,target_user_id,new_role.role,user)
+
+
+@room.post(
+    '/{room_id}/members/{user_id}/ban',
+    response_model=BanResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
+)
+async def add_ban(
+    room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты, в которой нужно забанить пользователя (или игнорируется для глобального бана).")],
+    user_id: Annotated[uuid.UUID, Path(..., description="ID пользователя, которого нужно забанить.")],
+    ban_data: BanCreate,
+    db: db_dependencies,
+    user: user_dependencies
+) -> BanResponse:
+    """
+    Банит пользователя в конкретной комнате или глобально.
+    
+    Только владелец комнаты может банить в своей комнате. 
+    (Логика глобального бана пока не реализована на уровне прав, но путь есть)
+
+    Args:
+        room_id (uuid.UUID): ID комнаты.
+        target_user_id (uuid.UUID): ID пользователя, которого нужно забанить.
+        ban_data (BanCreate): Объект с данными бана (причина, room_id).
+        db (Session): Сессия базы данных.
+        current_user (User): Текущий аутентифицированный пользователь.
+
+    Returns:
+        BanResponse: Детали созданной записи о бане.
+    """
+    return await RoomService.ban_user_from_room(db,room_id,user_id,ban_data,user)
+
+
+@room.delete(
+    '/{room_id}/members/{user_id}/ban',
+    response_model=dict[str,Any],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
+)
+async def unban_user(
+    room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты, в которой нужно снять бан (или игнорируется для глобального разбана).")],
+    user_id: Annotated[uuid.UUID, Path(..., description="ID пользователя, с которого нужно снять бан.")],
+    db: db_dependencies,
+    current_user: user_dependencies,
+) -> dict[str, Any]:
+    """
+    Снимает бан с пользователя в конкретной комнате или глобально.
+
+    Только владелец комнаты может снимать баны в своей комнате. 
+    (Логика глобального разбана пока не реализована на уровне прав)
+
+    Args:
+        room_id (uuid.UUID): ID комнаты.
+        target_user_id (uuid.UUID): ID пользователя, с которого нужно снять бан.
+        db (Session): Сессия базы данных.
+        current_user (User): Текущий аутентифицированный пользователь.
+
+    Returns:
+        dict: Сообщение об успешном снятии бана.
+    """
+    return await RoomService.unban_user_from_room(db,room_id,user_id,current_user)
