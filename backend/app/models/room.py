@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.room_track_association import RoomTrackAssociationModel
     from app.models.member_room_association import Member_room_association
     from app.models.message import Message
+    from app.models.ban import Ban
 
 class Room(Base):
     __tablename__ = 'rooms'
@@ -33,3 +34,4 @@ class Room(Base):
     room_track: Mapped[list['RoomTrackAssociationModel']] = relationship(back_populates='room')
     member_room: Mapped[list['Member_room_association']] = relationship(back_populates='room')
     message: Mapped[list['Message']] = relationship(back_populates='room')
+    banned: Mapped['Ban'] = relationship(back_populates='room')
