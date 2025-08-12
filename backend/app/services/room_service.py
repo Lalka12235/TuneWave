@@ -25,6 +25,9 @@ from app.exceptions.exception import (
 from app.ws.connection_manager import manager
 import json
 from app.schemas.enum import ControlAction,Role
+from app.repositories.ban_repo import BanRepository
+from app.services.ban_service import BanService
+from app.schemas.ban_schemas import BanResponse,BanCreate,BanRemove
 
 
 
@@ -311,6 +314,19 @@ class RoomService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Комната не найдена."
+            )
+        global_ban = BanRepository.is_user_banned_global(db, user.id)
+        if global_ban:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="Вы забанены на платформе."
+            )
+
+        local_ban = BanRepository.is_user_banned_local(db, user.id, room_id)
+        if local_ban:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="Вы забанены в этой комнате."
             )
         
         existing_association = MemberRoomAssociationRepository.get_association_by_ids(db, user.id, room_id)
@@ -905,4 +921,285 @@ class RoomService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка сервера при изменении роли: {e}"
+            )
+        
+
+    @staticmethod
+    async def kick_member_from_room(db: Session,room_id: uuid.UUID,user_id: uuid.UUID,current_user: User) -> dict[str,Any]:
+        """
+        Удаляет указанного пользователя из комнаты. 🚪
+
+        Эту операцию могут выполнять только владелец или модератор комнаты.
+        Модераторы не могут кикать владельцев или других модераторов.
+        Пользователь не может кикнуть самого себя.
+
+        Args:
+            db (Session): Сессия базы данных SQLAlchemy.
+            room_id (uuid.UUID): Уникальный ID комнаты, из которой нужно удалить пользователя.
+            user_id (uuid.UUID): Уникальный ID пользователя, которого нужно кикнуть.
+            current_user (User): Объект текущего аутентифицированного пользователя,
+                                который пытается выполнить действие (должен быть владельцем или модератором).
+
+        Returns:
+            dict[str, Any]: Словарь с подтверждением успешного удаления пользователя.
+
+        Raises:
+            HTTPException (404 NOT FOUND): Если комната не найдена, или целевой пользователь не является членом комнаты.
+            HTTPException (403 FORBIDDEN): Если у текущего пользователя недостаточно прав (он не владелец/модератор),
+                                        или модератор пытается кикнуть владельца/другого модератора,
+                                        или пытаются кикнуть владельца комнаты.
+            HTTPException (400 BAD REQUEST): Если пользователь пытается кикнуть самого себя.
+            HTTPException (500 INTERNAL SERVER ERROR): При внутренних ошибках сервера во время операции.
+        """
+        room = RoomRepository.get_room_by_id(db, room_id)
+        if not room:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Комната не найдена.")
+
+
+        current_user_association = MemberRoomAssociationRepository.get_association_by_ids(
+            db, current_user.id, room_id
+        )
+        if not current_user_association or current_user_association.role not in [Role.OWNER.value, Role.MODERATOR.value]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="У вас нет прав для изменения ролей в этой комнате. Только владелец и модератор может это делать."
+            )
+        
+        
+        target_user_association = MemberRoomAssociationRepository.get_association_by_ids(
+            db, user_id, room_id
+        )
+        if not target_user_association: 
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Пользователь, которого вы пытаетесь кикнуть, не найден в этой комнате."
+        )
+        if current_user.id == user_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail='Нельзя кикнуть себя'
+        )
+        if user_id == room.owner_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Владельца нельяза кикнуть из комнаты."
+        )
+        
+        
+        if current_user_association.role == Role.MODERATOR.value:
+            if target_user_association.role == Role.MODERATOR.value:
+                raise HTTPException(
+                    status_code=403,
+                    detail='Нельзя кикнуть модератора'
+                )
+            elif target_user_association.role == Role.OWNER.value:
+                raise HTTPException(
+                    status_code=403,
+                    detail='Нельзя кикнуть Владельца'
+                )
+            
+        
+        try:
+            update_message = {
+                'action': 'kick member',
+                'user_id': user_id,
+                'room_id': room_id,
+            }
+            MemberRoomAssociationRepository.remove_member(db,user_id,room_id)
+            db.commit()
+            await manager.broadcast(room_id,json.dumps(update_message))
+            return {
+                'action': 'kick member',
+                'status': 'success',
+                'user_id': user_id,
+                'room_id': room_id,
+            }
+            
+        except HTTPException as e:
+            db.rollback()
+            raise e
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка сервера при кике пользователя: {e}"
+            )
+
+
+    @staticmethod
+    async def ban_user_from_room(
+        db: Session,
+        room_id: uuid.UUID,
+        target_user_id: uuid.UUID,
+        ban_data: BanCreate,
+        current_user: User, 
+    ) -> BanResponse:
+        """
+        Банит пользователя в конкретной комнате или глобально.
+        Только владелец комнаты может банить других пользователей.
+        Модераторы НЕ могут банить.
+
+        Args:
+            db (Session): Сессия базы данных.
+            room_id (uuid.UUID): ID комнаты.
+            target_user_id (uuid.UUID): ID пользователя, которого нужно забанить.
+            ban_data (BanCreate): Данные для бана (причина, room_id).
+            current_user (User): Текущий аутентифицированный пользователь, выполняющий действие.
+            manager (Any): Экземпляр ConnectionManager для WebSocket-уведомлений.
+
+        Returns:
+            BanResponse: Объект BanResponse, представляющий созданный бан.
+
+        Raises:
+            HTTPException: Если комната не найдена, недостаточно прав,
+                           целевой пользователь не найден, пользователь уже забанен,
+                           или произошла внутренняя ошибка.
+        """
+        try:
+            room = RoomRepository.get_room_by_id(db, room_id)
+            if not room:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Комната не найдена.")
+
+            current_user_assoc = MemberRoomAssociationRepository.get_association_by_ids(
+                db, current_user.id, room_id
+            )
+            if not current_user_assoc or current_user_assoc.role != Role.OWNER.value:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="У вас нет прав для бана пользователей в этой комнате. Только владелец может банить."
+                )
+            
+            
+            if current_user.id == target_user_id:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Вы не можете забанить самого себя.")
+
+
+            existing_global_ban = BanRepository.is_user_banned_global(db, target_user_id)
+            if existing_global_ban:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь уже забанен глобально.")
+            
+            existing_local_ban = BanRepository.is_user_banned_local(db, target_user_id, room_id)
+            if existing_local_ban:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Пользователь уже забанен в этой комнате.")
+
+            existing_member_association = MemberRoomAssociationRepository.get_association_by_ids(db, target_user_id, room_id)
+            if existing_member_association:
+                removed_from_room = MemberRoomAssociationRepository.remove_member(db, target_user_id, room_id)
+                if not removed_from_room:
+                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось подготовить пользователя к бану.")
+                db.flush()
+
+            new_ban_entry = BanRepository.add_ban(
+                db=db,
+                ban_user_id=target_user_id,
+                room_id=room_id,
+                reason=ban_data.reason,
+                by_ban_user_id=current_user.id
+            )
+
+            db.commit()
+            db.refresh(new_ban_entry)
+
+
+            ban_notification = {
+                "action": "ban",
+                "room_id": str(room_id),
+                "user_id": str(target_user_id),
+                "banned_by": str(current_user.id),
+                "reason": ban_data.reason if ban_data.reason else "не указана",
+                "detail": f"Пользователь {target_user_id} был забанен в комнате."
+            }
+            await manager.broadcast(room_id, json.dumps(ban_notification))
+            
+            
+            return BanService._map_ban_to_response(new_ban_entry)
+
+        except HTTPException as e:
+            db.rollback()
+            raise e
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Не удалось забанить пользователя из-за внутренней ошибки сервера."
+            )
+
+    @staticmethod
+    async def unban_user_from_room(
+        db: Session,
+        room_id: uuid.UUID,
+        target_user_id: uuid.UUID,
+        current_user: User,
+    ) -> dict[str, Any]:
+        """
+        Снимает бан с пользователя в конкретной комнате.
+        Только владелец комнаты может снимать баны.
+
+        Args:
+            db (Session): Сессия базы данных.
+            room_id (uuid.UUID): ID комнаты.
+            target_user_id (uuid.UUID): ID пользователя, с которого нужно снять бан.
+            current_user (User): Текущий аутентифицированный пользователь, выполняющий действие.
+            manager (Any): Экземпляр ConnectionManager для WebSocket-уведомлений.
+
+        Returns:
+            dict[str, Any]: Сообщение об успешном снятии бана.
+
+        Raises:
+            HTTPException: Если комната не найдена, недостаточно прав,
+                           пользователь не забанен, или произошла внутренняя ошибка.
+        """
+        room = RoomRepository.get_room_by_id(db, room_id)
+        if not room:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Комната не найдена.")
+
+        current_user_assoc = MemberRoomAssociationRepository.get_association_by_ids(
+            db, current_user.id, room_id
+        )
+        if not current_user_assoc or current_user_assoc.role != Role.OWNER.value:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="У вас нет прав для снятия банов в этой комнате. Только владелец может снимать баны."
+            )
+        
+        if current_user.id == target_user_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Вы не можете снять бан с самого себя.")
+
+
+        existing_ban_to_unban = BanRepository.is_user_banned_local(db, target_user_id, room_id)
+        if not existing_ban_to_unban:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Пользователь не забанен в этой комнате."
+            )
+        try:
+            unbanned_successfully = BanRepository.remove_ban_local(db, target_user_id, room_id)
+            
+            if not unbanned_successfully:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось снять бан из-за внутренней ошибки сервера.")
+            
+            db.commit()
+
+            unban_notification = {
+                "action": "unban",
+                "room_id": str(room_id),
+                "user_id": str(target_user_id),
+                "unbanned_by": str(current_user.id),
+                "detail": f"Бан пользователя {target_user_id} в комнате снят."
+            }
+            await manager.broadcast(room_id, json.dumps(unban_notification))
+
+            return {
+                "status": "success",
+                "detail": f"Бан с пользователя {target_user_id} в комнате {room_id} успешно снят."
+            }
+
+        except HTTPException as e:
+            db.rollback()
+            raise e
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Не удалось снять бан из-за внутренней ошибки сервера."
             )
