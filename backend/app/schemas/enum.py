@@ -11,3 +11,8 @@ class Role(Enum):
     MODERATOR = 'moderator'
     MEMBER = 'member'
     
+
+class FriendshipStatus(Enum):
+    PENDING = 'pending'
+    ACCEPTED = 'accepted'
+    DECLINED = 'declined'
