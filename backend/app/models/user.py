@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.member_room_association import Member_room_association
     from app.models.message import Message
     from app.models.ban import Ban
+    from backend.app.models.friendship import Friendship
 
 
 class User(Base):
@@ -41,4 +42,21 @@ class User(Base):
     room_track: Mapped[list['RoomTrackAssociationModel']] = relationship(back_populates='user')
     member_room: Mapped[list['Member_room_association']] = relationship(back_populates='user')
     message: Mapped[list['Message']] = relationship(back_populates='user')
-    banned: Mapped['Ban'] = relationship(back_populates='user')
+    bans_issued: Mapped[list["Ban"]] = relationship(
+        back_populates="banned_by_user",
+        foreign_keys="[Ban.by_ban_user_id]"
+    )
+    bans_received: Mapped[list["Ban"]] = relationship(
+        back_populates="banned_user",
+        foreign_keys="[Ban.ban_user_id]"
+    )
+    sent_friend_requests: Mapped[list["Friendship"]] = relationship(
+        foreign_keys="[Friendship.requester_id]",
+        back_populates="requester"
+    )
+    
+    # Запросы на дружбу, которые пользователь ПОЛУЧИЛ
+    received_friend_requests: Mapped[list["Friendship"]] = relationship(
+        foreign_keys="[Friendship.accepter_id]",
+        back_populates="accepter"
+    )

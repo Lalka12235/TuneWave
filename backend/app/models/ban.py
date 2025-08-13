@@ -20,5 +20,13 @@ class Ban(Base):
     ban_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), nullable=False)
     by_ban_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('users.id'), nullable=False)
 
-    user: Mapped['User'] = relationship(back_populates='banned')
+    banned_user: Mapped["User"] = relationship(
+        foreign_keys=[ban_user_id],
+        back_populates="bans_received"
+    )
+    
+    banned_by_user: Mapped["User"] = relationship(
+        foreign_keys=[by_ban_user_id],
+        back_populates="bans_issued" 
+    )
     room: Mapped['Room'] = relationship(back_populates='banned')

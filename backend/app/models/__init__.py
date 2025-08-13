@@ -7,7 +7,8 @@ __all__ = (
     'FavoriteTrack',
     'RoomTrackAssociationModel',
     'Message',
-    'Ban'
+    'Ban',
+    'Friendship'
 )
 
 from app.models.base import Base
@@ -19,3 +20,4 @@ from app.models.favorite_track import FavoriteTrack
 from app.models.room_track_association import RoomTrackAssociationModel
 from app.models.message import Message
 from app.models.ban import Ban
+from app.models.friendship import Friendship
