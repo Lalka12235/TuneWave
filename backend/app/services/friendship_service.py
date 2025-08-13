@@ -297,6 +297,7 @@ class FriendshipService:
                 detail='Запись о дружбе не найдена'
             )
         
+        
         if current_user_id not in [friendship.requester_id, friendship.accepter_id]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
