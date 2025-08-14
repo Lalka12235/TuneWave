@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.message import Message
     from app.models.ban import Ban
     from backend.app.models.friendship import Friendship
+    from app.models.notification import Notification
 
 
 class User(Base):
@@ -55,8 +56,17 @@ class User(Base):
         back_populates="requester"
     )
     
-    # Запросы на дружбу, которые пользователь ПОЛУЧИЛ
+    
     received_friend_requests: Mapped[list["Friendship"]] = relationship(
         foreign_keys="[Friendship.accepter_id]",
         back_populates="accepter"
+    )
+
+    notifications_received: Mapped[list["Notification"]] = relationship(
+    foreign_keys="[Notification.user_id]",
+    back_populates="user"
+    )
+    notifications_sent: Mapped[list["Notification"]]  = relationship(
+        foreign_keys="[Notification.sender_id]",
+        back_populates="sender"
     )

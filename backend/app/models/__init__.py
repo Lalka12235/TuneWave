@@ -8,7 +8,8 @@ __all__ = (
     'RoomTrackAssociationModel',
     'Message',
     'Ban',
-    'Friendship'
+    'Friendship',
+    'Notification'
 )
 
 from app.models.base import Base
@@ -21,3 +22,4 @@ from app.models.room_track_association import RoomTrackAssociationModel
 from app.models.message import Message
 from app.models.ban import Ban
 from app.models.friendship import Friendship
+from app.models.notification import Notification

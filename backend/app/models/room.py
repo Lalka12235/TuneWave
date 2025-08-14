@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.member_room_association import Member_room_association
     from app.models.message import Message
     from app.models.ban import Ban
+    from app.models.notification import Notification
 
 class Room(Base):
     __tablename__ = 'rooms'
@@ -35,3 +36,7 @@ class Room(Base):
     member_room: Mapped[list['Member_room_association']] = relationship(back_populates='room')
     message: Mapped[list['Message']] = relationship(back_populates='room')
     banned: Mapped['Ban'] = relationship(back_populates='room')
+
+    notifications: Mapped[list["Notification"]] = relationship(
+        back_populates="room"
+    )   
