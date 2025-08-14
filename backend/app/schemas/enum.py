@@ -16,3 +16,13 @@ class FriendshipStatus(Enum):
     PENDING = 'pending'
     ACCEPTED = 'accepted'
     DECLINED = 'declined'
+
+
+class NotificationType(Enum):
+    FRIEND_REQUEST = "friend_request"
+    FRIEND_ACCEPTED = "friend_accepted"
+    FRIEND_DECLINED = "friend_declined"
+    FRIENDSHIP_DELETED = "friendship_deleted"
+    MESSAGE = "message"
+    SYSTEM_MESSAGE = "system_message"
+    ROOM_INVITE = "room_invite"
