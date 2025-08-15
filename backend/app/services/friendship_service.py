@@ -1,7 +1,7 @@
 from fastapi import HTTPException,status
 from app.repositories.friendship_repo import FriendshipRepository
 from app.schemas.enum import FriendshipStatus
-from app.schemas.friendship_schemas import FriendshipRequestCreate,FriendshipResponse,FriendshipUpdateStatus
+from app.schemas.friendship_schemas import FriendshipResponse
 from sqlalchemy.orm import Session
 import uuid
 from typing import Any
@@ -10,6 +10,8 @@ import json
 from app.ws.connection_manager import manager
 from datetime import datetime
 from app.repositories.user_repo import UserRepository
+from app.services.notification_service import NotificationService
+from app.models.notification import NotificationType
 
 class FriendshipService:
 
@@ -142,6 +144,14 @@ class FriendshipService:
             friendship = FriendshipRepository.add_friend_requet(db,requester_id,accepter_id)
             db.commit()
             db.refresh(friendship)
+            NotificationService.add_notification(
+                db=db,
+                user_id=accepter_id,
+                notification_type=NotificationType.FRIEND_REQUEST,
+                message=f"Вам пришел новый запрос на дружбу от {req_user.username}.",
+                sender_id=requester_id,
+                related_object_id=friendship.id 
+            )
             await manager.send_personal_message(json.dumps(notification_data), str(accepter_id))
             return FriendshipService._map_friendship_to_response(friendship)
         except HTTPException as e:
@@ -191,8 +201,6 @@ class FriendshipService:
             )
 
         try:
-            
-            
             updated_friendship = FriendshipRepository.update_friendship_status(db,friendship_id,FriendshipStatus.ACCEPTED,datetime.utcnow())
             db.commit()
             db.refresh(updated_friendship)
@@ -203,7 +211,33 @@ class FriendshipService:
                 "accepter_username": updated_friendship.accepter.username,
                 "detail": f"Ваш запрос на дружбу к {updated_friendship.accepter.username} принят. Вы теперь друзья!"
             }
+            NotificationService.add_notification(
+                db=db,
+                user_id=updated_friendship.requester_id,
+                notification_type=NotificationType.FRIEND_ACCEPTED,
+                message=f"{updated_friendship.accepter.username} принял(а) ваш запрос на дружбу.",
+                sender_id=current_accepter_id, # Тот, кто принял
+                related_object_id=updated_friendship.id
+            )
+            NotificationService.add_notification(
+                db=db,
+                user_id=current_accepter_id,
+                notification_type=NotificationType.FRIEND_ACCEPTED,
+                message=f"Вы приняли запрос на дружбу от {updated_friendship.requester.username}. Теперь вы друзья!",
+                sender_id=updated_friendship.requester_id, # Тот, кто отправил
+                related_object_id=updated_friendship.id
+            )
+            notification_data_accepter = {
+                "action": "friend_request_accepted",
+                "friendship_id": str(updated_friendship.id),
+                "requester_id": str(updated_friendship.requester_id),
+                "requester_username": updated_friendship.requester.username,
+                "detail": f"Вы приняли запрос на дружбу от {updated_friendship.requester.username}. Вы теперь друзья!"
+            }
+
+            await manager.send_personal_message(json.dumps(notification_data_accepter), str(current_accepter_id))
             await manager.send_personal_message(json.dumps(notification_data_requester), str(updated_friendship.requester_id))
+            
             return FriendshipService._map_friendship_to_response(updated_friendship)
         except HTTPException as e:
             db.rollback()
@@ -262,6 +296,14 @@ class FriendshipService:
                 "accepter_username": updated_friendship.accepter.username,
                 "detail": f"Ваш запрос на дружбу к {updated_friendship.accepter.username} отклонен."
             }
+            NotificationService.add_notification(
+                db=db,
+                user_id=updated_friendship.requester_id, # Уведомление для отправителя запроса
+                notification_type=NotificationType.FRIEND_DECLINED, # Тип уведомления
+                message=f"{updated_friendship.accepter.username} отклонил(а) ваш запрос на дружбу.",
+                sender_id=current_accepter_id, # Тот, кто отклонил
+                related_object_id=updated_friendship.id
+            )
             await manager.send_personal_message(json.dumps(notification_data_requester), str(updated_friendship.requester_id))
             return FriendshipService._map_friendship_to_response(updated_friendship)
         except HTTPException as e:
@@ -312,6 +354,23 @@ class FriendshipService:
                     detail="Не удалось удалить запись о дружбе из-за внутренней ошибки сервера."
                 )
             db.commit()
+            other_user_id = None
+            if friendship.requester_id == current_user_id:
+                other_user_id = friendship.accepter_id
+                notification_message = f"{friendship.requester.username} удалил(а) запись о вашей дружбе."
+            else: # current_user_id == friendship.accepter_id
+                other_user_id = friendship.requester_id
+                notification_message = f"{friendship.accepter.username} удалил(а) запись о вашей дружбе."
+            
+            if other_user_id:
+                await NotificationService.add_notification(
+                    db=db,
+                    user_id=other_user_id, # Уведомление для "другой" стороны
+                    notification_type=NotificationType.FRIENDSHIP_DELETED, # Новый тип уведомления
+                    message=notification_message,
+                    sender_id=current_user_id, # Тот, кто удалил
+                    related_object_id=friendship.id # ID записи о дружбе
+                )
             target_user_id_for_notification = str(friendship.requester_id) if friendship.accepter_id == current_user_id else str(friendship.accepter_id)
 
             notification_data = {
