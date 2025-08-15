@@ -284,3 +284,33 @@ async def unban_user(
         dict: Сообщение об успешном снятии бана.
     """
     return await RoomService.unban_user_from_room(db,room_id,user_id,current_user)
+
+
+
+@room.post(
+    '/{room_id}/invite/{invited_user_id}',
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
+)
+async def send_room_invite(
+    room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты, куда нужно пригласить.")],
+    invited_user_id: Annotated[uuid.UUID, Path(..., description="ID пользователя, которого нужно пригласить.")],
+    db: db_dependencies,
+    current_user: user_dependencies,
+) -> dict[str, str]:
+    """
+    Отправляет приглашение указанному пользователю присоединиться к комнате.
+    Только владелец или модератор комнаты может отправлять приглашения.
+
+    Args:
+        room_id (uuid.UUID): ID комнаты, куда приглашают.
+        invited_user_id (uuid.UUID): ID пользователя, которого приглашают.
+        db (Session): Сессия базы данных.
+        current_user (User): Текущий аутентифицированный пользователь (отправитель приглашения).
+
+    Returns:
+        dict[str, str]: Сообщение об успешной отправке приглашения.
+    """
+    return await RoomService.send_room_invite(
+        db, room_id, current_user.id, invited_user_id
+    )
