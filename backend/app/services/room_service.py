@@ -24,10 +24,14 @@ from app.exceptions.exception import (
 )
 from app.ws.connection_manager import manager
 import json
-from app.schemas.enum import ControlAction,Role
+from app.schemas.enum import ControlAction,Role,NotificationType
 from app.repositories.ban_repo import BanRepository
 from app.services.ban_service import BanService
-from app.schemas.ban_schemas import BanResponse,BanCreate,BanRemove
+from app.schemas.ban_schemas import BanResponse,BanCreate
+from app.services.notification_service import NotificationService
+from app.schemas.notification_schemas import NotificationResponse
+from app.repositories.user_repo import UserRepository
+
 
 
 
@@ -1202,4 +1206,105 @@ class RoomService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось снять бан из-за внутренней ошибки сервера."
+            )
+        
+    
+    @staticmethod
+    async def send_room_invite(
+        db: Session,
+        room_id: uuid.UUID,
+        inviter_id: uuid.UUID,
+        invited_user_id: uuid.UUID,
+    ) -> dict[str,str]:
+        """
+        Отправляет приглашение в комнату указанному пользователю.
+
+        Args:
+            db (Session): Сессия базы данных SQLAlchemy.
+            room_id (uuid.UUID): ID комнаты, куда приглашают.
+            inviter_id (uuid.UUID): ID пользователя, который отправляет приглашение.
+            invited_user_id (uuid.UUID): ID пользователя, которого приглашают.
+
+        Returns:
+            dict[str, str]: Сообщение об успешной отправке приглашения.
+
+        Raises:
+            HTTPException: Если комната/пользователи не найдены, права недостаточны,
+                           или приглашение невозможно отправить по другим причинам.
+        """
+        room = RoomRepository.get_room_by_id(db,room_id)
+        if not room:
+            raise HTTPException(
+                status_code=404,
+                detail='Комната не найдена'
+            )
+        inviter = UserRepository.get_user_by_id(db,inviter_id)
+        if not inviter:
+            raise HTTPException(
+                status_code=404,
+                detail='Приглашающий пользователь не найден'
+            )
+        
+        invited = UserRepository.get_user_by_id(db,invited_user_id)
+        if not invited:
+            raise HTTPException(
+                status_code=404,
+                detail='Приглашаемый пользователь не найден'
+            )
+        
+        if inviter_id == invited_user_id:
+            raise HTTPException(
+                status_code=400,
+                detail='Вы не можете пригласить самого себя в комнату.'
+            )
+        
+        inviter_membership = MemberRoomAssociationRepository.get_member_room_association(db, room_id, inviter_id)
+        if not inviter_membership or inviter_membership.role not in [Role.OWNER, Role.MODERATOR]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='У вас нет прав для приглашения пользователей в эту комнату. Только владельцы и модераторы могут это делать.'
+            )
+
+        invited_member_in_room = MemberRoomAssociationRepository.get_member_room_association(db, room_id, invited_user_id)
+        if invited_member_in_room:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Пользователь уже является участником этой комнаты.'
+            )
+            
+        have_banned = BanRepository.is_user_banned_local(db,invited_user_id,room_id)
+        if have_banned:
+            raise HTTPException(
+                status_code=403,
+                detail='Пользователь забанен в этой комнате'
+            )
+        
+        try:
+            NotificationService.add_notification(
+                db,
+                invited_user_id,
+                NotificationType.ROOM_INVITE,
+                message=f"{inviter.username} приглашает вас в комнату {room.name}.",
+                inviter_id=inviter_id,
+                room_id=room_id,
+                related_object_id=room_id
+            )
+            ws_message = {
+                'action': 'room_invite_received',
+                'room_id': str(room_id),
+                'room_name': room.name,
+                'inviter_id': str(inviter_id),
+                'inviter_username': inviter.username,
+                'detail': f"Вы получили приглашение в комнату {room.name} от {inviter.username}."
+            }
+            await manager.send_personal_message(json.dumps(ws_message),invited_user_id)
+            return {"status": "success", "detail": "Приглашение отправлено."}
+        except HTTPException as e:
+            db.rollback()
+            raise e
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Не удалось создать уведомление из-за внутренней ошибки сервера."
             )
