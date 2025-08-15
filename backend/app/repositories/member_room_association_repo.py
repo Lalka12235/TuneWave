@@ -1,7 +1,6 @@
-from sqlalchemy import select,delete,update
+from sqlalchemy import select,delete,update,and_
 from sqlalchemy.orm import Session,joinedload
 from app.models.member_room_association import Member_room_association
-from app.models.user import User
 from app.models.room import Room
 import uuid
 from app.models.room_track_association import RoomTrackAssociationModel
@@ -141,3 +140,31 @@ class MemberRoomAssociationRepository:
             ).values(role=role).returning(Member_room_association)
         result = db.execute(stmt)
         return result.scalar_one_or_none()
+    
+
+    @staticmethod
+    def get_member_room_association(db: Session, room_id: uuid.UUID, user_id: uuid.UUID) -> Member_room_association | None:
+        """
+        Получает запись об участии пользователя в конкретной комнате.
+        Загружает отношения user и room.
+
+        Args:
+            db (Session): Сессия базы данных SQLAlchemy.
+            room_id (uuid.UUID): ID комнаты.
+            user_id (uuid.UUID): ID пользователя.
+
+        Returns:
+            Optional[Member_room_association]: Объект ассоциации, если найден, иначе None.
+        """
+        
+        stmt = select(Member_room_association).options(
+           joinedload(Member_room_association.user),
+           joinedload(Member_room_association.room)
+        ).where(
+           and_(
+               Member_room_association.room_id == room_id,
+               Member_room_association.user_id == user_id
+           )
+        )
+        result = db.execute(stmt)
+        return result.scalars().first()
