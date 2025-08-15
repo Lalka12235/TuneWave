@@ -10,6 +10,7 @@ from app.utils.jwt import decode_access_token
 from jwt import exceptions
 from app.utils.email import send_email
 import os
+from app.repositories.ban_repo import BanRepository
 
 class UserService:
 
@@ -289,6 +290,13 @@ class UserService:
         if not user:
             user = UserRepository.get_user_by_google_id(db, google_data.google_id)
 
+        global_ban = BanRepository.is_user_banned_global(db,user.id)
+        if global_ban:
+            raise HTTPException(
+                status_code=403,
+                detail="Ваш аккаунт заблокирован. Свяжитесь с поддержкой для получения дополнительной информации."
+            )
+
         if user:
             update_data = {
                 'google_access_token': google_data.google_access_token,
@@ -367,6 +375,13 @@ class UserService:
         user = UserRepository.get_user_by_email(db,spotify_data.email)
         if not user:
             user = UserRepository.get_user_by_spotify_id(db,spotify_data.spotify_id)
+
+        global_ban = BanRepository.is_user_banned_global(db,user.id)
+        if global_ban:
+            raise HTTPException(
+                status_code=403,
+                detail="Ваш аккаунт заблокирован. Свяжитесь с поддержкой для получения дополнительной информации."
+            )
 
         if user:
             update_data = {}
