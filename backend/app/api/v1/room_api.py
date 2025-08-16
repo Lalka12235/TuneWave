@@ -4,11 +4,11 @@ from app.schemas.room_schemas import (
     RoomUpdate, 
     RoomResponse,
     TrackInQueueResponse,
-    AddTrackToQueueRequest
+    AddTrackToQueueRequest,
+    InviteResponse
 )
 from app.schemas.user_schemas import UserResponse
-from app.schemas.room_member_schemas import RoomMemberResponse,RoomMemberRoleUpdate
-from app.schemas.room_member_schemas import JoinRoomRequest
+from app.schemas.room_member_schemas import RoomMemberResponse,RoomMemberRoleUpdate,JoinRoomRequest
 from typing import Annotated,Any
 from app.auth.auth import get_current_user
 from app.models.user import User
@@ -313,4 +313,32 @@ async def send_room_invite(
     """
     return await RoomService.send_room_invite(
         db, room_id, current_user.id, invited_user_id
+    )
+
+
+@room.put(
+    '/{notification_id}/respond-to-invite',
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
+)
+async def respond_to_room_invite(
+    notification_id: Annotated[uuid.UUID, Path(..., description="ID уведомления-приглашения, на которое нужно ответить.")],
+    response_data: InviteResponse,
+    db: db_dependencies,
+    current_user: user_dependencies,
+) -> dict[str, str]:
+    """
+    Отвечает на приглашение в комнату (принимает или отклоняет).
+
+    Args:
+        notification_id (uuid.UUID): ID уведомления о приглашении.
+        response_data (InviteResponse): Данные ответа, содержащие 'action' ("accept" или "decline").
+        db (Session): Сессия базы данных.
+        current_user (User): Текущий аутентифицированный пользователь (который отвечает на приглашение).
+
+    Returns:
+        dict[str, str]: Сообщение о результате операции.
+    """
+    return await RoomService.handle_room_invite_response(
+        db, notification_id, current_user.id, response_data.action
     )
