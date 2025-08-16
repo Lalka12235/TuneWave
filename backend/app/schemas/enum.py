@@ -26,3 +26,5 @@ class NotificationType(Enum):
     MESSAGE = "message"
     SYSTEM_MESSAGE = "system_message"
     ROOM_INVITE = "room_invite"
+    ACCPET = 'accept'
+    DECLINE = 'decline'
