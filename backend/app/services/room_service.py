@@ -29,6 +29,7 @@ from app.repositories.ban_repo import BanRepository
 from app.services.ban_service import BanService
 from app.schemas.ban_schemas import BanResponse,BanCreate
 from app.services.notification_service import NotificationService
+from app.repositories.notification_repo import NotificationRepository
 from app.schemas.notification_schemas import NotificationResponse
 from app.repositories.user_repo import UserRepository
 
@@ -1307,4 +1308,153 @@ class RoomService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось создать уведомление из-за внутренней ошибки сервера."
+            )
+
+
+    @staticmethod
+    async def handle_room_invite_response(
+        db: Session,
+        notification_id: uuid.UUID,
+        current_user_id: uuid.UUID,
+        action: NotificationType,
+    ) -> NotificationResponse:
+        """
+        Обрабатывает ответ пользователя на приглашение в комнату (принять или отклонить).
+
+        Args:
+            db (Session): Сессия базы данных SQLAlchemy.
+            notification_id (uuid.UUID): ID уведомления о приглашении.
+            current_user_id (uuid.UUID): ID текущего пользователя, который отвечает на приглашение.
+            action (str): Действие пользователя ("accept" для принятия, "decline" для отклонения).
+
+        Returns:
+            dict[str, str]: Сообщение о результате операции.
+
+        Raises:
+            HTTPException: Если уведомление не найдено, у пользователя нет прав,
+                           уведомление не является приглашением, или возникла другая ошибка.
+        """
+        notification = NotificationRepository.get_notification_by_id(db,notification_id)
+        if not notification:
+            raise HTTPException(
+                status_code=404,
+                detail='Уведомление не найдено'
+            )
+        
+        if not notification.user_id == current_user_id:
+            raise HTTPException(
+                status_code=403,
+                detail='Это уведомление принадлежит не вам'
+            )
+        
+        if not notification.notification_type != NotificationType.ROOM_INVITE:
+            raise HTTPException(
+                status_code=400,
+                detail='Это уведомление не является приглашением в комнату.'
+            )
+        
+        if not notification.is_read:
+            raise HTTPException(
+                status_code=400,
+                detail='Это приглашение уже было обработано.'
+            )
+        
+        room_id = notification.room_id
+        inviter_id = notification.sender_id
+        invited_user_id = notification.user_id 
+
+        try:
+            room = RoomRepository.get_room_by_id(db, room_id)
+            if not room:
+                NotificationService.mark_notification_as_read(db, notification_id, current_user_id)
+                db.commit() 
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail='Комната, в которую вас пригласили, не найдена или удалена.'
+                )
+            
+            inviter = UserRepository.get_user_by_id(db, inviter_id) if inviter_id else None
+            invited_user = UserRepository.get_user_by_id(db, invited_user_id)
+
+
+            if action == "accept":
+                invited_member_in_room = MemberRoomAssociationRepository.get_member_room_association(db, room_id, invited_user_id)
+                if invited_member_in_room:
+                    NotificationService.mark_notification_as_read(db, notification_id, current_user_id) # Помечаем как прочитанное
+                    db.commit() 
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail='Вы уже являетесь участником этой комнаты.'
+                    )
+                
+                is_banned_local = BanRepository.is_user_banned_local(db, invited_user_id, room_id)
+                if is_banned_local:
+                    NotificationService.mark_notification_as_read(db, notification_id, current_user_id) # Помечаем как прочитанное
+                    db.commit() 
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail='Вы забанены в этой комнате и не можете присоединиться.'
+                    )
+                
+                new_member_association = MemberRoomAssociationRepository.add_member(
+                    db, invited_user_id,room_id,Role.MEMBER 
+                )
+                
+                NotificationService.mark_notification_as_read(db, notification_id, current_user_id)
+
+                db.commit()
+                db.refresh(new_member_association)
+
+                join_message = {
+                    "action": "user_joined_room",
+                    "room_id": str(room_id),
+                    "user_id": str(invited_user_id),
+                    "username": invited_user.username,
+                    "detail": f"{invited_user.username} присоединился(ась) к комнате."
+                }
+                await manager.broadcast(room_id, json.dumps(join_message))
+
+                if inviter:
+                    NotificationService.add_notification(
+                        db=db,
+                        user_id=inviter_id,
+                        notification_type=NotificationType.SYSTEM_MESSAGE, 
+                        message=f"{invited_user.username} принял(а) ваше приглашение в комнату {room.name}.",
+                        sender_id=invited_user_id, 
+                        room_id=room_id,
+                        related_object_id=room_id
+                    )
+                
+                return {"status": "success", "detail": "Вы успешно присоединились к комнате."}
+
+            elif action == "decline":
+                NotificationService.mark_notification_as_read(db, notification_id, current_user_id)
+                db.commit()
+
+                if inviter:
+                    await NotificationService.add_notification(
+                        db=db,
+                        user_id=inviter_id,
+                        notification_type=NotificationType.SYSTEM_MESSAGE, 
+                        message=f"{invited_user.username} отклонил(а) ваше приглашение в комнату {room.name}.",
+                        sender_id=invited_user_id,
+                        room_id=room_id,
+                        related_object_id=room_id
+                    )
+                return {"status": "success", "detail": "Приглашение отклонено."}
+
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Недопустимое действие. Действие должно быть "accept" или "decline".'
+                )
+
+        except HTTPException as e:
+            db.rollback()
+            raise e
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Не удалось обработать приглашение из-за внутренней ошибки сервера."
             )
