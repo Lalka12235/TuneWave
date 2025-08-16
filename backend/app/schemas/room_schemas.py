@@ -80,3 +80,7 @@ class RoomMemberResponse(BaseModel):
     username: str
     
     model_config = ConfigDict(from_attributes=True)
+
+
+class InviteResponse(BaseModel):
+    action: str = Field(..., description='Действие: "accept" для принятия, "decline" для отклонения.')

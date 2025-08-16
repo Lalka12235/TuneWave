@@ -24,3 +24,5 @@ class NotificationResponse(BaseModel):
     created_at: datetime = Field(..., description="Дата и время создания уведомления.")
 
     model_config = ConfigDict(from_attributes=True)
+
+
