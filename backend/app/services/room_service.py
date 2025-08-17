@@ -22,7 +22,7 @@ from app.exceptions.exception import (
     RoomNotFoundException,
     UnauthorizedRoomActionException
 )
-from app.ws.connection_manager import manager
+from app.ws.connection_manager import manager,GLOBAL_ROOM_ID
 import json
 from app.schemas.enum import ControlAction,Role,NotificationType
 from app.repositories.ban_repo import BanRepository
@@ -138,7 +138,7 @@ class RoomService:
     
 
     @staticmethod
-    def create_room(db: Session,room_data: RoomCreate,owner: User) -> RoomResponse:
+    async def create_room(db: Session,room_data: RoomCreate,owner: User) -> RoomResponse:
         """
         Создает новую комнату.
         Включает проверку уникальности имени и хэширование пароля.
@@ -180,6 +180,14 @@ class RoomService:
             )
             db.commit()
             db.refresh(new_room)
+
+            room_response = RoomService._map_room_to_response(new_room)
+            websocket_message = {
+            "action": "room_created",
+            "room_data": room_response.model_dump_json()
+            }
+            await manager.broadcast(GLOBAL_ROOM_ID,websocket_message)
+
             return RoomService._map_room_to_response(new_room)
         except Exception as e:
             db.rollback()
@@ -297,7 +305,7 @@ class RoomService:
         return verify_pass(password, room.password_hash)
     
     @staticmethod
-    def join_room(db: Session,user: User,room_id: uuid.UUID,password: str | None = None) -> RoomResponse:
+    async def join_room(db: Session,user: User,room_id: uuid.UUID,password: str | None = None) -> RoomResponse:
         """
         Пользователь присоединяется к комнате.
         
@@ -360,6 +368,23 @@ class RoomService:
             db.commit()
             db.refresh(new_association)
 
+            websocket_message_for_room = {
+            "action": "join_room",
+            "room_id": room.id,
+            'user_id': user.id,
+            'username': user.username,
+            'detail': f'{user.username} присоелинился к комнате'
+            }
+            websocket_message_for_user = {
+            "action": "join_room",
+            "room_id": room.id,
+            'user_id': user.id,
+            'username': user.username,
+            'detail': f'Вы присоединились к комнате {room.name}'
+            }
+            await manager.send_personal_message(json.dumps(websocket_message_for_user),user.id)
+            await manager.broadcast(room_id,json.dumps(websocket_message_for_room))
+
             return RoomService._map_room_to_response(room)
         except Exception as e:
             db.rollback()
@@ -369,7 +394,7 @@ class RoomService:
             )
 
     @staticmethod
-    def leave_room(db: Session, room_id: uuid.UUID, user: User) -> dict[str, Any]:
+    async def leave_room(db: Session, room_id: uuid.UUID, user: User) -> dict[str, Any]:
         """
         Пользователь покидает комнату.
         
@@ -394,6 +419,23 @@ class RoomService:
             deleted_successfully = MemberRoomAssociationRepository.remove_member(db,user.id,room_id)
 
             db.commit()
+
+            websocket_message_for_room = {
+            "action": "join_room",
+            "room_id": room_id,
+            'user_id': user.id,
+            'username': user.username,
+            'detail': f'{user.username} вышел из комнате'
+            }
+            websocket_message_for_user = {
+            "action": "join_room",
+            "room_id": room_id,
+            'user_id': user.id,
+            'username': user.username,
+            'detail': f'Вы вышли из комнате{existing_association.room.name}'
+            }
+            await manager.send_personal_message(json.dumps(websocket_message_for_user),user.id)
+            await manager.broadcast(room_id,json.dumps(websocket_message_for_room))
 
             if deleted_successfully:
                 return {
@@ -823,7 +865,7 @@ class RoomService:
 
     
     @staticmethod
-    def update_member_role(
+    async def update_member_role(
         db: Session,
         room_id: uuid.UUID,
         target_user_id: uuid.UUID,
@@ -909,12 +951,30 @@ class RoomService:
             final_association_for_response = MemberRoomAssociationRepository.get_association_by_ids(
                 db, target_user_id, room_id
             )
-
             if not final_association_for_response:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Ошибка при формировании ответа после обновления роли."
                 )
+            
+            role_message_for_room = {
+                'room_id': room_id,
+                'username': target_user_association.user.username,
+                'new_role': target_user_association.role,
+                'moderator_id': current_user.id,
+                'moderator_username': current_user.username,
+                'detail': f'У пользователя {target_user_association.user.username} была обновлена роль до {target_user_association.role}'
+            }
+            role_message_for_user = {
+                'room_id': room_id,
+                'username': target_user_association.user.username,
+                'new_role': target_user_association.role,
+                'moderator_id': current_user.id,
+                'moderator_username': current_user.username,
+                'detail': f'У вас была обновлена роль до {new_role.value}'
+            }
+            await manager.send_personal_message(json.dumps(role_message_for_user))
+            await manager.broadcast(room_id,json.dumps(role_message_for_room))
 
             return RoomService._map_member_to_response(final_association_for_response)
 
@@ -1005,14 +1065,27 @@ class RoomService:
             
         
         try:
-            update_message = {
-                'action': 'kick member',
-                'user_id': user_id,
+            kick_message_for_room = {
+                'action': 'you_weke_kicked',
+                'kicked_user_id': user_id,
+                'kicked_username': target_user_association.user.username,
                 'room_id': room_id,
+                'moderator_id': current_user.id,
+                'detail': f'Пользователь {target_user_association.user.username} был кикнут из комнаты.'
+            }
+            kick_message_for_user = {
+                'action': 'user_kicked_from_room',
+                'kicked_user_id': user_id,
+                'kicked_username': target_user_association.user.username,
+                'room_id': room_id,
+                'moderator_id': current_user.id,
+                'detail': f'Вы были кикнуты из комнаты {room.name}'
             }
             MemberRoomAssociationRepository.remove_member(db,user_id,room_id)
             db.commit()
-            await manager.broadcast(room_id,json.dumps(update_message))
+            
+            await manager.send_personal_message(json.dumps(kick_message_for_user),user_id)
+            await manager.broadcast(room_id,json.dumps(kick_message_for_room))
             return {
                 'action': 'kick member',
                 'status': 'success',
@@ -1106,7 +1179,7 @@ class RoomService:
             db.refresh(new_ban_entry)
 
 
-            ban_notification = {
+            ban_notification_for_room = {
                 "action": "ban",
                 "room_id": str(room_id),
                 "user_id": str(target_user_id),
@@ -1114,7 +1187,16 @@ class RoomService:
                 "reason": ban_data.reason if ban_data.reason else "не указана",
                 "detail": f"Пользователь {target_user_id} был забанен в комнате."
             }
-            await manager.broadcast(room_id, json.dumps(ban_notification))
+            ban_notification_for_user = {
+                "action": "ban",
+                "room_id": str(room_id),
+                "user_id": str(target_user_id),
+                "banned_by": str(current_user.id),
+                "reason": ban_data.reason if ban_data.reason else "не указана",
+                "detail": f"Вы были забанены в комнате {room.name}."
+            }
+            await manager.send_personal_message(json.dumps(ban_notification_for_user),target_user_id)
+            await manager.broadcast(room_id, json.dumps(ban_notification_for_room))
             
             
             return BanService._map_ban_to_response(new_ban_entry)
@@ -1185,14 +1267,22 @@ class RoomService:
             
             db.commit()
 
-            unban_notification = {
+            unban_notification_for_room = {
                 "action": "unban",
                 "room_id": str(room_id),
                 "user_id": str(target_user_id),
                 "unbanned_by": str(current_user.id),
                 "detail": f"Бан пользователя {target_user_id} в комнате снят."
             }
-            await manager.broadcast(room_id, json.dumps(unban_notification))
+            unban_notification_for_user = {
+                "action": "unban",
+                "room_id": str(room_id),
+                "user_id": str(target_user_id),
+                "unbanned_by": str(current_user.id),
+                "detail": f"Ваш бан в комнате{room.name} снят."
+            }
+            await manager.send_personal_message(json.dumps(unban_notification_for_user),target_user_id)
+            await manager.broadcast(room_id, json.dumps(unban_notification_for_room))
 
             return {
                 "status": "success",
@@ -1405,14 +1495,14 @@ class RoomService:
                 db.commit()
                 db.refresh(new_member_association)
 
-                join_message = {
+                websocket_message = {
                     "action": "user_joined_room",
                     "room_id": str(room_id),
                     "user_id": str(invited_user_id),
                     "username": invited_user.username,
                     "detail": f"{invited_user.username} присоединился(ась) к комнате."
                 }
-                await manager.broadcast(room_id, json.dumps(join_message))
+                await manager.broadcast(room_id, json.dumps(websocket_message))
 
                 if inviter:
                     NotificationService.add_notification(
