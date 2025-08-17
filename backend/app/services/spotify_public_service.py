@@ -3,9 +3,14 @@ import httpx
 from fastapi import HTTPException, status
 import time
 from typing import Any
+from app.schemas.spotify_schemas import SpotifyPlaylistsSearchPaging,SpotifyTrackDetails,SpotifyPlaylistTracksPaging
 
 
 class SpotifyPublicService:
+    """
+    Сервис для взаимодействия с публичным Spotify API (без авторизации пользователя),
+    используя Client Credentials Flow.
+    """
 
     SPOTIFY_API_BASE_URL = 'https://api.spotify.com/v1'
     SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/api/token'
@@ -87,7 +92,7 @@ class SpotifyPublicService:
         
     async def search_public_track(self,query: str, limit: int = 10) -> dict[str,Any]:
         """
-        Ищет треки на Spotify.
+        Ищет треки на Spotify (публичный поиск).
         """
         await self._get_access_token_client()
         return await self._make_spotify_request(
@@ -98,7 +103,7 @@ class SpotifyPublicService:
     
     async def search_track_by_spotify_id(self,spotify_id: str) -> dict[str, Any]:
         """
-        Ищет треки на Spotify по Spotify ID
+        Получает детальную информацию о треке по его Spotify ID (публичный доступ).
         """
         await self._get_access_token_client()
         return await self._make_spotify_request(
@@ -106,3 +111,50 @@ class SpotifyPublicService:
             '/tracks',
             params={'q':spotify_id,'type':'track'}
         )
+    
+    async def search_public_playlists(self,query: str, limit: int = 10) -> list[SpotifyPlaylistsSearchPaging]:
+        """
+        Ищет плейлисты на Spotify по названию (публичный поиск).
+        Возвращает объект SpotifyPlaylistsSearchPaging, содержащий пагинацию и список плейлистов.
+        """
+        response_data = await self._make_spotify_request(
+            'GET',
+            '/search',
+            params={'q':query,'type':'playlist','limit': limit}
+        )
+        if 'playlists' in response_data:
+            return SpotifyPlaylistsSearchPaging.model_validate(response_data['playlists'])
+    
+
+    
+    async def get_public_playlist_tracks(self, playlist_id: str) -> list[SpotifyTrackDetails]:
+        """
+        Получает все воспроизводимые треки из указанного плейлиста Spotify (публичный доступ).
+        Обрабатывает пагинацию и возвращает список объектов SpotifyTrackDetails.
+        """
+        all_tracks: list[SpotifyTrackDetails] = []
+        offset = 0
+        limit = 50 
+
+        while True:
+            response_data = await self._make_spotify_request(
+                'GET',
+                f'/playlists/{playlist_id}/tracks',
+                params={'limit': limit, 'offset': offset}
+            )
+            
+            tracks_page = SpotifyPlaylistTracksPaging.model_validate(response_data)
+            
+            for item in tracks_page.items:
+                if item.track and item.track.is_playable: 
+                    all_tracks.append(item.track)
+            
+           
+            if tracks_page.next:
+                offset += limit
+            else:
+                break 
+
+        return all_tracks
+        
+        
