@@ -1,6 +1,8 @@
 from fastapi import WebSocket
 import uuid
 
+GLOBAL_ROOM_ID = uuid.UUID('00000000-0000-0000-0000-000000000000')
+
 
 class ConnectionManager:
     def __init__(self):
