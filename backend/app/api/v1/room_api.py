@@ -40,7 +40,7 @@ async def create_room(
     Создает новую комнату.
     Требуется аутентификация. Владелец комнаты будет текущим аутентифицированным пользователем.
     """
-    return RoomService.create_room(db, room_data, current_user)
+    return await RoomService.create_room(db, room_data, current_user)
 
 
 @room.put("/{room_id}", response_model=RoomResponse,dependencies=[Depends(RateLimiter(times=10, seconds=60))])
@@ -80,7 +80,7 @@ async def join_room(
     Пользователь присоединяется к комнате.
     Требуется аутентификация. Если комната приватная, требуется пароль.
     """
-    return RoomService.join_room(db,current_user,room_id,request_data.password)
+    return await RoomService.join_room(db,current_user,room_id,request_data.password)
 
 
 @room.post('/{room_id}/leave',status_code=status.HTTP_200_OK)
@@ -93,7 +93,7 @@ async def leave_room(
     Пользователь покидает комнату.
     Требуется аутентификация.
     """
-    return RoomService.leave_room(db,room_id,current_user)
+    return await RoomService.leave_room(db,room_id,current_user)
 
 
 @room.get('/{room_id}/members',response_model=list[UserResponse],dependencies=[Depends(RateLimiter(times=10, seconds=60))])
@@ -221,7 +221,7 @@ async def update_member_role(
     Raises:
         HTTPException: Если комната не найдена, у пользователя нет прав, или произошла ошибка.
     """
-    return RoomService.update_member_role(db,room_id,target_user_id,new_role.role,user)
+    return await RoomService.update_member_role(db,room_id,target_user_id,new_role.role,user)
 
 
 @room.post(
