@@ -6,9 +6,14 @@ from typing import Any
 import httpx
 from app.config.settings import settings
 from app.services.spotify_public_service import SpotifyPublicService
+from app.schemas.spotify_schemas import SpotifyPlaylistsSearchPaging,SpotifyTrackDetails,SpotifyPlaylistTracksPaging
 
 
 class SpotifyService:
+    """
+    Сервис для взаимодействия со Spotify API, используя как пользовательскую авторизацию,
+    так и публичные возможности через SpotifyPublicService.
+    """
 
     SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
     SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com/api"
@@ -260,3 +265,47 @@ class SpotifyService:
             '/tracks',
             params={'q':spotify_id,'type':'track'}
         )
+    
+    async def search_playlists(self,query: str, limit: int = 10) -> list[SpotifyPlaylistsSearchPaging]:
+        """
+        Ищет плейлисты на Spotify по названию
+        Возвращает объект SpotifyPlaylistsSearchPaging, содержащий пагинацию и список плейлистов.
+        """
+        response_data = await self._make_spotify_request(
+            'GET',
+            '/search',
+            params={'q':query,'type':'playlist','limit': limit}
+        )
+        if 'playlists' in response_data:
+            return SpotifyPlaylistsSearchPaging.model_validate(response_data['playlists'])
+    
+
+    async def get_playlist_tracks(self, playlist_id: str) -> list[SpotifyTrackDetails]:
+        """
+        Получает все воспроизводимые треки из указанного плейлиста Spotify.
+        Обрабатывает пагинацию и возвращает список объектов SpotifyTrackDetails.
+        """
+        all_tracks: list[SpotifyTrackDetails] = []
+        offset = 0
+        limit = 50 
+
+        while True:
+            response_data = await self._make_spotify_request(
+                'GET',
+                f'/playlists/{playlist_id}/tracks',
+                params={'limit': limit, 'offset': offset}
+            )
+            
+            tracks_page = SpotifyPlaylistTracksPaging.model_validate(response_data)
+            
+            for item in tracks_page.items:
+                if item.track and item.track.is_playable: 
+                    all_tracks.append(item.track)
+            
+           
+            if tracks_page.next:
+                offset += limit
+            else:
+                break 
+
+        return all_tracks
