@@ -13,12 +13,16 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 class RoomTrackAssociationModel(Base):
+    """
+    Модель, представляющая трек в очереди воспроизведения конкретной комнаты.
+    Каждая запись - это один трек в очереди с его порядком и статусом.
+    """
     __tablename__ = 'room_track_associations'
 
     
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('rooms.id'), nullable=False)
-    track_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('tracks.id'), nullable=False)
+    room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('rooms.id',ondelete="CASCADE"), nullable=False)
+    track_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('tracks.id',ondelete="CASCADE"), nullable=False)
     order_in_queue: Mapped[int] = mapped_column(nullable=False)
     added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     added_by_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
