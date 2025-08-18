@@ -1,5 +1,5 @@
 from sqlalchemy import select,delete,func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session,joinedload
 from app.models.room_track_association import RoomTrackAssociationModel
 import uuid
 
@@ -32,7 +32,10 @@ class RoomTrackAssociationRepository:
         """Получает все треки, находящиеся в очереди данной комнаты, отсортированные по порядку."""
         stmt = select(RoomTrackAssociationModel).where(
             RoomTrackAssociationModel.room_id == room_id,
-        ).order_by(RoomTrackAssociationModel.order_in_queue)
+        ).order_by(RoomTrackAssociationModel.order_in_queue).options(
+                joinedload(RoomTrackAssociationModel.track),
+                joinedload(RoomTrackAssociationModel.added_by_user_id)
+            )
         return db.execute(stmt).scalars().all()
     
 
@@ -62,7 +65,10 @@ class RoomTrackAssociationRepository:
         """Получает ассоциацию трека с комнатой по её ID."""
         stmt = select(RoomTrackAssociationModel).where(
             RoomTrackAssociationModel.id == association_id
-        )
+        ).options(
+                joinedload(RoomTrackAssociationModel.track),
+                joinedload(RoomTrackAssociationModel.added_by_user)
+            )
         return db.execute(stmt).scalars().first()
 
 
@@ -82,7 +88,10 @@ class RoomTrackAssociationRepository:
         stmt = select(RoomTrackAssociationModel).where(
             RoomTrackAssociationModel.room_id == room_id,
             RoomTrackAssociationModel.track_id == track_id,
-        )
+        ).options(
+                joinedload(RoomTrackAssociationModel.track),
+                joinedload(RoomTrackAssociationModel.added_by_user)
+            )
         return db.execute(stmt).scalars().first()
     
 
@@ -99,5 +108,8 @@ class RoomTrackAssociationRepository:
         """
         stmt = select(RoomTrackAssociationModel).where(
             RoomTrackAssociationModel.room_id == room_id,
-        ).order_by(RoomTrackAssociationModel.order_in_queue.asc())
+        ).order_by(RoomTrackAssociationModel.order_in_queue.asc()).options(
+                joinedload(RoomTrackAssociationModel.track),
+                joinedload(RoomTrackAssociationModel.added_by_user_id)
+            ).limit(1)
         return db.execute(stmt).scalars().first()

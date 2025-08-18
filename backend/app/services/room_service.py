@@ -559,8 +559,8 @@ class RoomService:
                         "track_id": str(assoc.track_id),
                         "order": assoc.order_in_queue,
                         "title": assoc.track.title,
-                        "artist": assoc.track.artist,
-                        "album_art_url": assoc.track.album
+                        "artist": assoc.track.artist_names,
+                        "album_art_url": assoc.track.album_name
                     } for assoc in updated_queue
                 ]
             }
@@ -656,8 +656,8 @@ class RoomService:
                         "track_id": str(assoc.track_id),
                         "order": assoc.order_in_queue,
                         "title": assoc.track.title,
-                        "artist": assoc.track.artist,
-                        "album_art_url": assoc.track.album
+                        "artist": assoc.track.artist_names,
+                        "album_art_url": assoc.track.album_name
                     } for assoc in updated_queue
                 ]
             }
@@ -749,8 +749,8 @@ class RoomService:
                         "track_id": str(assoc.track_id),
                         "order": assoc.order_in_queue,
                         "title": assoc.track.title,
-                        "artist": assoc.track.artist,
-                        "album_art_url": assoc.track.album
+                        "artist": assoc.track.artist_names,
+                        "album_art_url": assoc.track.album_name
                     } for assoc in updated_queue
                 ]
             }
