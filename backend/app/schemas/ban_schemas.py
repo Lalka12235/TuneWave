@@ -1,7 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
 import uuid
-from app.schemas.user_schemas import UserResponse 
-from app.schemas.room_schemas import RoomResponse
 from datetime import datetime
 
 

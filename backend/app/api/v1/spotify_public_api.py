@@ -1,7 +1,6 @@
 from fastapi import APIRouter,Query
 from typing import Annotated,Any
 from app.services.spotify_public_service import SpotifyPublicService
-from fastapi_limiter.depends import RateLimiter
 
 
 spotify_public = APIRouter(

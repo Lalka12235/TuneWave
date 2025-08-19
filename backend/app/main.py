@@ -15,7 +15,6 @@ from app.logger.log_config import configure_logging
 from app.services.scheduler_service import SchedulerService
 from contextlib import asynccontextmanager
 from fastapi_limiter import FastAPILimiter
-from fastapi_limiter.depends import RateLimiter
 import redis.asyncio as redis
 from app.config.settings import settings
 import os

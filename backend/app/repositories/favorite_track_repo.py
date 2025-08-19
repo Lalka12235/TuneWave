@@ -1,7 +1,6 @@
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session,joinedload
 from app.models.favorite_track import FavoriteTrack
-from app.models.track import Track
 import uuid
 
 

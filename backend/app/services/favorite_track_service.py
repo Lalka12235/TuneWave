@@ -136,14 +136,14 @@ class FavoriteTrackService:
             db.refresh(new_favorite_track)
             return FavoriteTrackService._map_favorite_track_to_response(new_favorite_track)
 
-        except HTTPException as e:
+        except HTTPException:
             db.rollback()
             raise 
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Не удалось добавить любимый трек из-за внутренней ошибки сервера."
+                detail="Не удалось добавить любимый трек из-за внутренней ошибки сервера."
             )
     
     @staticmethod
@@ -195,9 +195,9 @@ class FavoriteTrackService:
         except HTTPException as e:
             db.rollback()
             raise e
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Не удалось удалить любимый трек из-за внутренней ошибки сервера."
+                detail="Не удалось удалить любимый трек из-за внутренней ошибки сервера."
             )

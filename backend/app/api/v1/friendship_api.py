@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy.orm import Session
 from app.config.session import get_db
 from app.auth.auth import get_current_user
-from typing import Annotated,Any
+from typing import Annotated
 from app.models.user import User
 from app.services.friendship_service import FriendshipService,FriendshipRequestCreate
 from fastapi_limiter.depends import RateLimiter

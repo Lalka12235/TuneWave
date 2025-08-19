@@ -1,8 +1,7 @@
 from fastapi import APIRouter,Depends,status
 from app.schemas.ban_schemas import BanResponse
 from app.services.ban_service import BanService
-import uuid
-from typing import Annotated,Any
+from typing import Annotated
 from app.auth.auth import get_current_user
 from app.models.user import User
 from app.config.session import get_db

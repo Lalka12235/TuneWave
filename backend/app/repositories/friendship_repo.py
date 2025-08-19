@@ -1,4 +1,4 @@
-from sqlalchemy import select,delete,func,or_,and_,update
+from sqlalchemy import select,delete,or_,and_,update
 from sqlalchemy.orm import Session,joinedload
 from backend.app.models.friendship import Friendship
 import uuid
@@ -128,7 +128,7 @@ class FriendshipRepository:
         Returns:
             List[Friendship]: Список объектов Friendship со статусом PENDING.
         """
-        stmt = select(Friendship).where(
+        select(Friendship).where(
             Friendship.status == FriendshipStatus.PENDING,
             Friendship.accepter_id == accepter_id,
         ).options(

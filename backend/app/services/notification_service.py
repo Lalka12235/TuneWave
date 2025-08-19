@@ -96,7 +96,7 @@ class NotificationService:
         except HTTPException as e:
             db.rollback()
             raise e
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -134,7 +134,7 @@ class NotificationService:
         except HTTPException as e:
             db.rollback()
             raise e
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -170,7 +170,7 @@ class NotificationService:
         except HTTPException as e:
             db.rollback()
             raise e
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -17,7 +17,7 @@ from app.config.session import get_db
 from sqlalchemy.orm import Session
 import uuid
 from fastapi_limiter.depends import RateLimiter
-from app.schemas.ban_schemas import BanCreate,BanResponse,BanRemove
+from app.schemas.ban_schemas import BanCreate,BanResponse
 
 room = APIRouter(
     tags=['Room'],

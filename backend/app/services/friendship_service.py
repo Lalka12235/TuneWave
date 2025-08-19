@@ -4,7 +4,6 @@ from app.schemas.enum import FriendshipStatus
 from app.schemas.friendship_schemas import FriendshipResponse
 from sqlalchemy.orm import Session
 import uuid
-from typing import Any
 from backend.app.models.friendship import Friendship
 import json
 from app.ws.connection_manager import manager
@@ -157,7 +156,7 @@ class FriendshipService:
         except HTTPException as e:
             db.rollback()
             raise e
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise HTTPException(
                 status_code=500,
@@ -242,7 +241,7 @@ class FriendshipService:
         except HTTPException as e:
             db.rollback()
             raise e
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise HTTPException(
                 status_code=500,
@@ -309,7 +308,7 @@ class FriendshipService:
         except HTTPException as e:
             db.rollback()
             raise e
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise HTTPException(
                 status_code=500,
@@ -387,7 +386,7 @@ class FriendshipService:
         except HTTPException as e:
             db.rollback()
             raise e
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise HTTPException(
                 status_code=500,

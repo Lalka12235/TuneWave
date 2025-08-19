@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect,Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.ws.connection_manager import manager,GLOBAL_ROOM_ID
 import uuid
 
@@ -21,7 +21,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: uuid.UUID,user_id: u
         manager.disconnect(GLOBAL_ROOM_ID, user_id, websocket)
         if room_id != GLOBAL_ROOM_ID:
             manager.disconnect(room_id, user_id, websocket)
-    except Exception as e:
+    except Exception:
         manager.disconnect(GLOBAL_ROOM_ID, user_id, websocket)
         if room_id != GLOBAL_ROOM_ID:
             manager.disconnect(room_id, user_id, websocket)
