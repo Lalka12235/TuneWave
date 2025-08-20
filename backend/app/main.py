@@ -11,6 +11,10 @@ from app.api.v1.track_api import track
 from app.api.v1.ws_chat_api import chat_ws
 from app.api.v1.chat_api import chat
 from app.api.v1.favorite_track_api import ft
+from app.api.v1.friendship_api import friendship
+from app.api.v1.ban_api import ban
+from app.api.v1.notification_api import notification
+from app.api.v1.ws_api import ws
 from app.logger.log_config import configure_logging
 from app.services.scheduler_service import SchedulerService
 from contextlib import asynccontextmanager
@@ -90,11 +94,14 @@ app.include_router(auth)
 app.include_router(user)
 app.include_router(room)
 app.include_router(spotify)
-#app.include_router(ws)
+app.include_router(ws)
 app.include_router(spotify_public)
 app.include_router(track)
 app.include_router(chat_ws)
 app.include_router(chat)
 app.include_router(ft)
+app.include_router(ban)
+app.include_router(friendship)
+app.include_router(notification)
 
 app.mount("/avatars", StaticFiles(directory=settings.AVATARS_STORAGE_DIR), name="avatars")
