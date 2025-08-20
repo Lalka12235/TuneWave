@@ -32,6 +32,8 @@ from app.services.notification_service import NotificationService
 from app.repositories.notification_repo import NotificationRepository
 from app.schemas.notification_schemas import NotificationResponse
 from app.repositories.user_repo import UserRepository
+from app.logger.log_config import logger
+from app.schemas.spotify_schemas import SpotifyTrackDetails
 
 
 
@@ -762,105 +764,90 @@ class RoomService:
     
 
     @staticmethod
-    async def control_player(db: Session, room_id: uuid.UUID, action: str, current_user: User):
+    async def set_playback_host(db: Session, room_id: uuid.UUID, user_id: uuid.UUID) -> RoomResponse:
         """
-        Отправляет команды управления плеером Spotify и оповещает клиентов через WebSocket.
+        Назначает пользователя хостом воспроизведения для комнаты.
+        Пользователь должен быть членом комнаты и иметь авторизацию Spotify с активным устройством.
         """
-        room = RoomRepository.get_room_by_id(db, room_id)
-        if not room:
-            raise RoomNotFoundException()
-        
-        if room.owner_id != current_user.id:
-            raise UnauthorizedRoomActionException()
-        
-        if not current_user.spotify_access_token:
-            raise HTTPException(
-                status_code=401,
-                detail='Пользователь не авторизован в Spotify.'
-            )
-        
-        spotify = SpotifyService(db, current_user)
-        
-        device_id = await spotify._get_device_id(current_user.spotify_access_token)
-        if not device_id:
-            raise HTTPException(
-                status_code=400,
-                detail='Активное устройство Spotify не найдено.'
-            )
+        pass
 
-        try:
-            if action == ControlAction.PLAY.value:
-                if not room.current_track_id:
-                    first_track_in_queue = RoomTrackAssociationRepository.get_first_track_in_queue(db, room_id)
-                    if first_track_in_queue:
-                        room.current_track_id = first_track_in_queue.track_id
-                        room.is_playing = True
-                    else:
-                        raise ValueError("В очереди нет треков для воспроизведения.")
-                
-                if room.current_track_id:
-                    track = room.current_track
-                    if track:
-                        await spotify.play(
-                            track_uri=track.spotify_uri,
-                            device_id=device_id
-                        )
-                    else:
-                        raise ValueError("Трек не найден в базе данных.")
-                
-                db.commit()
+    @staticmethod
+    async def clear_playback_host(db: Session, room_id: uuid.UUID) -> RoomResponse:
+        """
+        Очищает хоста воспроизведения для комнаты и сбрасывает состояние плеера.
+        """
+        pass
 
-            elif action == ControlAction.PAUSE.value:
-                await spotify.pause(current_user.spotify_access_token,device_id=device_id)
-                room.is_playing = False
-                
-                db.commit()
+    @staticmethod
+    async def update_room_playback_state(
+        db: Session, 
+        room_id: uuid.UUID, 
+        current_playing_track_assoc_id: uuid.UUID | None, 
+        progress_ms: int, 
+        is_playing: bool
+    ) -> RoomResponse:
+        """
+        Обновляет состояние воспроизведения в полях комнаты. 
+        Используется, например, планировщиком или при получении состояния плеера от хоста.
+        """
+        pass
 
-            elif action == ControlAction.SKIP.value:
-                await spotify.skip(current_user.spotify_access_token,device_id=device_id)
-                
-                if room.current_track_id:
-                    current_association_to_remove = RoomTrackAssociationRepository.get_association_by_room_and_track(
-                        db, 
-                        room_id=room_id,
-                        track_id=room.current_track_id
-                    )
-                    if current_association_to_remove:
-                        RoomTrackAssociationRepository.remove_track_from_queue_by_association_id(
-                            db, 
-                            association_id=current_association_to_remove.id
-                        )
-                        RoomService._reorder_queue(db, room_id)
-                
-                room.current_track_id = None
-                room.is_playing = False
-                
-                db.commit()
+    @staticmethod
+    async def player_command_play(
+        db: Session,
+        room_id: uuid.UUID,
+        current_user: User,
+        track_uri: str| None = None,
+        position_ms: int = 0
+    ) -> dict[str, Any]:
+        """
+        Отправляет команду "PLAY" на Spotify плеер комнаты через хоста воспроизведения.
+        """
+        pass
 
-            else:
-                raise ValueError(f"Неизвестное действие: {action}")
+    @staticmethod
+    async def player_command_pause(
+        db: Session,
+        room_id: uuid.UUID,
+        current_user: User
+    ) -> dict[str, Any]:
+        """
+        Отправляет команду "PAUSE" на Spotify плеер комнаты через хоста воспроизведения.
+        """
+        pass
 
-            update_message = {
-                "action": action,
-                "is_playing": room.is_playing,
-                "current_track_id": str(room.current_track_id) if room.current_track_id else None
-            }
-            await manager.broadcast(room_id, json.dumps(update_message))
+    @staticmethod
+    async def player_command_skip_next(
+        db: Session,
+        room_id: uuid.UUID,
+        current_user: User
+    ) -> dict[str, Any]:
+        """
+        Отправляет команду "SKIP NEXT" на Spotify плеер комнаты через хоста воспроизведения.
+        """
+        pass
 
-        except HTTPException as e:
-            db.rollback()
-            raise HTTPException(
-                status_code=e.status_code,
-                detail=f"Ошибка Spotify: {e.detail}"
-            )
-        except Exception as e:
-            db.rollback()
-            raise HTTPException(
-                status_code=500,
-                detail=f"Внутренняя ошибка сервера: {e}"
-            )
-        
-        return {"detail": f"Команда '{action}' успешно выполнена."}
+    @staticmethod
+    async def player_command_skip_previous(
+        db: Session,
+        room_id: uuid.UUID,
+        current_user: User
+    ) -> dict[str, Any]:
+        """
+        Отправляет команду "SKIP PREVIOUS" на Spotify плеер комнаты через хоста воспроизведения.
+        """
+        pass
+
+    @staticmethod
+    async def get_room_player_state(
+        db: Session, 
+        room_id: uuid.UUID, 
+        current_user: User
+    ) -> dict[str, Any]:
+        """
+        Получает текущее состояние Spotify плеера для комнаты.
+        """
+        pass
 
 
     
