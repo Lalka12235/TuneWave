@@ -29,3 +29,6 @@ def configure_logging(level=logging.INFO, log_file_prefix='app'):
     root_logger.handlers.clear()
     
     root_logger.addHandler(file_handler)
+    global logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(level)
