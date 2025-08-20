@@ -3,6 +3,7 @@ import smtplib
 from app.config.settings import settings
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from app.logger.log_config import logger
 
 
 async def send_email(
@@ -35,7 +36,8 @@ async def send_email(
         server.send_message(msg)
         server.quit()
     except smtplib.SMTPException as e:
+        logger.error(f'Не получилось отправить сообщение на почту {reciepint_email}.{e}')
         raise HTTPException(
             status_code=500,
-            detail=f'Ошибка отправки email.{e}'
+            detail=f'Ошибка отправки email.'
         )

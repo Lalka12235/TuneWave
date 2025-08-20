@@ -3,6 +3,7 @@ from jwt.exceptions import InvalidTokenError, ExpiredSignatureError
 from app.config.settings import settings
 from fastapi import HTTPException, status 
 from datetime import datetime, timedelta, timezone
+from app.logger.log_config import logging
 
 
 def create_access_token(
@@ -68,7 +69,8 @@ def decode_access_token(token: str) -> dict:
             detail="Invalid token"
         )
     except Exception as e:
+        logging.error(f'Could not validate credentials: {e}')
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Could not validate credentials: {e}"
+            detail=f"Could not validate credentials"
         )
