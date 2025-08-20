@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Depends,status,Path,Query
+from fastapi import APIRouter,Depends,status,Path,Query,Body
 from app.schemas.room_schemas import (
     RoomCreate, 
     RoomUpdate, 
@@ -342,3 +342,80 @@ async def respond_to_room_invite(
     return await RoomService.handle_room_invite_response(
         db, notification_id, current_user.id, response_data.action
     )
+
+
+
+@room.put("/{room_id}/playback-host", status_code=status.HTTP_200_OK, response_model=dict[str, Any])
+async def set_room_playback_host(
+    room_id: uuid.UUID,
+    user_id_to_set_as_host: uuid.UUID = Body(..., embed=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> dict[str, Any]:
+    """
+    Назначает указанного пользователя хостом воспроизведения для комнаты.
+    Только владелец или модератор могут назначить хоста.
+    Назначаемый пользователь должен быть авторизован в Spotify и иметь активное устройство.
+    """
+    return await RoomService.set_playback_host(db, room_id, user_id_to_set_as_host)
+
+@room.put("/{room_id}/player/play", status_code=status.HTTP_204_NO_CONTENT)
+async def player_play_command(
+    room_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    track_uri: str | None = None, 
+    position_ms: int = 0 
+):
+    """
+    Запускает или возобновляет воспроизведение Spotify в комнате через хоста воспроизведения.
+    """
+    return await RoomService.player_command_play(db, room_id, current_user, track_uri=track_uri, position_ms=position_ms)
+
+
+@room.put("/{room_id}/player/pause", status_code=status.HTTP_204_NO_CONTENT)
+async def player_pause_command(
+    room_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Ставит воспроизведение Spotify на паузу в комнате через хоста воспроизведения.
+    """
+    return await RoomService.player_command_pause(db, room_id, current_user)
+
+
+
+@room.post("/{room_id}/player/next", status_code=status.HTTP_204_NO_CONTENT)
+async def player_skip_next_command(
+    room_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Переключает на следующий трек в Spotify плеере комнаты через хоста воспроизведения.
+    """
+    return await RoomService.player_command_skip_next(db, room_id, current_user)
+
+
+@room.post("/{room_id}/player/previous", status_code=status.HTTP_204_NO_CONTENT)
+async def player_skip_previous_command(
+    room_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Переключает на предыдущий трек в Spotify плеере комнаты через хоста воспроизведения.
+    """
+    return await RoomService.player_command_skip_previous(db, room_id, current_user)
+
+@room.get("/{room_id}/player/state", response_model=dict[str, Any])
+async def get_room_player_state(
+    room_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> dict[str, Any]:
+    """
+    Получает текущее состояние Spotify плеера для комнаты.
+    """
+    return await RoomService.get_room_player_state(db, room_id, current_user)
