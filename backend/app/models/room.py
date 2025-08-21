@@ -37,12 +37,6 @@ class Room(Base):
     current_playing_track_association_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey('room_track_associations.id', ondelete="SET NULL"), nullable=True, comment="ID записи в очереди (RoomTrackAssociationModel) для текущего играющего трека."
     )
-    current_playback_progress_ms: Mapped[int | None] = mapped_column(
-        nullable=True, comment="Текущий прогресс воспроизведения трека в миллисекундах."
-    )
-    is_playing: Mapped[bool] = mapped_column(
-        default=False, nullable=False, comment="Флаг, указывающий, находится ли плеер в режиме воспроизведения (True) или паузы (False)."
-    )
 
 
     user: Mapped['User'] = relationship(back_populates='room')
