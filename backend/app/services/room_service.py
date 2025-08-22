@@ -49,7 +49,7 @@ class RoomService:
         Преобразует объект модели Room в Pydantic-схему RoomResponse,
         включая информацию об участниках и очереди треков.
         """
-        owner_response = UserService._map_user_to_response(room.user) if room.owner_id else None
+        owner_response = UserService._map_user_to_response(room.owner) if room.owner_id else None
         
         members_response = []
         if room.member_room:
@@ -372,15 +372,15 @@ class RoomService:
 
             websocket_message_for_room = {
             "action": "join_room",
-            "room_id": room.id,
-            'user_id': user.id,
+            "room_id": str(room.id),
+            'user_id': str(user.id),
             'username': user.username,
-            'detail': f'{user.username} присоелинился к комнате'
+            'detail': f'{user.username} присоединился к комнате'
             }
             websocket_message_for_user = {
             "action": "join_room",
-            "room_id": room.id,
-            'user_id': user.id,
+            "room_id": str(room.id),
+            'user_id': str(user.id),
             'username': user.username,
             'detail': f'Вы присоединились к комнате {room.name}'
             }
@@ -418,23 +418,24 @@ class RoomService:
                 detail="Вы не являетесь участником этой комнаты."
             )
         try:
+            room_name_for_message = existing_association.room.name
             deleted_successfully = MemberRoomAssociationRepository.remove_member(db,user.id,room_id)
 
             db.commit()
 
             websocket_message_for_room = {
-            "action": "join_room",
-            "room_id": room_id,
-            'user_id': user.id,
+            "action": "leave_room",
+            "room_id": str(room_id),
+            'user_id': str(user.id),
             'username': user.username,
             'detail': f'{user.username} вышел из комнате'
             }
             websocket_message_for_user = {
-            "action": "join_room",
-            "room_id": room_id,
-            'user_id': user.id,
+            "action": "leave_room",
+            "room_id": str(room_id),
+            'user_id': str(user.id),
             'username': user.username,
-            'detail': f'Вы вышли из комнате{existing_association.room.name}'
+            'detail': f'Вы вышли из комнате{room_name_for_message}'
             }
             await manager.send_personal_message(json.dumps(websocket_message_for_user),user.id)
             await manager.broadcast(room_id,json.dumps(websocket_message_for_room))
@@ -476,11 +477,11 @@ class RoomService:
                 detail="Комната не найдена."
             )
         
-        members = MemberRoomAssociationRepository.get_members_by_room_id(db,room_id)
+        members = room.member_room
         if not members:
             return []
         
-        return [UserService._map_user_to_response(member) for member in members]
+        return [UserService._map_user_to_response(member.user) for member in members]
     
 
     @staticmethod
@@ -1327,7 +1328,7 @@ class RoomService:
             )
             
 
-        if target_user_association.role == new_role.value: 
+        if target_user_association.role == new_role: 
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='Пользователь уже имеет такую роль.'
@@ -1335,7 +1336,7 @@ class RoomService:
         
         try:
             updated_association = MemberRoomAssociationRepository.update_role(
-                db, target_user_id, room_id, new_role.value
+                db, room_id, target_user_id, new_role
             )
             
             if not updated_association:
@@ -1356,20 +1357,20 @@ class RoomService:
                 )
             
             role_message_for_room = {
-                'room_id': room_id,
+                'room_id': str(room_id),
                 'username': target_user_association.user.username,
                 'new_role': target_user_association.role,
-                'moderator_id': current_user.id,
+                'moderator_id': str(current_user.id),
                 'moderator_username': current_user.username,
                 'detail': f'У пользователя {target_user_association.user.username} была обновлена роль до {target_user_association.role}'
             }
             role_message_for_user = {
-                'room_id': room_id,
+                'room_id': str(room_id),
                 'username': target_user_association.user.username,
                 'new_role': target_user_association.role,
-                'moderator_id': current_user.id,
+                'moderator_id': str(current_user.id),
                 'moderator_username': current_user.username,
-                'detail': f'У вас была обновлена роль до {new_role.value}'
+                'detail': f'У вас была обновлена роль до {new_role}'
             }
             await manager.send_personal_message(json.dumps(role_message_for_user))
             await manager.broadcast(room_id,json.dumps(role_message_for_room))

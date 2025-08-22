@@ -4,7 +4,7 @@ from app.schemas.enum import FriendshipStatus
 from app.schemas.friendship_schemas import FriendshipResponse
 from sqlalchemy.orm import Session
 import uuid
-from backend.app.models.friendship import Friendship
+from app.models.friendship import Friendship
 import json
 from app.ws.connection_manager import manager
 from datetime import datetime

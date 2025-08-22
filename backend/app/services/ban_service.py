@@ -6,6 +6,7 @@ from app.schemas.ban_schemas import BanResponse,BanCreate,BanRemove
 from app.models.ban import Ban
 from app.models.user import User
 from typing import Any
+from app.logger.log_config import logger
 
 
 class BanService:
@@ -131,30 +132,24 @@ class BanService:
         """
         existing_ban_to_remove = None
         if data_ban.room_id:
-            existing_ban_to_remove = BanRepository.is_user_banned_local(db, data_ban.ban_user_id, data_ban.room_id)
+            existing_ban_to_remove_local = BanRepository.is_user_banned_local(db, data_ban.ban_user_id, data_ban.room_id)
         else:
-            existing_ban_to_remove = BanRepository.is_user_banned_global(db, data_ban.ban_user_id)
+            existing_ban_to_remove_global = BanRepository.is_user_banned_global(db, data_ban.ban_user_id)
         
         if not existing_ban_to_remove:
+                logger.warning(f"BanService: Попытка снять несуществующий бан для user_id={data_ban.ban_user_id}, room_id={data_ban.room_id}")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Бан не найден или уже был снят."
                 )
         try:
-            removed_successfully = False
-            if data_ban.room_id:
-                removed_successfully = BanRepository.remove_ban_local(db, data_ban.ban_user_id, data_ban.room_id) # <-- ИСПРАВЛЕН ПОРЯДОК АРГУМЕНТОВ
+            if existing_ban_to_remove_local:
+                del_success = BanRepository.remove_ban_local(db,data_ban.room_id,data_ban.ban_user_id)
             else:
-                removed_successfully = BanRepository.remove_ban_global(db, data_ban.ban_user_id)
-            
-            if not removed_successfully:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Не удалось снять бан из-за внутренней ошибки сервера."
-                )
-            
+                del_success = BanRepository.remove_ban_global(db,data_ban.ban_user_id)
             db.commit()
-
+            logger.info(f"BanService: Бан успешно снят для user_id={data_ban.ban_user_id}, room_id={data_ban.room_id}")
+            
             return {
                 "status": "success",
                 "detail": "Бан успешно снят."
@@ -162,11 +157,21 @@ class BanService:
 
         except HTTPException as e:
             db.rollback()
+            logger.warning(
+                f"HTTPException при снятии бана. user_id: {data_ban.ban_user_id}, "
+                f"room_id: {data_ban.room_id if data_ban.room_id else 'глобальный'}. Ошибка: {e.detail}",
+                exc_info=True
+            )
             raise e
-        except Exception:
+        except Exception as e:
             db.rollback()
+            logger.error(
+                f"Внутренняя ошибка сервера при снятии бана. user_id: {data_ban.ban_user_id}, "
+                f"room_id: {data_ban.room_id if data_ban.room_id else 'глобальный'}. Ошибка: {e}",
+                exc_info=True
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Не удалось снять бан из-за внутренней ошибки сервера."
+                detail=f"Не удалось снять бан из-за внутренней ошибки сервера: {e}" 
             )
 

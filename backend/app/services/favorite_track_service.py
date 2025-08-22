@@ -31,7 +31,7 @@ class FavoriteTrackService:
         return FavoriteTrackResponse.model_validate(favorite_track_model)
     
     @staticmethod
-    async def _get_or_create_track(db: Session, current_user: User,spotify_id: str) -> Track:
+    async def _get_or_create_track(db: Session, spotify_id: str,current_user: User | None = None) -> Track:
         """
         Ищет трек в нашей базе данных по Spotify ID. Если не находит,
         получает информацию о треке из Spotify API и сохраняет его в нашей БД.
@@ -46,6 +46,7 @@ class FavoriteTrackService:
         Raises:
             HTTPException: Если трек не найден в Spotify или произошла ошибка при его создании.
         """
+        spotify_detail = ''
         if current_user and current_user.spotify_access_token:
             spotify_user_service = SpotifyService(db,current_user)
             spotify_detail = await spotify_user_service.search_track_by_spotify_id(spotify_id)
@@ -122,7 +123,7 @@ class FavoriteTrackService:
         Raises:
             HTTPException: Если трек уже добавлен или произошла ошибка.
         """
-        track = await FavoriteTrackService._get_or_create_track(db, spotify_id)
+        track = await FavoriteTrackService._get_or_create_track(db,spotify_id)
         
         is_favorite = FavoriteTrackRepository.is_favorite_track(db, user_id, track.id)
         if is_favorite:

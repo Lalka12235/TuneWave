@@ -65,44 +65,36 @@ class TrackService:
     
 
     @staticmethod
-    async def get_or_create_track_from_spotify(db: Session, spotify_id: str) -> TrackResponse:
+    async def get_or_create_track_from_spotify(db: Session, spotify_data: TrackCreate) -> TrackResponse:
         """
         Пытается получить трек из кеша (БД) по Spotify ID. Если не найден,
         запрашивает его у Spotify API и сохраняет в кеше.
         Возвращает объект TrackResponse.
         """
-        local_track = TrackRepository.get_track_by_spotify_id(db, spotify_id)
+        local_track = TrackRepository.get_track_by_spotify_id(db, spotify_data.spotify_id)
         if local_track:
-            logger.debug(f"Сервис треков: Трек '{spotify_id}' найден в локальном кеше.")
+            logger.debug(f"Сервис треков: Трек '{spotify_data.spotify_id}' найден в локальном кеше.")
             return TrackService._map_track_to_response(local_track)
 
-        logger.info(f"Сервис треков: Трек '{spotify_id}' не найден в кеше, запрашиваем у Spotify API.")
+        logger.info(f"Сервис треков: Трек '{spotify_data.spotify_id}' не найден в кеше, запрашиваем у Spotify API.")
         spotify_public_service = SpotifyPublicService()
         try:
-            spotify_track_details: SpotifyTrackDetails | None = await spotify_public_service.search_public_track(spotify_id)
-            if not spotify_track_details:
-                logger.warning(f"Сервис треков: Трек '{spotify_id}' не найден в Spotify API.")
-                raise HTTPException(status_code=404,detail=f"Трек с Spotify ID '{spotify_id}' не найден на Spotify.")
-
-            track_create_data = TrackCreate(
-                spotify_id=spotify_track_details.id,
-                spotify_uri=spotify_track_details.uri,
-                title=spotify_track_details.name,
-                artist_names=[artist.name for artist in spotify_track_details.artists],
-                album_name=spotify_track_details.album.name,
-                album_cover_url=spotify_track_details.album.images[0].url if spotify_track_details.album.images else None,
-                duration_ms=spotify_track_details.duration_ms,
-                is_playable=spotify_track_details.is_playable,
-            )
-            new_local_track_response = TrackService.create_track(db, track_create_data)
-            logger.info(f"Сервис треков: Трек '{spotify_id}' успешно получен от Spotify и кеширован в БД.")
+            #spotify_track_details: SpotifyTrackDetails | None = await spotify_public_service.search_public_track(spotify_data.spotify_id)
+            #if not spotify_track_details:
+            #    logger.warning(f"Сервис треков: Трек '{spotify_data.spotify_id}' не найден в Spotify API.")
+            #    raise HTTPException(status_code=404,detail=f"Трек с Spotify ID '{spotify_data.spotify_id}' не найден на Spotify.")
+            new_local_track_response = TrackService.create_track(db, spotify_data)
+            db.commit()
+            db.refresh(new_local_track_response)
+            logger.info(f"Сервис треков: Трек '{spotify_data.spotify_id}' успешно получен от Spotify и кеширован в БД.")
+            return TrackService._map_track_to_response(new_local_track_response)
         except HTTPException as e:
             raise e
         except Exception as e:
-            logger.error(f"Сервис треков: Неизвестная ошибка при получении/сохранении трека '{spotify_id}': {e}", exc_info=True)
+            logger.error(f"Сервис треков: Неизвестная ошибка при получении/сохранении трека '{spotify_data.spotify_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Не удалось получить или сохранить трек из-за внутренней ошибки: {e}"
+                detail=f"Не удалось получить или сохранить трек из-за внутренней ошибки"
             )
     
 
