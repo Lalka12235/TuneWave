@@ -38,10 +38,27 @@ class User(Base):
     spotify_refresh_token: Mapped[str] = mapped_column(nullable=True)
     spotify_token_expires_at: Mapped[int] = mapped_column(nullable=True)
 
-    room: Mapped[list['Room']] = relationship(back_populates='user')
+    owned_rooms: Mapped[list["Room"]] = relationship(
+        "Room",
+        back_populates="owner",
+        foreign_keys="[Room.owner_id]"
+    )
+
+    hosted_rooms: Mapped[list["Room"]] = relationship(
+        "Room",
+        back_populates="playback_host",
+        foreign_keys="[Room.playback_host_id]"
+    )
+
+    member_room: Mapped[list["Member_room_association"]] = relationship(
+        "Member_room_association", back_populates="user", cascade="all, delete-orphan"
+    )
     favorite_track: Mapped[list['FavoriteTrack']] = relationship(back_populates='user')
-    room_track: Mapped[list['RoomTrackAssociationModel']] = relationship(back_populates='user')
-    member_room: Mapped[list['Member_room_association']] = relationship(back_populates='user')
+    room_track: Mapped[list['RoomTrackAssociationModel']] = relationship(
+        back_populates='user',
+        primaryjoin="User.id == RoomTrackAssociationModel.added_by_user_id" # Предполагается, что RoomTrackAssociationModel имеет колонку user_id
+    )
+    #member_room: Mapped[list['Member_room_association']] = relationship(back_populates='user')
     message: Mapped[list['Message']] = relationship(back_populates='user')
     bans_issued: Mapped[list["Ban"]] = relationship(
         back_populates="banned_by_user",

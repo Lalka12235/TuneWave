@@ -39,9 +39,21 @@ class Room(Base):
     )
 
 
-    user: Mapped['User'] = relationship(back_populates='room')
+    owner: Mapped["User"] = relationship(
+        back_populates="owned_rooms",
+        foreign_keys=[owner_id] 
+    )
+
+
+    playback_host: Mapped["User | None"] = relationship(
+        back_populates="hosted_rooms",
+        foreign_keys=[playback_host_id]
+    )
     current_track: Mapped["Track | None"] = relationship("Track", lazy="joined")
-    room_track: Mapped[list['RoomTrackAssociationModel']] = relationship(back_populates='room')
+    room_track: Mapped[list['RoomTrackAssociationModel']] = relationship(
+        back_populates='room',
+        primaryjoin="Room.id == RoomTrackAssociationModel.room_id" # Предполагается, что RoomTrackAssociationModel имеет колонку room_id
+    )
     member_room: Mapped[list['Member_room_association']] = relationship(back_populates='room')
     message: Mapped[list['Message']] = relationship(back_populates='room')
     banned: Mapped['Ban'] = relationship(back_populates='room')

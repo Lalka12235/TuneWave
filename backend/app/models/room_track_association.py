@@ -27,6 +27,12 @@ class RoomTrackAssociationModel(Base):
     added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     added_by_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
 
-    user: Mapped['User'] = relationship(back_populates='room_track')
-    room: Mapped['Room'] = relationship(back_populates='room_track')
+    room: Mapped["Room"] = relationship(
+        back_populates="room_track",
+        primaryjoin="RoomTrackAssociationModel.room_id == Room.id"
+    )
+    user: Mapped["User"] = relationship(
+        back_populates="room_track",
+        primaryjoin="RoomTrackAssociationModel.added_by_user_id == User.id"
+    )
     track: Mapped['Track'] = relationship(back_populates='room_track')
