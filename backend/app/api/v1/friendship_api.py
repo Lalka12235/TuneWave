@@ -1,12 +1,12 @@
 from fastapi import APIRouter,Depends,Path,status
-from app.schemas.friendship_schemas import FriendshipResponse
+from app.schemas.friendship_schemas import FriendshipResponse,FriendshipRequestCreate
 import uuid
 from sqlalchemy.orm import Session
 from app.config.session import get_db
 from app.auth.auth import get_current_user
 from typing import Annotated
 from app.models.user import User
-from app.services.friendship_service import FriendshipService,FriendshipRequestCreate
+from app.services.friendship_service import FriendshipService
 from fastapi_limiter.depends import RateLimiter
 
 

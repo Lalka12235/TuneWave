@@ -43,7 +43,6 @@ async def add_favorite_track(
     db: db_dependencies,
     user: user_dependencies,
     add_data: FavoriteTrackAdd,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 ) -> FavoriteTrackResponse:
     """
     Добавляет трек в список любимых треков текущего аутентифицированного пользователя.
@@ -56,7 +55,7 @@ async def add_favorite_track(
     Returns:
         FavoriteTrackResponse: Объект, представляющий добавленный любимый трек.
     """
-    return FavoriteTrackService.add_favorite_track(db,user.id,add_data.spotify_id)
+    return await FavoriteTrackService.add_favorite_track(db,user.id,add_data.spotify_id)
 
 
 @ft.delete('/me{spotify_id}', response_model=dict[str,Any],dependencies=[Depends(RateLimiter(times=5, seconds=60))])
@@ -64,7 +63,6 @@ async def remvoe_favorite_track(
     db: db_dependencies,
     user: user_dependencies,
     spotify_id: Annotated[str,Path(...,description='Spotify ID трека для удаления из избранного')],
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 ) -> dict[str,Any]:
     """
     Добавляет трек в список любимых треков текущего аутентифицированного пользователя.
@@ -77,7 +75,7 @@ async def remvoe_favorite_track(
     Returns:
         FavoriteTrackResponse: Объект, представляющий добавленный любимый трек.
     """
-    return FavoriteTrackService.remove_favorite_track(db,user.id,)
+    return FavoriteTrackService.remove_favorite_track(db,user.id,spotify_id)
 
 
 @ft.get('/{user_id}', response_model=list[FavoriteTrackResponse],
@@ -97,4 +95,4 @@ async def get_user_favorite_tracks_public(
     Returns:
         list[FavoriteTrackResponse]: Список любимых треков пользователя.
     """
-    return await FavoriteTrackService.get_user_favorite_tracks(db, user_id)
+    return FavoriteTrackService.get_user_favorite_tracks(db, user_id)
