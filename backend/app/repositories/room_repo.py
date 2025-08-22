@@ -27,7 +27,7 @@ class RoomRepository:
             Room | None: Объект комнаты, если найден, иначе None.
         """
         stmt = select(Room).options(
-            joinedload(Room.user), # Загружаем владельца
+            joinedload(Room.owner), # Загружаем владельца
             joinedload(Room.member_room).joinedload(Member_room_association.user), # Загружаем участников и их пользователей
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track) # Загружаем очередь и связанные треки
         ).filter(Room.id == room_id)
@@ -48,7 +48,7 @@ class RoomRepository:
             Room | None: Объект комнаты, если найден, иначе None.
         """
         stmt = select(Room).options(
-            joinedload(Room.user),
+            joinedload(Room.owner),
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         ).filter(Room.name == name)
@@ -67,7 +67,7 @@ class RoomRepository:
             List[Room]: Список объектов Room.
         """
         stmt = select(Room).options(
-            joinedload(Room.user),
+            joinedload(Room.owner),
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         )
@@ -157,7 +157,7 @@ class RoomRepository:
         stmt = select(Room).where(
             Room.id == room_id,
         ).options(
-            joinedload(Room.user),
+            joinedload(Room.owner),
         )
         result = db.execute(stmt)
         return result.scalar_one_or_none()

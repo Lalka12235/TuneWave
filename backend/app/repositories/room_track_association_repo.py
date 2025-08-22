@@ -34,7 +34,7 @@ class RoomTrackAssociationRepository:
             RoomTrackAssociationModel.room_id == room_id,
         ).order_by(RoomTrackAssociationModel.order_in_queue).options(
                 joinedload(RoomTrackAssociationModel.track),
-                joinedload(RoomTrackAssociationModel.added_by_user_id)
+                joinedload(RoomTrackAssociationModel.user)
             )
         return db.execute(stmt).scalars().all()
     
@@ -67,7 +67,7 @@ class RoomTrackAssociationRepository:
             RoomTrackAssociationModel.id == association_id
         ).options(
                 joinedload(RoomTrackAssociationModel.track),
-                joinedload(RoomTrackAssociationModel.added_by_user)
+                joinedload(RoomTrackAssociationModel.user)
             )
         return db.execute(stmt).scalars().first()
 
@@ -90,7 +90,7 @@ class RoomTrackAssociationRepository:
             RoomTrackAssociationModel.track_id == track_id,
         ).options(
                 joinedload(RoomTrackAssociationModel.track),
-                joinedload(RoomTrackAssociationModel.added_by_user)
+                joinedload(RoomTrackAssociationModel.user)
             )
         return db.execute(stmt).scalars().first()
     
@@ -110,6 +110,6 @@ class RoomTrackAssociationRepository:
             RoomTrackAssociationModel.room_id == room_id,
         ).order_by(RoomTrackAssociationModel.order_in_queue.asc()).options(
                 joinedload(RoomTrackAssociationModel.track),
-                joinedload(RoomTrackAssociationModel.added_by_user_id)
+                joinedload(RoomTrackAssociationModel.user)
             ).limit(1)
         return db.execute(stmt).scalars().first()

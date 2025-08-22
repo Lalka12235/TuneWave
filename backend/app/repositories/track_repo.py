@@ -21,7 +21,7 @@ class TrackRepository:
     def get_track_by_spotify_id(db: Session,spotify_id: str) -> Track | None:
         """Получает трек по его Spotify ID."""
         stmt = select(Track).where(
-            Track.spotify_track_id == spotify_id,
+            Track.spotify_id == spotify_id,
         )
         result = db.execute(stmt)
         return result.scalar_one_or_none()

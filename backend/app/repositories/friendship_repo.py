@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete,or_,and_,update
 from sqlalchemy.orm import Session,joinedload
-from backend.app.models.friendship import Friendship
+from app.models.friendship import Friendship
 import uuid
 from app.schemas.enum import FriendshipStatus
 from datetime import datetime

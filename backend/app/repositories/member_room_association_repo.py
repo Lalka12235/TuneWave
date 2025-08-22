@@ -112,7 +112,7 @@ class MemberRoomAssociationRepository:
         stmt = select(Room).join(Member_room_association).filter(
             Member_room_association.user_id == user_id
         ).options(
-            joinedload(Room.user),
+            joinedload(Room.owner),
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         )
