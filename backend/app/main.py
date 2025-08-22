@@ -25,6 +25,21 @@ import os
 
 configure_logging()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Контекстный менеджер для управления жизненным циклом приложения.
+    """
+    scheduler_service.start()
+    r = redis.from_url("redis://localhost", encoding="utf-8", decode_responses=True)
+    await FastAPILimiter.init(r)
+    
+    yield  # Здесь приложение начинает обрабатывать запросы
+
+    scheduler_service.scheduler.shutdown()
+
+    await r.close()
+
 app = FastAPI(
     title="TuneWave",
     description="""
@@ -50,23 +65,12 @@ app = FastAPI(
         "name": "music",
         "description": "Операции с музыкальными треками"
     }],
+    lifespan=lifespan
 )
 
 scheduler_service = SchedulerService()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Контекстный менеджер для управления жизненным циклом приложения.
-    """
-    os.makedirs(settings.AVATARS_STORAGE_DIR,exist_ok=True)
-    scheduler_service.start()
-    r = redis.from_url("redis://localhost", encoding="utf-8", decode_responses=True)
-    await FastAPILimiter.init(r)
-    
-    yield  # Здесь приложение начинает обрабатывать запросы
 
-    scheduler_service.scheduler.shutdown()
 
 
 @app.get('/ping')
@@ -104,4 +108,5 @@ app.include_router(ban)
 app.include_router(friendship)
 app.include_router(notification)
 
+os.makedirs(settings.AVATARS_STORAGE_DIR,exist_ok=True)
 app.mount("/avatars", StaticFiles(directory=settings.AVATARS_STORAGE_DIR), name="avatars")

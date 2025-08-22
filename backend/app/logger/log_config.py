@@ -5,6 +5,8 @@ from pathlib import Path
 from datetime import datetime
 
 BASE_DIR = Path(__file__).resolve().parent
+logger = logging.getLogger(__name__)
+
 
 def configure_logging(level=logging.INFO, log_file_prefix='app'):
     os.makedirs(os.path.dirname(BASE_DIR / 'logs'), exist_ok=True)
@@ -29,6 +31,4 @@ def configure_logging(level=logging.INFO, log_file_prefix='app'):
     root_logger.handlers.clear()
     
     root_logger.addHandler(file_handler)
-    global logger
-    logger = logging.getLogger(__name__)
     logger.setLevel(level)
