@@ -128,12 +128,15 @@ class FriendshipRepository:
         Returns:
             List[Friendship]: Список объектов Friendship со статусом PENDING.
         """
-        select(Friendship).where(
+        stmt = select(Friendship).where(
             Friendship.status == FriendshipStatus.PENDING,
             Friendship.accepter_id == accepter_id,
         ).options(
             joinedload(Friendship.requester),
         )
+        result = db.execute(stmt)
+        return result.scalars().all()
+
 
 
     @staticmethod
@@ -159,7 +162,7 @@ class FriendshipRepository:
     
     
     @staticmethod
-    def update_friendship_status(db: Session,friendship_id: uuid.UUID,new_status: FriendshipStatus,accepted_at: datetime | None = None) -> Friendship | None:
+    def update_friendship_status(db: Session,friendship_id: uuid.UUID,new_status: FriendshipStatus,accepted_at: datetime | None = None) -> bool:
         """
         Обновляет статус существующего запроса на дружбу.
 
@@ -175,7 +178,7 @@ class FriendshipRepository:
             Friendship.id == friendship_id,
         ).values(status=new_status,accepted_at=accepted_at)
         result = db.execute(stmt)
-        return result.scalar_one_or_none()
+        return result.rowcount > 0
     
 
     @staticmethod

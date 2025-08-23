@@ -18,16 +18,19 @@ class ChatRepository:
         Returns:
             list[Message]: Возвращает список найденных сообщений
         """
-        stmt = select(Message).where(
-            Message.created_at < before_timestamp
-        ).filter(
-            Message.room_id == room_id
-        ).order_by(
-            Message.created_at.asc()
-        ).limit(limit).options(
-            joinedload(Message.user)
+        stmt = (
+            select(Message)
+            .where(Message.room_id == room_id)
+            .order_by((Message.created_at).desc())
+            .limit(limit)
+            .options(joinedload(Message.user))
         )
-        return db.execute(stmt).scalars().all()
+
+        if before_timestamp:
+            stmt = stmt.where(Message.created_at < before_timestamp)
+
+        result = db.execute(stmt)
+        return result.scalars().all()
 
     
 
@@ -50,5 +53,5 @@ class ChatRepository:
             text=text,
         )
         db.add(new_message)
-        db.refresh(new_message)
+        db.flush()
         return new_message
