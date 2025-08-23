@@ -25,6 +25,6 @@ class NotificationType(Enum):
     FRIENDSHIP_DELETED = "friendship_deleted"
     MESSAGE = "message"
     SYSTEM_MESSAGE = "system_message"
-    ROOM_INVITE = "room_invite"
-    ACCPET = 'accept'
+    ROOM_INVITED = "room_invited"
+    ACCEPT = 'accept'
     DECLINE = 'decline'
