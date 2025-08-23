@@ -6,6 +6,7 @@ from app.services.room_service import RoomService
 from app.models.message import Message
 import uuid
 from datetime import datetime
+from app.logger.log_config import logger
 
 
 
@@ -82,6 +83,7 @@ class ChatService():
             db.commit()
             db.refresh(new_message)
         except Exception as e:
+            logger.error(f'ChatService: произошла ошибка при отправке сообщения от пользователя {user_id} в комнату {room_id}.{e}',exc_info=True)
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -7,6 +7,7 @@ from app.models.notification import Notification
 from app.repositories.user_repo import UserRepository
 from app.repositories.room_repo import RoomRepository
 from app.schemas.enum import NotificationType
+from app.logger.log_config import logger
 
 
 class NotificationService:
@@ -132,6 +133,7 @@ class NotificationService:
             db.refresh(notification_update)
             return NotificationService._map_notification_to_response(notification_update)
         except HTTPException as e:
+            logger.error(f'NotificationService: произошла ошибка при попытке прочтения уведомления {notification_id} от пользователя {notification.sender_id} к пользователю {notification.user_id}.{e}',exc_info=True)
             db.rollback()
             raise e
         except Exception:

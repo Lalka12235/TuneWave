@@ -11,6 +11,7 @@ from datetime import datetime
 from app.repositories.user_repo import UserRepository
 from app.services.notification_service import NotificationService
 from app.models.notification import NotificationType
+from app.logger.log_config import logger
 
 class FriendshipService:
 
@@ -133,13 +134,6 @@ class FriendshipService:
                 )
         
         try:
-            notification_data = {
-                "action": "friend_request_received",
-                "friendship_id": str(friendship.id),
-                "requester_id": str(requester_id),
-                "requester_username": req_user.username,
-                "detail": f"Вы получили новый запрос на дружбу от {req_user.username}."
-            }
             friendship = FriendshipRepository.add_friend_requet(db,requester_id,accepter_id)
             db.commit()
             db.refresh(friendship)
@@ -151,17 +145,32 @@ class FriendshipService:
                 sender_id=requester_id,
                 related_object_id=friendship.id 
             )
+            notification_data = {
+                "action": "friend_request_received",
+                "friendship_id": str(friendship.id),
+                "requester_id": str(requester_id),
+                "requester_username": req_user.username,
+                "detail": f"Вы получили новый запрос на дружбу от {req_user.username}."
+            }
             await manager.send_personal_message(json.dumps(notification_data), str(accepter_id))
             return FriendshipService._map_friendship_to_response(friendship)
-        except HTTPException as e:
+        except HTTPException as http_exc:
             db.rollback()
-            raise e
-        except Exception:
-            db.rollback()
-            raise HTTPException(
-                status_code=500,
-                detail="Не удалось отправить запрос на дружбу из-за внутренней ошибки сервера."
+            logger.error(
+                f'FriendshipService: Ошибка HTTP при отправке заявки на дружбу от {requester_id} к {accepter_id}. Причина: {http_exc.detail}',
+                exc_info=True
             )
+            raise http_exc
+        except Exception as general_exc: # Привязываем исключение к переменной 'general_exc'
+            db.rollback()
+            logger.error(
+                f'FriendshipService: Непредвиденная ошибка при отправке заявки на дружбу от {requester_id} к {accepter_id}.',
+                exc_info=True # Это добавит полную трассировку стека в логи!
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Не удалось отправить запрос на дружбу из-за внутренней ошибки сервера."
+            ) from general_exc # Цепочка исключений для сохранения исходной причины
         
     
     @staticmethod
@@ -201,52 +210,63 @@ class FriendshipService:
 
         try:
             updated_friendship = FriendshipRepository.update_friendship_status(db,friendship_id,FriendshipStatus.ACCEPTED,datetime.utcnow())
-            db.commit()
-            db.refresh(updated_friendship)
+            if updated_friendship:
+                db.commit()
             notification_data_requester = {
                 "action": "friend_request_accepted",
-                "friendship_id": str(updated_friendship.id),
+                "friendship_id": str(friendship.id),
                 "accepter_id": str(current_accepter_id),
-                "accepter_username": updated_friendship.accepter.username,
-                "detail": f"Ваш запрос на дружбу к {updated_friendship.accepter.username} принят. Вы теперь друзья!"
+                "accepter_username": friendship.accepter.username,
+                "detail": f"Ваш запрос на дружбу к {friendship.accepter.username} принят. Вы теперь друзья!"
             }
             NotificationService.add_notification(
                 db=db,
-                user_id=updated_friendship.requester_id,
+                user_id=friendship.requester_id,
                 notification_type=NotificationType.FRIEND_ACCEPTED,
-                message=f"{updated_friendship.accepter.username} принял(а) ваш запрос на дружбу.",
+                message=f"{friendship.accepter.username} принял(а) ваш запрос на дружбу.",
                 sender_id=current_accepter_id, # Тот, кто принял
-                related_object_id=updated_friendship.id
+                related_object_id=friendship.id
             )
             NotificationService.add_notification(
                 db=db,
                 user_id=current_accepter_id,
                 notification_type=NotificationType.FRIEND_ACCEPTED,
-                message=f"Вы приняли запрос на дружбу от {updated_friendship.requester.username}. Теперь вы друзья!",
-                sender_id=updated_friendship.requester_id, # Тот, кто отправил
-                related_object_id=updated_friendship.id
+                message=f"Вы приняли запрос на дружбу от {friendship.requester.username}. Теперь вы друзья!",
+                sender_id=friendship.requester_id, # Тот, кто отправил
+                related_object_id=friendship.id
             )
             notification_data_accepter = {
                 "action": "friend_request_accepted",
-                "friendship_id": str(updated_friendship.id),
-                "requester_id": str(updated_friendship.requester_id),
-                "requester_username": updated_friendship.requester.username,
-                "detail": f"Вы приняли запрос на дружбу от {updated_friendship.requester.username}. Вы теперь друзья!"
+                "friendship_id": str(friendship.id),
+                "requester_id": str(friendship.requester_id),
+                "requester_username": friendship.requester.username,
+                "detail": f"Вы приняли запрос на дружбу от {friendship.requester.username}. Вы теперь друзья!"
             }
 
             await manager.send_personal_message(json.dumps(notification_data_accepter), str(current_accepter_id))
-            await manager.send_personal_message(json.dumps(notification_data_requester), str(updated_friendship.requester_id))
+            await manager.send_personal_message(json.dumps(notification_data_requester), str(friendship.requester_id))
             
             return FriendshipService._map_friendship_to_response(updated_friendship)
-        except HTTPException as e:
+        except HTTPException as http_exc: # Переименовано 'e' в 'http_exc'
+            logger.error(
+                f'RoomService: Произошла ошибка при приглашении пользователя '
+                f'в комнату . Причина: {http_exc.detail if hasattr(http_exc, "detail") else http_exc}', 
+                exc_info=True # Добавляем полную информацию о трассировке стека
+            )
             db.rollback()
-            raise e
-        except Exception:
+            raise http_exc # Снова выбрасываем исключение
+        
+        except Exception as general_exc: # Переименовано в 'general_exc'
+            logger.error(
+                f'RoomService: Неизвестная ошибка при приглашении пользователя '
+                f'в комнату .', 
+                exc_info=True # Добавляем полную информацию о трассировке стека
+            )
             db.rollback()
             raise HTTPException(
-                status_code=500,
-                detail="Не удалось принять запрос на дружбу из-за внутренней ошибки сервера."
-            )
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Не удалось создать уведомление из-за внутренней ошибки сервера."
+            ) from general_exc # Цепочка исключений для сохранения исходной причины
         
     
     @staticmethod
@@ -286,34 +306,44 @@ class FriendshipService:
 
         try:
             updated_friendship = FriendshipRepository.update_friendship_status(db,friendship_id,FriendshipStatus.DECLINED)
-            db.commit()
-            db.refresh(updated_friendship)
+            if updated_friendship:
+                db.commit()
             notification_data_requester = {
                 "action": "friend_request_declined",
-                "friendship_id": str(updated_friendship.id),
+                "friendship_id": str(friendship.id),
                 "accepter_id": str(current_accepter_id),
-                "accepter_username": updated_friendship.accepter.username,
-                "detail": f"Ваш запрос на дружбу к {updated_friendship.accepter.username} отклонен."
+                "accepter_username": friendship.accepter.username,
+                "detail": f"Ваш запрос на дружбу к {friendship.accepter.username} отклонен."
             }
             NotificationService.add_notification(
                 db=db,
-                user_id=updated_friendship.requester_id, # Уведомление для отправителя запроса
+                user_id=friendship.requester_id, # Уведомление для отправителя запроса
                 notification_type=NotificationType.FRIEND_DECLINED, # Тип уведомления
-                message=f"{updated_friendship.accepter.username} отклонил(а) ваш запрос на дружбу.",
+                message=f"{friendship.accepter.username} отклонил(а) ваш запрос на дружбу.",
                 sender_id=current_accepter_id, # Тот, кто отклонил
-                related_object_id=updated_friendship.id
+                related_object_id=friendship.id
             )
-            await manager.send_personal_message(json.dumps(notification_data_requester), str(updated_friendship.requester_id))
-            return FriendshipService._map_friendship_to_response(updated_friendship)
-        except HTTPException as e:
+            await manager.send_personal_message(json.dumps(notification_data_requester), str(friendship.requester_id))
+            return FriendshipService._map_friendship_to_response(friendship)
+        except HTTPException as http_exc:
             db.rollback()
-            raise e
-        except Exception:
+            logger.error(
+                f'FriendshipService: HTTP-ошибка при отклонении запроса на дружбу {friendship_id} пользователем {current_accepter_id}. '
+                f'Причина: {http_exc.detail}', 
+                exc_info=True
+            )
+            raise http_exc
+        
+        except Exception as general_exc: # 💡 ИСПРАВЛЕНИЕ: Добавлено 'as general_exc'
             db.rollback()
+            logger.error(
+                f'FriendshipService: Непредвиденная ошибка при отклонении запроса на дружбу {friendship_id} пользователем {current_accepter_id}.',
+                exc_info=True # Это добавит полную трассировку стека в логи!
+            )
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось отклонить запрос на дружбу из-за внутренней ошибки сервера."
-            )
+            ) from general_exc # Цепочка исключений для сохранения исходной причины
         
     @staticmethod
     async def delete_friendship(db: Session,friendship_id: uuid.UUID, current_user_id: uuid.UUID) -> dict[str,str]:
@@ -362,7 +392,7 @@ class FriendshipService:
                 notification_message = f"{friendship.accepter.username} удалил(а) запись о вашей дружбе."
             
             if other_user_id:
-                await NotificationService.add_notification(
+                NotificationService.add_notification(
                     db=db,
                     user_id=other_user_id, # Уведомление для "другой" стороны
                     notification_type=NotificationType.FRIENDSHIP_DELETED, # Новый тип уведомления
@@ -383,12 +413,22 @@ class FriendshipService:
                 'action': 'delete friendship',
                 'status': 'success'
             }
-        except HTTPException as e:
+        except HTTPException as http_exc:
             db.rollback()
-            raise e
-        except Exception:
-            db.rollback()
-            raise HTTPException(
-                status_code=500,
-                detail="Не удалось удалить запись о дружбе из-за внутренней ошибки сервера."
+            logger.error(
+                f'FriendshipService: HTTP-ошибка при отклонении запроса на дружбу {friendship_id} пользователем . '
+                f'Причина: {http_exc.detail}', 
+                exc_info=True
             )
+            raise http_exc
+        
+        except Exception as general_exc: # 💡 ИСПРАВЛЕНИЕ: Добавлено 'as general_exc'
+            db.rollback()
+            logger.error(
+                f'FriendshipService: Непредвиденная ошибка при отклонении запроса на дружбу {friendship_id} пользователем .',
+                exc_info=True # Это добавит полную трассировку стека в логи!
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Не удалось отклонить запрос на дружбу из-за внутренней ошибки сервера."
+            ) from general_exc # Цепочка исключений для сохранения исходной причины

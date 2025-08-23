@@ -1749,7 +1749,7 @@ class RoomService:
             )
         
         inviter_membership = MemberRoomAssociationRepository.get_member_room_association(db, room_id, inviter_id)
-        if not inviter_membership or inviter_membership.role not in [Role.OWNER, Role.MODERATOR]:
+        if not inviter_membership or inviter_membership.role not in [Role.OWNER.value, Role.MODERATOR.value]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail='У вас нет прав для приглашения пользователей в эту комнату. Только владельцы и модераторы могут это делать.'
@@ -1773,12 +1773,13 @@ class RoomService:
             NotificationService.add_notification(
                 db,
                 invited_user_id,
-                NotificationType.ROOM_INVITE,
+                NotificationType.ROOM_INVITED,
                 message=f"{inviter.username} приглашает вас в комнату {room.name}.",
-                inviter_id=inviter_id,
+                sender_id=inviter_id,
                 room_id=room_id,
                 related_object_id=room_id
             )
+            logger.info(f'RoomService: уведомление успешно отправлено пользователю {invited_user_id} из комнаты {room_id}')
             ws_message = {
                 'action': 'room_invite_received',
                 'room_id': str(room_id),
@@ -1789,15 +1790,26 @@ class RoomService:
             }
             await manager.send_personal_message(json.dumps(ws_message),invited_user_id)
             return {"status": "success", "detail": "Приглашение отправлено."}
-        except HTTPException as e:
+        except HTTPException as http_exc: # Переименовано 'e' в 'http_exc'
+            logger.error(
+                f'RoomService: Произошла ошибка при приглашении пользователя {invited_user_id} '
+                f'в комнату {room_id}. Причина: {http_exc.detail if hasattr(http_exc, "detail") else http_exc}', 
+                exc_info=True # Добавляем полную информацию о трассировке стека
+            )
             db.rollback()
-            raise e
-        except Exception:
+            raise http_exc # Снова выбрасываем исключение
+        
+        except Exception as general_exc: # Переименовано в 'general_exc'
+            logger.error(
+                f'RoomService: Неизвестная ошибка при приглашении пользователя {invited_user_id} '
+                f'в комнату {room_id}.', 
+                exc_info=True # Добавляем полную информацию о трассировке стека
+            )
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось создать уведомление из-за внутренней ошибки сервера."
-            )
+            ) from general_exc # Цепочка исключений для сохранения исходной причины
 
 
     @staticmethod
@@ -1836,7 +1848,7 @@ class RoomService:
                 detail='Это уведомление принадлежит не вам'
             )
         
-        if not notification.notification_type != NotificationType.ROOM_INVITE:
+        if not notification.notification_type != NotificationType.ROOM_INVITED.value:
             raise HTTPException(
                 status_code=400,
                 detail='Это уведомление не является приглашением в комнату.'
