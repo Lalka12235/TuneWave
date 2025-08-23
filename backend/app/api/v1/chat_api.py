@@ -25,7 +25,7 @@ async def get_message_for_room(
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
     user: user_dependencies,
     db: db_dependencies,
-    limit: Annotated[int,Query(...,description='Лимит на отображение сообщений в комнате')],
+    limit: Annotated[int,Query(...,description='Лимит на отображение сообщений в комнате')] = 10,
     before_timestamp: Annotated[datetime | None, Query(
         description='Метка времени последнего сообщения, для пагинации'
     )] = None,

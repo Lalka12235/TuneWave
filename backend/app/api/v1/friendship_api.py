@@ -174,7 +174,7 @@ async def get_my_sent_requests(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(RateLimiter(times=15, seconds=60))]
 )
-async def get_my_sent_requests(
+async def get_my_received_requests(
     db: db_dependencies,
     current_user: user_dependencies,
 ) -> list[FriendshipResponse]:
