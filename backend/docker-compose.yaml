@@ -11,7 +11,7 @@ services:
   #  ports:
   #    - "5432:5432"
   #  networks:
-  #    - netapi
+  #    - tunewave_network
   #  volumes:
   #    - postgre_vol:/var/lib/postgresql/data 
   #  healthcheck:
@@ -32,9 +32,12 @@ services:
   #  environment:
   #    APP_CONFIG_DB_URL: postgresql+psycopg://user:password@postgres:5432/db_name
   #  networks:
-  #    - netapi
+  #    - tunewave_network
   #  depends_on:
   #    - postgres
+  #    - rabbitmq
+  #    - redis
+  #    - celery-worker
     
   rabbitmq:
     image: rabbitmq:3-management
@@ -65,6 +68,24 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A infrastructure.celery.worker worker --loglevel=INFO -P eventlet
+    environment:
+      RABBITMQ_BROKER_URL: ${RABBITMQ_BROKER_URL}
+      REDIS_URL: ${REDIS_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL}
+  networks:
+    - tunewave_network
+  depends_on:
+    - redis
 
 
 networks:
