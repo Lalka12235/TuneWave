@@ -8,7 +8,7 @@ from typing import Any
 from app.config.settings import settings
 from app.utils.jwt import decode_access_token
 from jwt import exceptions
-from app.utils.email import send_email
+from app.tasks import send_email_task
 import os
 from app.repositories.ban_repo import BanRepository
 from app.logger.log_config import logger
@@ -201,7 +201,7 @@ class UserService:
             С уважением,
             Команда TuneWave
             """
-            email_sent = await send_email(user_data.email, subject, body)
+            email_sent = (user_data.email, subject, body)
             if not email_sent:
                 logger.warning(f'Сообщение на почту не отправилось {email_sent}')
                 pass
@@ -307,15 +307,16 @@ class UserService:
             logger.warning(f'Пользователь не найден {google_data.email}')
             user = UserRepository.get_user_by_google_id(db, google_data.google_id)
 
-        global_ban = BanRepository.is_user_banned_global(db,user.id)
-        if global_ban:
-            logger.warning(f"Попытка входа забаненного пользователя Google: ID '{user.id}'.")
-            raise HTTPException(
-                status_code=403,
-                detail="Ваш аккаунт заблокирован. Свяжитесь с поддержкой для получения дополнительной информации."
-            )
+        
 
         if user:
+            global_ban = BanRepository.is_user_banned_global(db,user.id)
+            if global_ban:
+                logger.warning(f"Попытка входа забаненного пользователя Google: ID '{user.id}'.")
+                raise HTTPException(
+                    status_code=403,
+                    detail="Ваш аккаунт заблокирован. Свяжитесь с поддержкой для получения дополнительной информации."
+                )
             update_data = {
                 'google_access_token': google_data.google_access_token,
                 'google_token_expires_at': google_data.google_token_expires_at
@@ -363,10 +364,7 @@ class UserService:
                 С уважением,
                 Команда TuneWave
                 """
-                email_sent = await send_email(google_data.email, subject, body)
-                if not email_sent:
-                    logger.warning(f"Не удалось отправить приветственное письмо новому пользователю '{google_data.email}'.")
-                    pass
+                task_result = send_email_task.delay(google_data.email, subject, body)
             except Exception as e:
                 db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Google OAuth '{google_data.email}': {e}", exc_info=True)
@@ -400,15 +398,16 @@ class UserService:
             logger.warning(f'Пользователь не найден {spotify_data.email}')
             user = UserRepository.get_user_by_spotify_id(db,spotify_data.spotify_id)
 
-        global_ban = BanRepository.is_user_banned_global(db,user.id)
-        if global_ban:
-            logger.warning(f"Попытка входа забаненного пользователя Spotify: ID '{user.id}'.")
-            raise HTTPException(
-                status_code=403,
-                detail="Ваш аккаунт заблокирован. Свяжитесь с поддержкой для получения дополнительной информации."
-            )
+        
 
         if user:
+            global_ban = BanRepository.is_user_banned_global(db,user.id)
+            if global_ban:
+                logger.warning(f"Попытка входа забаненного пользователя Spotify: ID '{user.id}'.")
+                raise HTTPException(
+                    status_code=403,
+                    detail="Ваш аккаунт заблокирован. Свяжитесь с поддержкой для получения дополнительной информации."
+                )
             update_data = {}
             if not user.spotify_id:
                 update_data['spotify_id'] = spotify_data.spotify_id
@@ -460,10 +459,7 @@ class UserService:
                 С уважением,
                 Команда TuneWave
                 """
-                email_sent = await send_email(spotify_data.email, subject, body)
-                if not email_sent:
-                    logger.warning(f"Не удалось отправить приветственное письмо новому пользователю '{spotify_data.email}'.")
-                    pass
+                task_result = send_email_task.delay(spotify_data.email, subject, body)
             except Exception as e:
                 db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Spotify OAuth '{spotify_data.email}': {e}", exc_info=True)
