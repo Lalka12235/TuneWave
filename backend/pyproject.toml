@@ -10,6 +10,7 @@ dependencies = [
     "anyio==4.8.0",
     "apscheduler>=3.11.0",
     "bcrypt==4.3.0",
+    "celery>=5.4.0",
     "click==8.1.8",
     "colorama==0.4.6",
     "dnspython==2.7.0",
