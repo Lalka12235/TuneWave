@@ -8,7 +8,7 @@ from typing import Any
 from app.config.settings import settings
 from app.utils.jwt import decode_access_token
 from jwt import exceptions
-from app.tasks import send_email_task
+from infrastructure.celery.tasks import send_email_task
 import os
 from app.repositories.ban_repo import BanRepository
 from app.logger.log_config import logger
