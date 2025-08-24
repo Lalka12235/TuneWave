@@ -77,6 +77,9 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = Field("noreply@example.com", env="SMTP_FROM_EMAIL", description="Email отправителя")
     SMTP_USE_TLS: bool = Field(True, env="SMTP_USE_TLS", description="Использовать TLS для SMTP")
 
+    RABBITMQ_BROKER_URL: str
+    REDIS_URL: str 
+
 
     @property
     def sync_db_url(self) -> str:
