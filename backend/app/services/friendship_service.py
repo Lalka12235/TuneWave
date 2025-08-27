@@ -43,7 +43,7 @@ class FriendshipService:
     
     
     @staticmethod
-    def get_my_sent_requests(db: Session, user_id: uuid.UUID) -> list[FriendshipResponse]:
+    async def get_my_sent_requests(db: Session, user_id: uuid.UUID) -> list[FriendshipResponse]:
         """
         Получает список всех запросов на дружбу, отправленных указанным пользователем,
         которые находятся в статусе PENDING.
@@ -63,7 +63,7 @@ class FriendshipService:
     
 
     @staticmethod
-    def get_my_received_requests(db: Session,user_id: uuid.UUID) -> list[FriendshipResponse]:
+    async def get_my_received_requests(db: Session,user_id: uuid.UUID) -> list[FriendshipResponse]:
         """
         Получает список всех запросов на дружбу, полученных указанным пользователем,
         которые находятся в статусе PENDING.

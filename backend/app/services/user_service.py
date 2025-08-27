@@ -68,7 +68,7 @@ class UserService:
 
 
     @staticmethod
-    def get_user_by_id(db: Session,user_id: uuid.UUID) -> dict[str,Any]:
+    async def get_user_by_id(db: Session,user_id: uuid.UUID) -> dict[str,Any]:
         """
         Получает пользователя по его уникальному ID.
         

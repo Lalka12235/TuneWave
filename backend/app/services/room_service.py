@@ -100,7 +100,7 @@ class RoomService:
     
 
     @staticmethod
-    def get_room_by_id(db: Session,room_id: uuid.UUID) -> dict[str,Any]:
+    async def get_room_by_id(db: Session,room_id: uuid.UUID) -> dict[str,Any]:
         """
         Получает комнату по ее уникальному ID.
         """
@@ -115,7 +115,7 @@ class RoomService:
     
 
     @staticmethod
-    def get_room_by_name(db: Session,name: str) -> RoomResponse:
+    async def get_room_by_name(db: Session,name: str) -> RoomResponse:
         """
         Получает комнату по ее названию.
         """
@@ -130,7 +130,7 @@ class RoomService:
     
 
     @staticmethod
-    def get_all_rooms(db: Session) -> list[RoomResponse]:
+    async def get_all_rooms(db: Session) -> list[RoomResponse]:
         """
         Получает список всех комнат из базы данных.
         """
@@ -456,7 +456,7 @@ class RoomService:
         
     
     @staticmethod
-    def get_room_members(db: Session,room_id: uuid.UUID) -> list[UserResponse]:
+    async def get_room_members(db: Session,room_id: uuid.UUID) -> list[UserResponse]:
         """
         Получает список участников комнаты.
         
@@ -485,7 +485,7 @@ class RoomService:
     
 
     @staticmethod
-    def get_user_rooms(db: Session,user: User) -> list[RoomResponse]:
+    async def get_user_rooms(db: Session,user: User) -> list[RoomResponse]:
         """
         Получает список всех комнат, в которых состоит данный пользователь.
         
@@ -576,7 +576,7 @@ class RoomService:
     
 
     @staticmethod
-    def get_room_queue(db: Session,room_id: uuid.UUID) -> list[TrackInQueueResponse]:
+    async def get_room_queue(db: Session,room_id: uuid.UUID) -> list[TrackInQueueResponse]:
         """
         Получает текущую очередь треков для комнаты.
         """
