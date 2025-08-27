@@ -44,6 +44,7 @@ dependencies = [
     "python-dotenv==1.0.1",
     "python-multipart==0.0.20",
     "pyyaml==6.0.2",
+    "redis[hiredis]>=6.3.0",
     "rich==13.9.4",
     "rich-toolkit==0.13.2",
     "shellingham==1.5.4",
