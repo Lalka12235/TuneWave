@@ -22,6 +22,7 @@ from fastapi_limiter import FastAPILimiter
 import redis.asyncio as redis
 from app.config.settings import settings
 import os
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 configure_logging()
 
@@ -69,7 +70,7 @@ app = FastAPI(
 )
 
 scheduler_service = SchedulerService()
-
+app.add_middleware(ProxyHeadersMiddleware)
 
 
 
