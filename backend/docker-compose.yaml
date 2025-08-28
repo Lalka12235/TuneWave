@@ -28,11 +28,13 @@ services:
     env_file:
       - .env
     environment:
-      APP_CONFIG_DB_URL: postgresql+psycopg://user:password@postgres:5432/db_name
-      REDIS_HOST: redis # Имя сервиса Redis
+      POSTGRES_USER: ${DB_USER}  
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+      #APP_CONFIG_DB_URL: postgresql+psycopg://user:password@postgres:5432/db_name
+      REDIS_HOST: redis
       REDIS_PORT: 6379
-      RABBITMQ_BROKER_URL: amqp://guest:guest@rabbitmq:5672// # Для Celery-клиента в FastAPI
-      # ... остальные переменные окружения, такие как JWT, Google, Spotify, SMTP ...
+      RABBITMQ_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
@@ -65,7 +67,7 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
       RABBITMQ_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
-      REDIS_HOST: redis # Для Celery backend
+      REDIS_HOST: redis 
       REDIS_PORT: 6379
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
@@ -97,7 +99,7 @@ services:
     build:
       context: .
       dockerfile: ./infrastructure/celery/Dockerfile
-    command: celery -A infrastructure.celery worker --loglevel=INFO -P eventlet
+    command: celery -A infrastructure.celery worker --loglevel=INFO -P eventlet 
     env_file:
       - .env
     environment:
@@ -113,18 +115,18 @@ services:
     depends_on:
     - redis
   
-  #nginx:
-  #    restart: always
-  #    build:
-  #        context: .
-  #        dockerfile: ./infrastructure/nginx/Dockerfile
-  #    ports:
-  #      - 80:80
-  #    networks:
-  #    - tunewave_network
-  #    depends_on:
-  #      backend:
-  #        condition: service_healthy
+  nginx:
+      restart: always
+      build:
+          context: .
+          dockerfile: ./infrastructure/nginx/Dockerfile
+      ports:
+        - 80:80
+      networks:
+      - tunewave_network
+      depends_on:
+        backend:
+          condition: service_healthy
 
 
 networks:
