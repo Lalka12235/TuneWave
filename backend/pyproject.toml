@@ -58,3 +58,8 @@ dependencies = [
     "watchfiles==1.0.4",
     "websockets==15.0.1",
 ]
+
+[tool.uv.workspace]
+members = [
+    "infrastructure/celery",
+]
