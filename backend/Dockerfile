@@ -1,4 +1,8 @@
-FROM python:3.13-slim-bookworm
+FROM python:3.13-alpine
+
+RUN apk add --no-cache bash
+
+RUN apk add --no-cache postgresql-client
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
