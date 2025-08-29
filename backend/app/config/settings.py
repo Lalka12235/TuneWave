@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     Использует Pydantic-Settings для безопасной и удобной работы с конфигурацией.
     """
     BASE_URL: str = 'http://127.0.0.1:8000'
+
+    APP_CONFIG_DB_URL: str = Field(..., env="APP_CONFIG_DB_URL", description="Полный URL для подключения к базе данных")
     # --- Настройки базы данных ---
     DB_HOST: str = Field(..., description="Хост базы данных PostgreSQL")
     DB_PORT: int = Field(..., description="Порт базы данных PostgreSQL")
@@ -79,6 +81,7 @@ class Settings(BaseSettings):
 
     REDIS_HOST: str = Field(..., description="Хост Redis")
     REDIS_PORT: int = Field(6379, description="Порт Redis")
+    REDIS_URL: str 
 
     RABBITMQ_BROKER_URL: str
 

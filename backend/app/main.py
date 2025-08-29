@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     Контекстный менеджер для управления жизненным циклом приложения.
     """
     scheduler_service.start()
-    r = redis.from_url("redis://localhost", encoding="utf-8", decode_responses=True)
+    r = redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
     await FastAPILimiter.init(r)
     
     yield  # Здесь приложение начинает обрабатывать запросы
