@@ -4,12 +4,15 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-COPY uv.lock .
-COPY pyproject.toml .
+COPY ./infrastructure/celery/pyproject.toml ./infrastructure/celery/
+COPY ./infrastructure/celery/uv.lock ./infrastructure/celery/
+
+WORKDIR /app/infrastructure/celery
 
 RUN uv sync
 
-COPY ./app ./app
-COPY ./infrastructure ./infrastructure
+WORKDIR /app
 
-CMD ["celery", "-A", "infrastructure.celery.celery.celery_app", "worker", "--loglevel=info"]
+COPY . .
+
+CMD ["/app/infrastructure/celery/.venv/bin/celery", "-A", "infrastructure.celery.celery.celery_app", "worker", "--loglevel=info"]
