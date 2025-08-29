@@ -257,6 +257,17 @@ wheels = [
 ]
 
 [[package]]
+name = "celery-project"
+version = "0.1.0"
+source = { virtual = "infrastructure/celery" }
+dependencies = [
+    { name = "celery" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "celery", specifier = ">=5.4.0" }]
+
+[[package]]
 name = "certifi"
 version = "2025.7.14"
 source = { registry = "https://pypi.org/simple" }
