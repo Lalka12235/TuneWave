@@ -79,6 +79,8 @@ services:
       retries: 5
     networks:
       - tunewave_network
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
 
   redis:
     image: redis:7.0-alpine
@@ -132,3 +134,4 @@ networks:
 
 volumes:
   postgre_vol:
+  rabbitmq-data:
