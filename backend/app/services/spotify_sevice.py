@@ -137,13 +137,13 @@ class SpotifyService:
             logger.error(f"SpotifyService: Ошибка HTTP при обновлении токена Spotify для пользователя {self.user.id}: Статус {e.response.status_code} - Ответ: {e.response.text}", exc_info=True)
             raise HTTPException(
                 status_code=e.response.status_code,
-                detail=f"Ошибка при обновлении токена Spotify"
+                detail="Ошибка при обновлении токена Spotify"
             )
         except Exception as e:
             logger.error(f"SpotifyService: Неизвестная ошибка при обновлении токена Spotify для пользователя {self.user.id}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Неизвестная ошибка при обновлении токена Spotify"
+                detail="Неизвестная ошибка при обновлении токена Spotify"
             )
         
         self.user.spotify_access_token = new_tokens.get('access_token')

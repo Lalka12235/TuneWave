@@ -4,7 +4,6 @@ from app.schemas.track_schemas import TrackResponse,TrackCreate
 from sqlalchemy.orm import Session
 from app.models.track import Track
 from app.services.spotify_public_service import SpotifyPublicService
-from app.schemas.spotify_schemas import SpotifyTrackDetails
 import uuid
 from app.logger.log_config import logger
 
@@ -60,7 +59,7 @@ class TrackService:
             logger.error(f"Сервис треков: Ошибка при создании трека '{track_data.spotify_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Ошибка при создании трека"
+                detail="Ошибка при создании трека"
             )
     
 
@@ -77,7 +76,7 @@ class TrackService:
             return TrackService._map_track_to_response(local_track)
 
         logger.info(f"Сервис треков: Трек '{spotify_data.spotify_id}' не найден в кеше, запрашиваем у Spotify API.")
-        spotify_public_service = SpotifyPublicService()
+        SpotifyPublicService()
         try:
             #spotify_track_details: SpotifyTrackDetails | None = await spotify_public_service.search_public_track(spotify_data.spotify_id)
             #if not spotify_track_details:
@@ -94,7 +93,7 @@ class TrackService:
             logger.error(f"Сервис треков: Неизвестная ошибка при получении/сохранении трека '{spotify_data.spotify_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Не удалось получить или сохранить трек из-за внутренней ошибки"
+                detail="Не удалось получить или сохранить трек из-за внутренней ошибки"
             )
     
 
@@ -126,7 +125,7 @@ class TrackService:
             logger.error(f"Сервис треков: Ошибка при удалении трека с ID '{track_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Ошибка при удалении трека."
+                detail="Ошибка при удалении трека."
             )
 
     #пересмотреть

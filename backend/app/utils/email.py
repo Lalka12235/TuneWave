@@ -46,5 +46,5 @@ def send_email(
         logger.error(f'Не получилось отправить сообщение на почту {recipient_email}.{e}')
         raise HTTPException(
             status_code=500,
-            detail=f'Ошибка отправки email.'
+            detail='Ошибка отправки email.'
         )

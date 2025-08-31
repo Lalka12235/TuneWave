@@ -60,7 +60,7 @@ def get_current_user_id(credentials: Annotated[HTTPAuthorizationCredentials, Dep
         logger.error(f'Не удалось проверить учетные данные JWT: {e}', exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, # 500 Internal Server Error для неожиданных ошибок
-            detail=f"Не удалось проверить учетные данные"
+            detail="Не удалось проверить учетные данные"
         )
 
 

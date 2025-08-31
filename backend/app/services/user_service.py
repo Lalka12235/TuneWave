@@ -210,7 +210,7 @@ class UserService:
             logger.error(f"Ошибка при создании пользователя '{user_data.email}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Ошибка при создании пользователя"
+                detail="Ошибка при создании пользователя"
             )
         
 
@@ -250,7 +250,7 @@ class UserService:
             logger.error(f"Ошибка при обновлении профиля пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Ошибка при обновлении пользователя"
+                detail="Ошибка при обновлении пользователя"
             )
 
         return UserService._map_user_to_response(updated_user)
@@ -285,7 +285,7 @@ class UserService:
             logger.error(f"Ошибка при физическом удалении пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Ошибка при удаление пользователя"
+                detail="Ошибка при удаление пользователя"
             )
 
         return {
@@ -338,7 +338,7 @@ class UserService:
                 logger.error(f"Ошибка при обновлении пользователя '{user.id}' через Google OAuth: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Ошибка при обновлении пользователя"
+                    detail="Ошибка при обновлении пользователя"
                 )
         else:
             user_data = {
@@ -364,13 +364,13 @@ class UserService:
                 С уважением,
                 Команда TuneWave
                 """
-                task_result = send_email_task.delay(google_data.email, subject, body)
+                send_email_task.delay(google_data.email, subject, body)
             except Exception as e:
                 db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Google OAuth '{google_data.email}': {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Ошибка при создании пользователя"
+                    detail="Ошибка при создании пользователя"
                 )
             
         from datetime import timedelta
@@ -429,7 +429,7 @@ class UserService:
                 logger.error(f"Ошибка при обновлении пользователя '{user.id}' через Spotify OAuth: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Ошибка при создании пользователя"
+                    detail="Ошибка при создании пользователя"
                 )
 
         else:
@@ -459,13 +459,13 @@ class UserService:
                 С уважением,
                 Команда TuneWave
                 """
-                task_result = send_email_task.delay(spotify_data.email, subject, body)
+                send_email_task.delay(spotify_data.email, subject, body)
             except Exception as e:
                 db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Spotify OAuth '{spotify_data.email}': {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Ошибка при создании пользователя"
+                    detail="Ошибка при создании пользователя"
                 )
         
         from datetime import timedelta
@@ -502,7 +502,7 @@ class UserService:
             user = UserService.get_user_by_id(db,user_id)
             return user
         except exceptions.DecodeError:
-            logger.warning(f"Невалидный JWT-токен: ошибка декодирования.")
+            logger.warning("Невалидный JWT-токен: ошибка декодирования.")
             raise HTTPException(
                 status_code=401,
                 detail='Невалидный токен'
@@ -568,5 +568,5 @@ class UserService:
             logger.error(f"Ошибка сервера при загрузке аватара для пользователя '{user.id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Ошибка сервера при загрузке аватара"
+                detail="Ошибка сервера при загрузке аватара"
             )

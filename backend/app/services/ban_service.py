@@ -134,7 +134,7 @@ class BanService:
         if data_ban.room_id:
             existing_ban_to_remove_local = BanRepository.is_user_banned_local(db, data_ban.ban_user_id, data_ban.room_id)
         else:
-            existing_ban_to_remove_global = BanRepository.is_user_banned_global(db, data_ban.ban_user_id)
+            BanRepository.is_user_banned_global(db, data_ban.ban_user_id)
         
         if not existing_ban_to_remove:
                 logger.warning(f"BanService: Попытка снять несуществующий бан для user_id={data_ban.ban_user_id}, room_id={data_ban.room_id}")
@@ -144,9 +144,9 @@ class BanService:
                 )
         try:
             if existing_ban_to_remove_local:
-                del_success = BanRepository.remove_ban_local(db,data_ban.room_id,data_ban.ban_user_id)
+                BanRepository.remove_ban_local(db,data_ban.room_id,data_ban.ban_user_id)
             else:
-                del_success = BanRepository.remove_ban_global(db,data_ban.ban_user_id)
+                BanRepository.remove_ban_global(db,data_ban.ban_user_id)
             db.commit()
             logger.info(f"BanService: Бан успешно снят для user_id={data_ban.ban_user_id}, room_id={data_ban.room_id}")
             

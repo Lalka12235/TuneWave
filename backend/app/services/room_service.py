@@ -24,7 +24,7 @@ from app.exceptions.exception import (
 )
 from app.ws.connection_manager import manager,GLOBAL_ROOM_ID
 import json
-from app.schemas.enum import ControlAction,Role,NotificationType
+from app.schemas.enum import Role,NotificationType
 from app.repositories.ban_repo import BanRepository
 from app.services.ban_service import BanService
 from app.schemas.ban_schemas import BanResponse,BanCreate
@@ -874,7 +874,7 @@ class RoomService:
             "action": "playback_host_cleared",
             "room_id": str(room_id),
             "old_playback_host_id": str(old_host_id) if old_host_id else None,
-            "message": f"Хост воспроизведения комнаты был сброшен."
+            "message": "Хост воспроизведения комнаты был сброшен."
         }
 
         await manager.broadcast(room_id, json.dumps(ws_message))

@@ -72,5 +72,5 @@ def decode_access_token(token: str) -> dict:
         logging.error(f'Could not validate credentials: {e}')
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Could not validate credentials"
+            detail="Could not validate credentials"
         )

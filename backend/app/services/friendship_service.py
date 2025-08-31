@@ -258,8 +258,8 @@ class FriendshipService:
         
         except Exception as general_exc: # Переименовано в 'general_exc'
             logger.error(
-                f'RoomService: Неизвестная ошибка при приглашении пользователя '
-                f'в комнату .', 
+                'RoomService: Неизвестная ошибка при приглашении пользователя '
+                'в комнату .', 
                 exc_info=True # Добавляем полную информацию о трассировке стека
             )
             db.rollback()
