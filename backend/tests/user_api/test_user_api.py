@@ -1,10 +1,13 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 from backend.app.main import app
+from tests.user_api.conftest import get_user_id
 
 
 class TestUserAPI:
     @pytest.mark.asyncio
-    async def test_get_user_success(self):
+    async def test_get_user_success(self,get_user_id):
         async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as ac:
-            pass
+            response = await ac.get('/users/{user_id}',params={'user_id':get_user_id})
+            assert response.status_code == 200
+            
