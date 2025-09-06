@@ -1,12 +1,12 @@
 from fastapi import HTTPException,status, UploadFile
 from app.repositories.user_repo import UserRepository
 from sqlalchemy.orm import Session
-from app.models.user import User
+from app.models import User
 from app.schemas.user_schemas import UserResponse, UserCreate, UserUpdate,Token,GoogleOAuthData, SpotifyOAuthData
 import uuid
 from typing import Any
 from app.config.settings import settings
-from app.utils.jwt import decode_access_token
+from app.utils import decode_access_token,create_access_token
 from jwt import exceptions
 from infrastructure.celery.tasks import send_email_task
 import os
@@ -374,7 +374,6 @@ class UserService:
                 )
             
         from datetime import timedelta
-        from app.utils.jwt import create_access_token
 
         access_token = create_access_token(
             payload={'sub': str(user.id)},
@@ -469,7 +468,6 @@ class UserService:
                 )
         
         from datetime import timedelta
-        from app.utils.jwt import create_access_token
 
         access_token = create_access_token(
             payload={'sub': str(user.id)},

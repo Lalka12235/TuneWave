@@ -3,8 +3,7 @@ from app.repositories.ban_repo import BanRepository
 import uuid
 from sqlalchemy.orm import Session
 from app.schemas.ban_schemas import BanResponse,BanCreate,BanRemove
-from app.models.ban import Ban
-from app.models.user import User
+from app.models import Ban,User
 from typing import Any
 from app.logger.log_config import logger
 

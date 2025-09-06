@@ -2,15 +2,13 @@ from fastapi import HTTPException,status
 from sqlalchemy.orm import Session
 from app.schemas.favorite_track_schemas import FavoriteTrackResponse
 from app.schemas.track_schemas import TrackCreate
-from app.models.favorite_track import FavoriteTrack
+from app.models import FavoriteTrack,User,Track
 from app.repositories.favorite_track_repo import FavoriteTrackRepository
 from app.services.spotify_sevice import SpotifyService
 from app.repositories.track_repo import TrackRepository
-from app.models.track import Track
 from app.services.spotify_public_service import SpotifyPublicService
 import uuid
 from typing import Any
-from app.models.user import User
 
 
 class FavoriteTrackService:

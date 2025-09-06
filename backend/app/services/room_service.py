@@ -2,19 +2,16 @@ from fastapi import HTTPException,status
 from app.repositories.room_repo import RoomRepository
 from app.repositories.member_room_association_repo import MemberRoomAssociationRepository
 from app.schemas.room_member_schemas import RoomMemberResponse
-from app.models.member_room_association import Member_room_association
+from app.models import Member_room_association,RoomTrackAssociationModel,User,Room
 from sqlalchemy.orm import Session
 from app.schemas.room_schemas import RoomResponse, RoomCreate, RoomUpdate,TrackInQueueResponse
 from app.schemas.user_schemas import UserResponse
 from app.services.user_service import UserService
-from app.models.room import Room
 from app.services.track_service import TrackService
 from app.services.spotify_sevice import SpotifyService
 import uuid
 from typing import Any
-from app.utils.hash import make_hash_pass,verify_pass
-from app.models.user import User
-from app.models.room_track_association import RoomTrackAssociationModel
+from app.utils import make_hash_pass,verify_pass
 from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
 from app.exceptions.exception import (
     TrackNotFoundException, 

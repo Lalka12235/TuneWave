@@ -10,7 +10,7 @@ from app.ws.connection_manager import manager
 from datetime import datetime
 from app.repositories.user_repo import UserRepository
 from app.services.notification_service import NotificationService
-from app.models.notification import NotificationType
+from app.schemas.enum import NotificationType
 from app.logger.log_config import logger
 
 class FriendshipService:

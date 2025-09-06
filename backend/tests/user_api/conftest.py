@@ -1,13 +1,11 @@
 import pytest
-from app.models.base import Base
-from app.models.user import User
+from app.models import Base,User
 from app.config.session import engine, SessionLocal
 import uuid
 from sqlalchemy.orm import Session
 from datetime import datetime
-from app.utils.jwt import create_access_token
+from app.utils import create_access_token
 
-# Фикстура для создания тестового пользователя в базе данных
 @pytest.fixture
 def create_test_user(db_session: Session) -> User:
     """Создает и сохраняет тестового пользователя в БД."""
@@ -40,7 +38,7 @@ def create_another_user(db_session: Session) -> User:
 @pytest.fixture
 def get_jwt_token(create_test_user: User) -> str:
     """Генерирует JWT токен для тестового пользователя."""
-    return create_access_token(data={"sub": str(create_test_user.id)})
+    return create_access_token(payload={"sub": str(create_test_user.id)})
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_test_db():
