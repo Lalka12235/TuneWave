@@ -1,11 +1,8 @@
-from app.models.room import Room
+from app.models import Room,Member_room_association,RoomTrackAssociationModel,User
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session,joinedload
 import uuid
 from typing import Any
-from app.models.member_room_association import Member_room_association
-from app.models.room_track_association import RoomTrackAssociationModel
-from app.models.user import User
 
 
 class RoomRepository:

@@ -1,9 +1,7 @@
 from sqlalchemy import select,delete,update,and_
 from sqlalchemy.orm import Session,joinedload
-from app.models.member_room_association import Member_room_association
-from app.models.room import Room
+from app.models import Member_room_association,RoomTrackAssociationModel,Room
 import uuid
-from app.models.room_track_association import RoomTrackAssociationModel
 
 
 class MemberRoomAssociationRepository:

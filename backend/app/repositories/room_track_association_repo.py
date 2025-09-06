@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete,func
 from sqlalchemy.orm import Session,joinedload
-from app.models.room_track_association import RoomTrackAssociationModel
+from app.models import RoomTrackAssociationModel
 import uuid
 
 

@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session
-from app.models.track import Track
+from app.models import Track
 from app.schemas.track_schemas import TrackCreate
 import uuid
 

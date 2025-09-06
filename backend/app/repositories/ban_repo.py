@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session
-from app.models.ban import Ban
+from app.models import Ban
 import uuid
 
 

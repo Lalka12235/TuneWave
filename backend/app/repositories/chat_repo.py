@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session,joinedload
-from app.models.message import Message
+from app.models import Message
 from datetime import datetime
 import uuid
 
