@@ -15,7 +15,7 @@ RUN uv sync
 COPY app/prestart.sh .
 RUN chmod +x prestart.sh
 
-COPY .env .
+#COPY .env .
 COPY . .
 
 ENTRYPOINT ["/app/prestart.sh"]
