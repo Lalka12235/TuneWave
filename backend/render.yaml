@@ -1,0 +1,45 @@
+# Это конфигурационный файл для Render.com
+# Он описывает все сервисы, необходимые для вашего проекта TuneWave.
+services:
+  - type: pserv # Тип сервиса: управляемая база данных (persistent service)
+    name: tunewave-db # Имя вашей базы данных
+    plan: starter # Выбираем бесплатный или начальный план.
+
+    # Настройки для бэкенд-сервиса (FastAPI)
+  - type: web # Тип сервиса: веб-приложение
+    name: tunewave-backend # Имя вашего бэкенд-сервиса
+    env: python # Окружение: Python
+    region: frankfurt # Регион для развертывания. Выберите ближайший к вашим пользователям.
+    
+    # Render автоматически найдет ваш Dockerfile, если он находится в корне проекта.
+    # Если Dockerfile в другом месте, укажите путь: dockerfilePath: ./path/to/Dockerfile
+    dockerfilePath: Dockerfile
+
+    # Команда, которая будет выполняться для сборки вашего приложения.
+    # Она использует uv для установки зависимостей из requirements.txt
+    buildCommand: uv pip install -r requirements.txt
+    
+    # Команда для запуска вашего приложения.
+    # Uvicorn будет слушать на порту 10000, как того требует Render.
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
+
+    # Переменные окружения, необходимые для работы вашего приложения.
+    envVars:
+      # Связываем бэкенд с управляемой базой данных.
+      # Render автоматически создаст эти переменные окружения при развертывании.
+      - key: DB_HOST
+        fromDatabase:
+          name: tunewave-db # Имя базы данных, которую мы объявили выше
+          property: host
+      - key: DB_USER
+        fromDatabase:
+          name: tunewave-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: tunewave-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: tunewave-db
+          property: databaseName
