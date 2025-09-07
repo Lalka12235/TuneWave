@@ -5,6 +5,7 @@ services:
     env_file:
       - .env
     environment:
+      POSTGRES_HOST: ${DB_HOST}
       POSTGRES_USER: ${DB_USER}  
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
@@ -32,7 +33,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
       APP_CONFIG_DB_URL: postgresql+psycopg://${DB_USER}:${DB_PASS}@p{DB_HOST}:5432/${DB_NAME}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: ${REDIS_URL}
       RABBITMQ_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -66,7 +67,7 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
       RABBITMQ_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: ${REDIS_URL}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
