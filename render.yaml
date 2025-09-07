@@ -1,45 +1,45 @@
 # Corrected configuration file for Render.com.
 # This file addresses all the errors from your previous attempt.
 
-# Service 1: PostgreSQL Database
-# The correct type for a managed database on Render is `database`, not `pserv`.
-# The `pserv` type is used for services that require a persistent disk.
-- type: database
-  name: tunewave-db
-  # The plan for the database (starter, hobby, standard, etc.)
-  plan: starter
+# The `services` key is required at the top level to list all services.
+services:
+  # Service 1: PostgreSQL Database
+  # The correct type for a managed database on Render is `database`.
+  - type: database
+    name: tunewave-db
+    # The plan for the database (starter, hobby, standard, etc.)
+    plan: starter
 
-# Service 2: FastAPI Backend
-- type: web
-  name: tunewave-backend
-  # We're using Docker, so we should not specify 'env: python'.
-  # Render will automatically use the Dockerfile to build the service.
-  # If your Dockerfile is not in the root, specify `dockerfilePath: ./path/to/Dockerfile`.
-  dockerfilePath: Dockerfile
+  # Service 2: FastAPI Backend
+  - type: web
+    name: tunewave-backend
+    # We're using Docker, so we should not specify 'env: python'.
+    # Render will automatically use the Dockerfile to build the service.
+    dockerfilePath: Dockerfile
 
-  # The build command is used to install dependencies.
-  buildCommand: uv pip install -r requirements.txt
-  
-  # The start command tells Render how to run your application.
-  # Render requires web services to listen on the port provided by the $PORT environment variable.
-  startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    # The build command is used to install dependencies.
+    buildCommand: uv pip install -r requirements.txt
+    
+    # The start command tells Render how to run your application.
+    # Render requires web services to listen on the port provided by the $PORT environment variable.
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
 
-  # Environment variables to connect to the database.
-  envVars:
-    - key: DB_HOST
-      fromDatabase:
-        name: tunewave-db
-        property: host
-    - key: DB_USER
-      fromDatabase:
-        name: tunewave-db
-        property: user
-    - key: DB_PASSWORD
-      fromDatabase:
-        name: tunewave-db
-        property: password
-    # The property name for the database name is `database`, not `databaseName`.
-    - key: DB_NAME
-      fromDatabase:
-        name: tunewave-db
-        property: database
+    # Environment variables to connect to the database.
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: tunewave-db
+          property: host
+      - key: DB_USER
+        fromDatabase:
+          name: tunewave-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: tunewave-db
+          property: password
+      # The property name for the database name is `database`, not `databaseName`.
+      - key: DB_NAME
+        fromDatabase:
+          name: tunewave-db
+          property: database
