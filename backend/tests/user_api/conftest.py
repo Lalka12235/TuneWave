@@ -3,7 +3,6 @@ from app.models import Base,User
 from app.config.session import engine, SessionLocal
 import uuid
 from sqlalchemy.orm import Session
-from datetime import datetime
 from app.utils import create_access_token
 
 @pytest.fixture
