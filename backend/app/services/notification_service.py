@@ -3,7 +3,7 @@ from app.schemas.notification_schemas import NotificationResponse
 import uuid
 from sqlalchemy.orm import Session
 from app.repositories.notification_repo import NotificationRepository
-from app.models.notification import Notification
+from app.models import Notification
 from app.repositories.user_repo import UserRepository
 from app.repositories.room_repo import RoomRepository
 from app.schemas.enum import NotificationType
@@ -24,7 +24,9 @@ class NotificationService:
     def _check_user_exists(db: Session, user_id: uuid.UUID, detail_message: str):
         """Вспомогательный метод для проверки существования пользователя."""
         user = UserRepository.get_user_by_id(db, user_id)
+        logger.debug('NotificationService: Выполняем поиск пользователя по ID %s в базе данных',str(user_id))
         if not user:
+            logger.error('NotificationService: Во время поиска по ID пользователь %s не был найден в базе данных',str(user_id))
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail_message)
         return user
 
@@ -33,7 +35,9 @@ class NotificationService:
     def _check_room_exists(db: Session, room_id: uuid.UUID, detail_message: str):
         """Вспомогательный метод для проверки существования комнаты."""
         room = RoomRepository.get_room_by_id(db, room_id)
+        logger.debug('NotificationService: Выполняем поиск комнаты по ID %s в базе данных',str(room_id))
         if not room:
+            logger.error('NotificationService: Во время поиска комнаты по ID %s не был найден в базе данных',str(room_id))
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail_message)
         return room
         
@@ -46,6 +50,7 @@ class NotificationService:
         NotificationService._check_user_exists(db, user_id, "Пользователь для получения уведомлений не найден.")
         notifications = NotificationRepository.get_user_notification(db,user_id,limit,offset)
         if not notifications:
+            logger.warning('NotificationService: Список уведомлений у пользователя %s пуст',str(user_id))
             return []
         
 
@@ -90,11 +95,12 @@ class NotificationService:
             new_notification = NotificationRepository.add_notification(
                 db, user_id, notification_type, message, sender_id, room_id,related_object_id
             )
+            logger.info('NotificationService: Уведомление было успешно от %s к %s для входа в комнату %s',str(sender_id),str(user_id),str(room_id))
             db.commit()
             db.refresh(new_notification)
-
             return NotificationService._map_notification_to_response(new_notification)
         except HTTPException as e:
+            logger.error('NotificationService: Произошла ошибка при попытке отправить уведомление от %s к %s для комнаты %s.%r',str(sender_id),str(user_id),str(room_id),e.detail,exc_info=True)
             db.rollback()
             raise e
         except Exception:
@@ -113,12 +119,14 @@ class NotificationService:
         """
         notification = NotificationRepository.get_notification_by_id(db,notification_id)
         if not notification:
+            logger.warning('NotificationService: Уведомление по ID %s не было найдено',str(notification_id))
             raise HTTPException(
                 status_code=404,
                 detail='Уведомление не найдено'
             )
         
         if notification.user_id != current_user_id:
+            logger.warning('NotificationService: Произошла ошибка при отметки уведомления')
             raise HTTPException(
                 status_code=403,
                 detail="У вас нет прав для отметки этого уведомления как прочитанного."
@@ -129,6 +137,7 @@ class NotificationService:
         
         try:
             notification_update = NotificationRepository.mark_notification_as_read(db,notification_id)
+            logger.info('NotificationService: Сообщение успешном отмечено прочитаным по ID %s',str(notification_id))
             db.commit()
             db.refresh(notification_update)
             return NotificationService._map_notification_to_response(notification_update)
@@ -150,6 +159,7 @@ class NotificationService:
         Удаляет уведомление. Только владелец уведомления может его удалить.
         """
         notification = NotificationRepository.get_notification_by_id(db,notification_id)
+        logger.warning('NotificationService: Уведомление по ID %s не было найдено',str(notification_id))
         if not notification:
             raise HTTPException(
                 status_code=404,
@@ -157,6 +167,7 @@ class NotificationService:
             )
         
         if notification.user_id != current_user_id:
+            logger.warning('NotificationService: Произошла ошибка при удалении уведомления')
             raise HTTPException(
                 status_code=403,
                 detail="У вас нет прав для удаление этого уведомления."
@@ -164,12 +175,14 @@ class NotificationService:
         
         try:
             NotificationRepository.delete_notification(db,notification_id)
+            logger.info('NotificationService: Сообщение успешном удалено по ID %s',str(notification_id))
             db.commit()
             return {
                 "status": "success",
                 "detail": "Уведомление успешно удалено."
             }
         except HTTPException as e:
+            logger.error('NotificationService: произошла ошибка при попытке удаления уведомления %s.%r',str(notification_id),e.detail,exc_info=True)
             db.rollback()
             raise e
         except Exception:

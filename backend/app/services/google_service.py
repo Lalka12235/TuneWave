@@ -1,11 +1,11 @@
-from app.models.user import User
+from app.models import User
 from sqlalchemy.orm import Session
 from app.config.settings import settings
 import httpx
 from fastapi import HTTPException,status
 import time
 from app.services.user_service import UserService
-
+from app.logger.log_config import logger
 
 class GoogleService:
 
@@ -29,6 +29,7 @@ class GoogleService:
             HTTPException: Если refresh_token отсутствует или недействителен.
         """
         if not self.user.google_refresh_token:
+            logger.error('GoogleService: У пользователя %s отсутствует Google Refresh Token',str(self.user.id),)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Отсутствует refresh token Google. Требуется повторная авторизация."
@@ -44,11 +45,13 @@ class GoogleService:
 
         try:
             async with httpx.AsyncClient() as client:
+                logger.debug('GoogleService: Делаем запрос в Google для обновления токена по URl %s',token_url)
                 response = await client.post(url=token_url, data=token_data)
                 response.raise_for_status()
                 new_tokens: dict = response.json()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == status.HTTP_400_BAD_REQUEST:
+                logger.error('GoogleService: Произошла ошибка во время обновления токена пользователя %s',str(self.user.id))
                 UserService.update_user_profile(self.db, self.user, {
                     'google_access_token': None,
                     'google_refresh_token': None,
@@ -58,15 +61,18 @@ class GoogleService:
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Токен обновления Google недействителен. Пожалуйста, переавторизуйтесь в Google."
                 )
+            logger.error('GoogleService: Произошла ошибка во время обновления токена пользователя %s.%r',str(self.user.id),e.response.text,exc_info=True)
             raise HTTPException(
                 status_code=e.response.status_code,
-                detail=f"Ошибка при обновлении токена Google: {e.response.text}"
+                detail=f"Ошибка при обновлении токена Google"
             )
         except Exception as e:
+            logger.error('GoogleService: Неизвестная ошибка при обновлении токена Google: %r',exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Неизвестная ошибка при обновлении токена Google: {e}"
+                detail="Неизвестная ошибка при обновлении токена Google"
             )
+        logger.debug('GoogleService: Запрос прошел успешно')
         
         update_data = {
             'google_access_token': new_tokens.get('access_token'),
@@ -75,7 +81,9 @@ class GoogleService:
         
         if 'refresh_token' in new_tokens:
             update_data['google_refresh_token'] = new_tokens['refresh_token']
-        
+        logger.debug('GoogleService: Токен успешно обновлен')
+
+
         UserService.update_user_profile(self.db, self.user, update_data)
         
         return new_tokens

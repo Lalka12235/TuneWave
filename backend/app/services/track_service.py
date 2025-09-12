@@ -95,11 +95,11 @@ class TrackService:
 
         spotify_detail: dict = dict()
         if current_user and current_user.spotify_access_token:
-            db.info(f'FavoriteTrackSevice: У пользователя {current_user.id} найдены токены Spotify. Выполняем поиск трека {spotify_id} через токены пользователя')
+            logger.info(f'FavoriteTrackSevice: У пользователя {current_user.id} найдены токены Spotify. Выполняем поиск трека {spotify_id} через токены пользователя')
             spotify_user_service = SpotifyService(db,current_user)
             spotify_detail = await spotify_user_service.search_track_by_spotify_id(spotify_id)
         else:
-            db.info(f'FavoriteTrackSevice: У пользователя {current_user.id} не найдены токены Spotify. Выполняем поиск трека {spotify_id} через публичные токены')
+            logger.info(f'FavoriteTrackSevice: У пользователя {current_user.id} не найдены токены Spotify. Выполняем поиск трека {spotify_id} через публичные токены')
             spotify_public_service = SpotifyPublicService()
             spotify_detail = await spotify_public_service.search_track_by_spotify_id(spotify_id)
 

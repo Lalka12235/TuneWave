@@ -1,6 +1,6 @@
 from fastapi import HTTPException,status
 from sqlalchemy.orm import Session
-from app.models.user import User
+from app.models import User
 from time import time
 from typing import Any
 import httpx
