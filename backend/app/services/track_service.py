@@ -72,7 +72,7 @@ class TrackService:
     
 
     @staticmethod
-    async def _get_or_create_track(db: Session, spotify_id: str,current_user: User | None = None) -> TrackResponse:
+    async def get_or_create_track(db: Session, spotify_id: str,current_user: User | None = None) -> TrackResponse:
         """
         Ищет трек в нашей базе данных по Spotify ID. Если не находит,
         получает информацию о треке из Spotify API и сохраняет его в нашей БД.
@@ -113,7 +113,7 @@ class TrackService:
         try:
             track_create_data = TrackCreate(**spotify_detail)
             new_track = TrackRepository.create_track(db, track_create_data)
-            logger.info('Создаем')
+            logger.info('TrackService: Создаем трек с Spotify ID %s в базе данных',track_create_data.spotify_id)
             db.commit() 
             db.refresh(new_track) 
             return new_track

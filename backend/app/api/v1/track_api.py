@@ -35,5 +35,5 @@ async def create_track_from_spotify_data(
     """
     Создает трек в базе данных на основе Spotify data
     """
-    return await TrackService.get_or_create_track_from_spotify(db,spotify_data)
+    return await TrackService.get_or_create_track(db,spotify_data)
 
