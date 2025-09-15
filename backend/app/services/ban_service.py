@@ -177,6 +177,6 @@ class BanService:
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Не удалось снять бан из-за внутренней ошибки сервера" 
+                detail="Не удалось снять бан из-за внутренней ошибки сервера" 
             )
 

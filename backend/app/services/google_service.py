@@ -64,9 +64,9 @@ class GoogleService:
             logger.error('GoogleService: Произошла ошибка во время обновления токена пользователя %s.%r',str(self.user.id),e.response.text,exc_info=True)
             raise HTTPException(
                 status_code=e.response.status_code,
-                detail=f"Ошибка при обновлении токена Google"
+                detail="Ошибка при обновлении токена Google"
             )
-        except Exception as e:
+        except Exception:
             logger.error('GoogleService: Неизвестная ошибка при обновлении токена Google: %r',exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

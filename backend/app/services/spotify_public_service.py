@@ -51,7 +51,7 @@ class SpotifyPublicService:
             logger.error('SpotifyPublicService: Неизвестная ошибка при получении токена Spotify: %r',e.response.text,exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Неизвестная ошибка при получении токена Spotify"
+                detail="Неизвестная ошибка при получении токена Spotify"
             )
 
 
@@ -83,18 +83,18 @@ class SpotifyPublicService:
                 logger.error('SpotifyPublicService: Произошла ошибка при отправке запроса на Spotify API по URl %s endpint %s. Проверьте клиентские токены: %r',full_url,endpoint,e.response.text,exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=f"Неавторизованный запрос к Spotify API. Возможно, требуется переавторизация"
+                    detail="Неавторизованный запрос к Spotify API. Возможно, требуется переавторизация"
                 )
             logger.error('SpotifyPublicService: Произошла ошибка при отправке запроса на Spotify API по URl %s ednpoint %s. %r',full_url,endpoint,e.response.text,exc_info=True)
             raise HTTPException(
                 status_code=e.response.status_code,
-                detail=f"Ошибка Spotify API"
+                detail="Ошибка Spotify API"
             )
         except Exception as e:
             logger.error('SpotifyPublicService: Неизвестная ошибка при запросе к Spotify API URl %s endpoint %s. %r',full_url,endpoint,e,exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Неизвестная ошибка при запросе к Spotify API"
+                detail="Неизвестная ошибка при запросе к Spotify API"
             )
         
         

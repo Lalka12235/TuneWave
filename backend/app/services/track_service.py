@@ -113,7 +113,7 @@ class TrackService:
         try:
             track_create_data = TrackCreate(**spotify_detail)
             new_track = TrackRepository.create_track(db, track_create_data)
-            logger.info(f'Создаем')
+            logger.info('Создаем')
             db.commit() 
             db.refresh(new_track) 
             return new_track
