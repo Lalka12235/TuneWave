@@ -13,7 +13,7 @@ import uuid
 from app.config.session import get_db
 from app.auth.auth import get_current_user
 from typing import Annotated
-from app.models.user import User
+from app.models import User
 from app.schemas.message_schemas import MessageCreate
 from app.services.chat_service import ChatService
 from app.ws.connection_manager import manager

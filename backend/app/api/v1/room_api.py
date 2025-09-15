@@ -11,7 +11,7 @@ from app.schemas.user_schemas import UserResponse
 from app.schemas.room_member_schemas import RoomMemberResponse,RoomMemberRoleUpdate,JoinRoomRequest
 from typing import Annotated,Any
 from app.auth.auth import get_current_user
-from app.models.user import User
+from app.models import User
 from app.services.room_service import RoomService
 from app.config.session import get_db
 from sqlalchemy.orm import Session

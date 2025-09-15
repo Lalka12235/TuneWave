@@ -3,7 +3,7 @@ from app.schemas.ban_schemas import BanResponse
 from app.services.ban_service import BanService
 from typing import Annotated
 from app.auth.auth import get_current_user
-from app.models.user import User
+from app.models import User
 from app.config.session import get_db
 from sqlalchemy.orm import Session
 from fastapi_limiter.depends import RateLimiter

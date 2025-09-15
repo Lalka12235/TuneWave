@@ -3,7 +3,7 @@ from app.services.favorite_track_service import FavoriteTrackService
 from app.schemas.favorite_track_schemas import FavoriteTrackResponse,FavoriteTrackAdd
 from app.config.session import get_db
 from sqlalchemy.orm import Session
-from app.models.user import User
+from app.models import User
 from app.auth.auth import get_current_user
 from typing import Annotated,Any
 from fastapi_limiter.depends import RateLimiter

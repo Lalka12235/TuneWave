@@ -5,7 +5,7 @@ from app.schemas.user_schemas import UserResponse,UserUpdate
 from app.services.user_service import UserService
 from app.auth.auth import get_current_user
 from app.config.session import get_db
-from app.models.user import User
+from app.models import User
 from fastapi_limiter.depends import RateLimiter
 import uuid
 from infrastructure.redis.redis import get_redis_client
