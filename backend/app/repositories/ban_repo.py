@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session
-from app.models import Ban
+from app.models.ban import Ban
 import uuid
 
 
@@ -9,9 +9,11 @@ class BanRepository:
     Репозиторий для выполнения операций CRUD над моделью Ban.
     Отвечает за управление записями о банах пользователей.
     """
+    def __init__(self, db: Session):
+        self.db: Session = db
 
-    @staticmethod
-    def get_bans_by_admin(db: Session,user_id: uuid.UUID) -> list[Ban]:
+    
+    def get_bans_by_admin(self,user_id: uuid.UUID) -> list[Ban]:
         """
         Получает список банов, выданных указанным пользователем (кто забанил).
 
@@ -25,12 +27,12 @@ class BanRepository:
         stmt = select(Ban).where(
             Ban.by_ban_user_id== user_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().all()
     
 
-    @staticmethod
-    def get_bans_on_user(db: Session,user_id: uuid.UUID) -> list[Ban]:
+    
+    def get_bans_on_user(self,user_id: uuid.UUID) -> list[Ban]:
         """
         Получает список банов, полученных указанным пользователем (кого забанили).
 
@@ -44,12 +46,12 @@ class BanRepository:
         stmt = select(Ban).where(
             Ban.ban_user_id == user_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().all()
     
 
-    @staticmethod
-    def add_ban(db: Session,room_id: uuid.UUID,ban_user_id: uuid.UUID,reason: str,by_ban_user_id: uuid.UUID) -> Ban | None:
+    
+    def add_ban(self,room_id: uuid.UUID,ban_user_id: uuid.UUID,reason: str,by_ban_user_id: uuid.UUID) -> Ban | None:
         """
         Добавляет новую запись о бане в базу данных.
 
@@ -69,13 +71,13 @@ class BanRepository:
             reason=reason,
             by_ban_user_id=by_ban_user_id,
         )
-        db.add(new_ban_user)
-        db.flush()
+        self.db.add(new_ban_user)
+        self.db.flush()
         return new_ban_user
     
 
-    @staticmethod
-    def remove_ban_local(db: Session,room_id: uuid.UUID,ban_user_id: uuid.UUID) -> bool:
+    
+    def remove_ban_local(self,room_id: uuid.UUID,ban_user_id: uuid.UUID) -> bool:
         """
         Удаляет запись о бане из базы данных.
 
@@ -91,12 +93,12 @@ class BanRepository:
             Ban.room_id == room_id,
             Ban.ban_user_id == ban_user_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.rowcount > 0
     
 
-    @staticmethod
-    def remove_ban_global(db: Session,ban_user_id: uuid.UUID) -> bool:
+    
+    def remove_ban_global(self,ban_user_id: uuid.UUID) -> bool:
         """_summary_
 
         Args:
@@ -110,13 +112,13 @@ class BanRepository:
                 Ban.ban_user_id == ban_user_id,
                 Ban.room_id.is_(None)
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.rowcount > 0
     
 
 
-    @staticmethod
-    def is_user_banned_global(db: Session, user_id: uuid.UUID) -> Ban | None:
+    
+    def is_user_banned_global(self, user_id: uuid.UUID) -> Ban | None:
         """
         Проверяет, забанен ли пользователь ГЛОБАЛЬНО (то есть, во всех комнатах).
 
@@ -131,12 +133,12 @@ class BanRepository:
                 Ban.ban_user_id == user_id,
                 Ban.room_id.is_(None)
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
     
     
-    @staticmethod
-    def is_user_banned_local(db: Session, user_id: uuid.UUID,room_id: uuid.UUID) -> Ban | None:
+    
+    def is_user_banned_local(self, user_id: uuid.UUID,room_id: uuid.UUID) -> Ban | None:
         """
         Проверяет, забанен ли пользователь в КОНКРЕТНОЙ комнате.
 
@@ -152,5 +154,5 @@ class BanRepository:
                 Ban.ban_user_id == user_id,
                 Ban.room_id == room_id
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()

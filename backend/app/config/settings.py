@@ -13,19 +13,11 @@ class Settings(BaseSettings):
 
     APP_CONFIG_DB_URL: str = Field(..., env="APP_CONFIG_DB_URL", description="Полный URL для подключения к базе данных")
     # --- Настройки базы данных ---
-    MODE: str = Field(...,description='Режим базы данных')
-
     DB_HOST: str = Field(..., description="Хост базы данных PostgreSQL")
     DB_PORT: int = Field(..., description="Порт базы данных PostgreSQL")
     DB_USER: str = Field(..., description="Имя пользователя базы данных PostgreSQL")
     DB_PASS: str = Field(..., description="Пароль пользователя базы данных PostgreSQL")
     DB_NAME: str = Field(..., description="Имя базы данных PostgreSQL")
-
-    TEST_DB_HOST: str = Field(..., description="Хост базы данных PostgreSQL")
-    TEST_DB_PORT: str = Field(..., description="Порт базы данных PostgreSQL")
-    TEST_DB_PASS: str = Field(..., description="Имя пользователя базы данных") 
-    TEST_DB_USER: str = Field(..., description="Пароль пользователя базы данных")
-    TEST_DB_NAME: str = Field(..., description="Имя базы данных PostgreSQL")
 
     JWT_SECRET_KEY: str = Field(..., env="JWT_SECRET_KEY", description="Секретный ключ для подписи JWT-токенов")
     ALGORITHM: str = Field("HS256", description="Алгоритм шифрования для JWT")
@@ -96,14 +88,6 @@ class Settings(BaseSettings):
 
     @property
     def sync_db_url(self) -> str:
-        """
-        Возвращает синхронный URL для подключения к базе данных.
-        Используется, например, для Alembic.
-        """
-        return f'postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}'
-    
-    @property
-    def test_sync_db_url(self) -> str:
         """
         Возвращает синхронный URL для подключения к базе данных.
         Используется, например, для Alembic.

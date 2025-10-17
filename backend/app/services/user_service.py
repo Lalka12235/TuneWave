@@ -1,12 +1,11 @@
 from fastapi import HTTPException,status, UploadFile
 from app.repositories.user_repo import UserRepository
-from sqlalchemy.orm import Session
-from app.models import User
+from app.models.user import User
 from app.schemas.user_schemas import UserResponse, UserCreate, UserUpdate,Token,GoogleOAuthData, SpotifyOAuthData
 import uuid
 from typing import Any
 from app.config.settings import settings
-from app.utils import decode_access_token,create_access_token
+from app.utils.jwt import decode_access_token
 from jwt import exceptions
 from infrastructure.celery.tasks import send_email_task
 import os
@@ -15,10 +14,12 @@ from app.logger.log_config import logger
 
 class UserService:
 
-
-    @staticmethod
+    def __init__(self,user_repo: UserRepository):
+        self.user_repo = user_repo
+        
+        
     def _check_for_existing_user_and_raise_if_found(
-        db: Session,
+        self,
         email: str | None = None,
         google_id: str | None = None,
         spotify_id: str | None = None,
@@ -29,7 +30,7 @@ class UserService:
         Если пользователь найден (и его ID не совпадает с exclude_user_id), выбрасывает HTTPException (409 Conflict).
         """
         if email:
-            user = UserRepository.get_user_by_email(db, email)
+            user = self.user_repo.get_user_by_email(email)
             if user and (exclude_user_id is None or user.id != exclude_user_id):
                 logger.warning(f"Попытка создать/обновить пользователя: email '{email}' уже существует.")
                 raise HTTPException(
@@ -38,7 +39,7 @@ class UserService:
                 )
         
         if google_id:
-            user = UserRepository.get_user_by_google_id(db, google_id)
+            user = self.user_repo.get_user_by_google_id(google_id)
             if user and (exclude_user_id is None or user.id != exclude_user_id):
                 logger.warning(f"Попытка создать/обновить пользователя: Google ID '{google_id}' уже существует.")
                 raise HTTPException(
@@ -47,7 +48,7 @@ class UserService:
                 )
         
         if spotify_id:
-            user = UserRepository.get_user_by_spotify_id(db, spotify_id)
+            user = self.user_repo.get_user_by_spotify_id( spotify_id)
             if user and (exclude_user_id is None or user.id != exclude_user_id):
                 logger.warning(f"Попытка создать/обновить пользователя: Spotify ID '{spotify_id}' уже существует.")
                 raise HTTPException(
@@ -56,7 +57,7 @@ class UserService:
                 )
 
 
-    @staticmethod
+    
     def _map_user_to_response(user: User) -> UserResponse:
         """
         Вспомогательный метод для преобразования объекта User SQLAlchemy в Pydantic UserResponse.
@@ -67,8 +68,8 @@ class UserService:
         return UserResponse.model_validate(user)
 
 
-    @staticmethod
-    async def get_user_by_id(db: Session,user_id: uuid.UUID) -> dict[str,Any]:
+    
+    async def get_user_by_id(self,user_id: uuid.UUID) -> dict[str,Any]:
         """
         Получает пользователя по его уникальному ID.
         
@@ -82,7 +83,7 @@ class UserService:
         Returns:
             UserResponse: Pydantic-модель с данными пользователя.
         """
-        user = UserRepository.get_user_by_id(db,user_id)
+        user = self.user_repo.get_user_by_id(user_id)
         if not user:
             logger.warning(f"Запрос пользователя по ID: Пользователь '{user_id}' не найден.")
             raise HTTPException(
@@ -92,8 +93,8 @@ class UserService:
         
         return UserService._map_user_to_response(user)
     
-    @staticmethod
-    def get_user_by_email(db: Session,email: str) -> UserResponse:
+    
+    def get_user_by_email(self,email: str) -> UserResponse:
         """
         Получает пользователя по его email.
         
@@ -107,7 +108,7 @@ class UserService:
         Returns:
             UserResponse: Pydantic-модель с данными пользователя.
         """
-        user = UserRepository.get_user_by_email(db,email)
+        user = self.user_repo.get_user_by_email(email)
         if not user:
             logger.warning(f"Запрос пользователя по email: Пользователь с email '{email}' не найден.")
             raise HTTPException(
@@ -118,8 +119,8 @@ class UserService:
         return UserService._map_user_to_response(user)
     
 
-    @staticmethod
-    def get_user_by_spotify_id(db: Session, spotify_id: str) -> UserResponse:
+    
+    def get_user_by_spotify_id(self, spotify_id: str) -> UserResponse:
         """
         Получает пользователя по его Spotify ID.
         
@@ -133,7 +134,7 @@ class UserService:
         Returns:
             UserResponse: Pydantic-модель с данными пользователя.
         """
-        user = UserRepository.get_user_by_spotify_id(db,spotify_id)
+        user = self.user_repo.get_user_by_spotify_id(spotify_id)
         if not user:
             logger.warning(f"Запрос пользователя по Spotify ID: Пользователь с Spotify ID '{spotify_id}' не найден.")
             raise HTTPException(
@@ -144,8 +145,8 @@ class UserService:
         return UserService._map_user_to_response(user)
     
     
-    @staticmethod
-    def get_user_by_google_id(db: Session,google_id: str) -> UserResponse:
+    
+    def get_user_by_google_id(self,google_id: str) -> UserResponse:
         """
         Получает пользователя по его Google ID.
         
@@ -159,7 +160,7 @@ class UserService:
         Returns:
             UserResponse: Pydantic-модель с данными пользователя.
         """
-        user = UserRepository.get_user_by_google_id(db,google_id)
+        user = self.user_repo.get_user_by_google_id(google_id)
         if not user:
             logger.warning(f"Запрос пользователя по Google ID: Пользователь с Google ID '{google_id}' не найден.")
             raise HTTPException(
@@ -171,8 +172,8 @@ class UserService:
     
 
 
-    @staticmethod
-    async def create_user(db: Session,user_data: UserCreate) -> UserResponse:
+    
+    async def create_user(self,user_data: UserCreate) -> UserResponse:
         """Создание пользователя
 
         Args:
@@ -183,13 +184,13 @@ class UserService:
             UserResponse: Информация о создании
         """
         UserService._check_for_existing_user_and_raise_if_found(
-            db,
+            
             user_data.email,
             user_data.google_id,
             user_data.spotify_id
         )
         try:
-            new_user = UserRepository.create_user(db,user_data.model_dump())
+            new_user = self.user_repo.create_user(user_data.model_dump())
             logger.info(f"Пользователь '{user_data.username}' ({new_user.id}) успешно зарегистрирован.")
             subject = "Добро пожаловать в TuneWave!"
             body = f"""
@@ -206,7 +207,7 @@ class UserService:
                 logger.warning(f'Сообщение на почту не отправилось {email_sent}')
                 pass
         except Exception as e:
-            db.rollback()
+            self.user_repo.db.rollback()
             logger.error(f"Ошибка при создании пользователя '{user_data.email}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -216,8 +217,8 @@ class UserService:
 
         return UserService._map_user_to_response(new_user)
     
-    @staticmethod
-    async def update_user_profile(db: Session, user_id: uuid.UUID, update_data: UserUpdate) -> UserResponse:
+    
+    async def update_user_profile(self, user_id: uuid.UUID, update_data: UserUpdate) -> UserResponse:
         """
         Обновляет профиль пользователя.
         Включает проверку на уникальность email, если он изменяется.
@@ -233,7 +234,7 @@ class UserService:
         Raises:
             HTTPException: Если пользователь не найден (404) или новый email уже занят другим пользователем (409).
         """
-        user = UserRepository.get_user_by_id(db, user_id)
+        user = self.user_repo.get_user_by_id( user_id)
         if not user:
             logger.warning(f"Попытка обновить профиль несуществующего пользователя с ID '{user_id}'.")
             raise HTTPException(
@@ -243,10 +244,10 @@ class UserService:
         
         data_to_update = update_data.model_dump(exclude_unset=True) 
         try:
-            updated_user = UserRepository.update_user(db, user, data_to_update)
+            updated_user = self.user_repo.update_user( user, data_to_update)
             logger.info(f"Профиль пользователя '{user_id}' успешно обновлен.")
         except Exception as e:
-            db.rollback()
+            self.user_repo.db.rollback()
             logger.error(f"Ошибка при обновлении профиля пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -256,8 +257,8 @@ class UserService:
         return UserService._map_user_to_response(updated_user)
     
 
-    @staticmethod
-    def hard_delete_user(db: Session,user_id: uuid.UUID) -> dict[str,Any]:
+    
+    def hard_delete_user(self,user_id: uuid.UUID) -> dict[str,Any]:
         """_summary_
 
         Args:
@@ -270,7 +271,7 @@ class UserService:
         Returns:
             dict[str,Any]: Информация об удалении
         """
-        user = UserRepository.get_user_by_id(db,user_id)
+        user = self.user_repo.get_user_by_id(user_id)
 
         if not user:
             logger.warning(f"Попытка удалить несуществующего пользователя с ID '{user_id}'.")
@@ -279,9 +280,9 @@ class UserService:
                 detail='User not found'
             )
         try:
-            UserRepository.hard_delete_user(db,user_id)
+            self.user_repo.hard_delete_user(user_id)
         except Exception as e:
-            db.rollback()
+            self.user_repo.db.rollback()
             logger.error(f"Ошибка при физическом удалении пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -295,22 +296,22 @@ class UserService:
         }
     
 
-    @staticmethod
-    async def authenticate_user_with_google(db: Session, google_data: GoogleOAuthData) -> tuple[UserResponse, Token]:
+    
+    async def authenticate_user_with_google(self, google_data: GoogleOAuthData) -> tuple[UserResponse, Token]:
         """
         Аутентифицирует пользователя через Google OAuth.
         Создает или обновляет пользователя в БД и возвращает JWT-токен вашего приложения.
         """
 
-        user = UserRepository.get_user_by_email(db, google_data.email)
+        user = self.user_repo.get_user_by_email( google_data.email)
         if not user:
             logger.warning(f'Пользователь не найден {google_data.email}')
-            user = UserRepository.get_user_by_google_id(db, google_data.google_id)
+            user = self.user_repo.get_user_by_google_id( google_data.google_id)
 
         
 
         if user:
-            global_ban = BanRepository.is_user_banned_global(db,user.id)
+            global_ban = BanRepository.is_user_banned_global(user.id)
             if global_ban:
                 logger.warning(f"Попытка входа забаненного пользователя Google: ID '{user.id}'.")
                 raise HTTPException(
@@ -331,10 +332,10 @@ class UserService:
             if google_data.is_email_verified and not user.is_email_verified:
                 update_data['is_email_verified'] = True
             try:
-                user = UserRepository.update_user(db, user, update_data)
+                user = self.user_repo.update_user( user, update_data)
                 logger.info(f"Пользователь '{user.id}' успешно обновлен через Google OAuth.")
             except Exception as e:
-                db.rollback()
+                self.user_repo.db.rollback()
                 logger.error(f"Ошибка при обновлении пользователя '{user.id}' через Google OAuth: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -352,7 +353,7 @@ class UserService:
                 'google_token_expires_at': google_data.google_token_expires_at,
             }
             try:
-                user = UserRepository.create_user(db, user_data)
+                user = self.user_repo.create_user( user_data)
                 logger.info(f"Новый пользователь '{user.id}' зарегистрирован через Google OAuth.")
                 subject = "Добро пожаловать в TuneWave!"
                 body = f"""
@@ -366,7 +367,7 @@ class UserService:
                 """
                 send_email_task.delay(google_data.email, subject, body)
             except Exception as e:
-                db.rollback()
+                self.user_repo.db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Google OAuth '{google_data.email}': {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -374,6 +375,7 @@ class UserService:
                 )
             
         from datetime import timedelta
+        from app.utils.jwt import create_access_token
 
         access_token = create_access_token(
             payload={'sub': str(user.id)},
@@ -383,24 +385,24 @@ class UserService:
         return UserService._map_user_to_response(user), Token(access_token=access_token)
     
 
-    @staticmethod
+    
     async def authenticate_user_with_spotify(
-        db: Session,
+        self,
         spotify_data: SpotifyOAuthData
     ) -> tuple[UserResponse,Token]:
         """
         Аутентифицирует пользователя через Spotify OAuth.
         Создает или обновляет пользователя в БД и возвращает JWT-токен вашего приложения.
         """
-        user = UserRepository.get_user_by_email(db,spotify_data.email)
+        user = self.user_repo.get_user_by_email(spotify_data.email)
         if not user:
             logger.warning(f'Пользователь не найден {spotify_data.email}')
-            user = UserRepository.get_user_by_spotify_id(db,spotify_data.spotify_id)
+            user = self.user_repo.get_user_by_spotify_id(spotify_data.spotify_id)
 
         
 
         if user:
-            global_ban = BanRepository.is_user_banned_global(db,user.id)
+            global_ban = BanRepository.is_user_banned_global(user.id)
             if global_ban:
                 logger.warning(f"Попытка входа забаненного пользователя Spotify: ID '{user.id}'.")
                 raise HTTPException(
@@ -421,10 +423,10 @@ class UserService:
 
             try:
                 if update_data:
-                    user = UserRepository.update_user(db,user,update_data)
+                    user = self.user_repo.update_user(user,update_data)
                     logger.info(f"Пользователь '{user.id}' успешно обновлен через Spotify OAuth.")
             except Exception as e:
-                db.rollback()
+                self.user_repo.db.rollback()
                 logger.error(f"Ошибка при обновлении пользователя '{user.id}' через Spotify OAuth: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -446,7 +448,7 @@ class UserService:
             }
 
             try:
-                user = UserRepository.create_user(db,user_data)
+                user = self.user_repo.create_user(user_data)
                 logger.info(f"Новый пользователь '{user.id}' зарегистрирован через Spotify OAuth.")
                 subject = "Добро пожаловать в TuneWave!"
                 body = f"""
@@ -460,7 +462,7 @@ class UserService:
                 """
                 send_email_task.delay(spotify_data.email, subject, body)
             except Exception as e:
-                db.rollback()
+                self.user_repo.db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Spotify OAuth '{spotify_data.email}': {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -468,6 +470,7 @@ class UserService:
                 )
         
         from datetime import timedelta
+        from app.utils.jwt import create_access_token
 
         access_token = create_access_token(
             payload={'sub': str(user.id)},
@@ -477,8 +480,8 @@ class UserService:
         return UserService._map_user_to_response(user), Token(access_token=access_token)
     
 
-    @staticmethod
-    def get_user_by_token(db: Session,token: str) -> User:
+    
+    def get_user_by_token(self,token: str) -> User:
         """_summary_
 
         Args:
@@ -497,7 +500,7 @@ class UserService:
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail='Невалидный токен: отсутствует ID пользователя'
                 )
-            user = UserService.get_user_by_id(db,user_id)
+            user = UserService.get_user_by_id(user_id)
             return user
         except exceptions.DecodeError:
             logger.warning("Невалидный JWT-токен: ошибка декодирования.")
@@ -508,8 +511,8 @@ class UserService:
         
 
     
-    @staticmethod
-    async def load_avatar(db: Session,user: User,avatar_file: UploadFile) -> UserResponse:
+    
+    async def load_avatar(self,user: User,avatar_file: UploadFile) -> UserResponse:
         """
         Загружает файл аватарки, сохраняет его и обновляет URL в профиле пользователя.
 
@@ -552,7 +555,7 @@ class UserService:
             new_avatar_url = f"{settings.BASE_URL}/avatars/{unique_filename}"
             
             updated_user = await UserService.update_user_profile(
-                db, 
+                 
                 user.id, 
                 UserUpdate(avatar_url=new_avatar_url)
             )
@@ -560,7 +563,7 @@ class UserService:
             return updated_user
             
         except Exception as e:
-            db.rollback()
+            self.user_repo.db.rollback()
             if os.path.exists(file_path):
                 os.remove(file_path)
             logger.error(f"Ошибка сервера при загрузке аватара для пользователя '{user.id}': {e}", exc_info=True)

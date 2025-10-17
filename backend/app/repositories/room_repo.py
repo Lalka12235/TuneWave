@@ -1,8 +1,11 @@
-from app.models import Room,Member_room_association,RoomTrackAssociationModel,User
+from app.models.room import Room
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session,joinedload
 import uuid
 from typing import Any
+from app.models.member_room_association import Member_room_association
+from app.models.room_track_association import RoomTrackAssociationModel
+from app.models.user import User
 
 
 class RoomRepository:
@@ -11,8 +14,11 @@ class RoomRepository:
     над моделью Room в базе данных.
     """
 
-    @staticmethod
-    def get_room_by_id(db: Session, room_id: uuid.UUID) -> Room | None:
+    def __init__(self, db: Session):
+        self.self = db
+
+    
+    def get_room_by_id(self, room_id: uuid.UUID) -> Room | None:
         """
         Получает комнату по ее уникальному идентификатору (ID).
 
@@ -28,12 +34,12 @@ class RoomRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user), # Загружаем участников и их пользователей
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track) # Загружаем очередь и связанные треки
         ).filter(Room.id == room_id)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         # КРИТИЧНО: .unique() для joinedload с коллекциями
         return result.unique().scalar_one_or_none()
     
-    @staticmethod
-    def get_room_by_name(db: Session, name: str) -> Room | None:
+    
+    def get_room_by_name(self, name: str) -> Room | None:
         """
         Получает комнату по ее названию.
 
@@ -49,11 +55,11 @@ class RoomRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         ).filter(Room.name == name)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.unique().scalar_one_or_none()
 
-    @staticmethod
-    def get_all_rooms(db: Session) -> list[Room]:
+    
+    def get_all_rooms(self) -> list[Room]:
         """
         Получает список всех комнат из базы данных.
 
@@ -68,13 +74,13 @@ class RoomRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.unique().scalars().all()
     
 
 
-    @staticmethod
-    def create_room(db: Session,room_data: dict[str, Any]) -> Room:
+    
+    def create_room(self,room_data: dict[str, Any]) -> Room:
         """
         Создает новую комнату в базе данных.
 
@@ -87,11 +93,11 @@ class RoomRepository:
             Room: Созданный объект комнаты.
         """
         new_room = Room(**room_data)
-        db.add(new_room)
+        self.db.add(new_room)
         return new_room
     
-    @staticmethod
-    def update_room(db: Session,room: Room, update_data: dict[str,Any]) -> Room:
+    
+    def update_room(self,room: Room, update_data: dict[str,Any]) -> Room:
         """
         Обновляет существующую комнату в базе данных.
 
@@ -108,8 +114,8 @@ class RoomRepository:
         return room
 
 
-    @staticmethod
-    def delete_room(db: Session, room_id: uuid.UUID) -> bool:
+    
+    def delete_room(self, room_id: uuid.UUID) -> bool:
         """
         Удаляет комнату из базы данных по ее ID.
 
@@ -121,12 +127,12 @@ class RoomRepository:
             bool: True, если комната была успешно удалена, иначе False.
         """
         stmt = delete(Room).where(Room.id == room_id)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.rowcount > 0
     
 
-    @staticmethod
-    def get_active_rooms(db: Session) -> list[Room]:
+    
+    def get_active_rooms(self) -> list[Room]:
         """
         Возвращает список комнат, в которых сейчас играет музыка.
         Связанные объекты current_track загружаются одним запросом.
@@ -136,12 +142,12 @@ class RoomRepository:
         ).options(
             joinedload(Room.room_track),
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().all()
     
 
-    @staticmethod
-    def get_owner_room(db: Session,room_id: uuid.UUID) -> User | None:
+    
+    def get_owner_room(self,room_id: uuid.UUID) -> User | None:
         """_summary_
 
         Args:
@@ -156,6 +162,6 @@ class RoomRepository:
         ).options(
             joinedload(Room.owner),
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
     

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.repositories.chat_repo import ChatRepository
 from app.schemas.message_schemas import MessageCreate,MessageResponse
 from app.services.room_service import RoomService
-from app.models import Message
+from app.models.message import Message
 import uuid
 from datetime import datetime
 from app.logger.log_config import logger
@@ -45,10 +45,8 @@ class ChatService():
         RoomService.get_room_by_id(db,room_id)
         
         if before_timestamp:
-            logger.info(f'ChatService: Сортируем полученные сообщения по дате {before_timestamp} в комнате {room_id}')
             messages = ChatRepository.get_message_for_room(db,room_id,limit,before_timestamp)
 
-        logger.info(f'ChatService: Получены сообщения в комнате {room_id}')
         messages = ChatRepository.get_message_for_room(db,room_id,limit)
 
         return [ChatService._map_message_to_response(message) for message in messages]
@@ -76,14 +74,12 @@ class ChatService():
         user_in_room = RoomService.get_room_members(db,room_id)
 
         if user_id not in [member.id for member in user_in_room]:
-            logger.info(f'ChatService: Сообщение не может быть отправлено в комнату {room_id} потому что пользователь {user_in_room} не состоит в ней')
             raise HTTPException(
                 status_code=403,
                 detail='Вы не находитесь в комнате'
             )
         try:
             new_message = ChatRepository.create_message(db,room_id,user_id,message.text)
-            logger.info(f'ChatService: Создаем сообщение {new_message.id} в комнате {room_id} с текстом {new_message.text}')
             db.commit()
             db.refresh(new_message)
         except Exception as e:
@@ -91,8 +87,10 @@ class ChatService():
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Ошибка при создании сообщения"
+                detail=f"Ошибка при создании сообщения: {e}"
             )
             
+        
+
         return ChatService._map_message_to_response(new_message)
     

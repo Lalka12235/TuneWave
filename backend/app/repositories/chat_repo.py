@@ -1,14 +1,17 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session,joinedload
-from app.models import Message
+from app.models.message import Message
 from datetime import datetime
 import uuid
 
 
 class ChatRepository:
 
-    @staticmethod
-    def get_message_for_room(db: Session,room_id: uuid.UUID,limit: int = 50,before_timestamp: datetime | None = None) -> list[Message]:
+    def __init__(self, db: Session):
+        self.db: Session = db
+
+    
+    def get_message_for_room(self,room_id: uuid.UUID,limit: int = 50,before_timestamp: datetime | None = None) -> list[Message]:
         """Возвращает все сообщения в комнате
 
         Args:
@@ -29,13 +32,13 @@ class ChatRepository:
         if before_timestamp:
             stmt = stmt.where(Message.created_at < before_timestamp)
 
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().all()
 
     
 
-    @staticmethod
-    def create_message(db: Session,room_id: uuid.UUID,user_id: uuid.UUID,text: str) -> Message:
+    
+    def create_message(self,room_id: uuid.UUID,user_id: uuid.UUID,text: str) -> Message:
         """Создает сообщение в базе данных
 
         Args:
@@ -52,6 +55,6 @@ class ChatRepository:
             user_id=user_id,
             text=text,
         )
-        db.add(new_message)
-        db.flush()
+        self.db.add(new_message)
+        self.db.flush()
         return new_message

@@ -1,12 +1,15 @@
 from sqlalchemy import select,delete
-from app.models import User
+from app.models.user import User
 from sqlalchemy.orm import Session
 import uuid
 
 class UserRepository:
 
-    @staticmethod
-    def get_user_by_id(db: Session, user_id: uuid.UUID) -> User | None:
+    def __init__(self,db : Session):
+        self.db = db
+
+    
+    def get_user_by_id(self, user_id: uuid.UUID) -> User | None:
         """
         Получает пользователя по его уникальному ID.
         
@@ -20,11 +23,11 @@ class UserRepository:
         stmt = select(User).where(
             User.id == user_id
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    @staticmethod
-    def get_user_by_email(db: Session, email: str) -> User | None:
+    
+    def get_user_by_email(self, email: str) -> User | None:
         """
         Получает пользователя по его email.
         
@@ -36,11 +39,11 @@ class UserRepository:
             User | None: Объект User, если найден, иначе None.
         """
         stmt = select(User).where(User.email == email)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    @staticmethod
-    def get_user_by_google_id(db: Session, google_id: str) -> User | None:
+    
+    def get_user_by_google_id(self, google_id: str) -> User | None:
         """
         Получает пользователя по его Google ID.
         
@@ -52,11 +55,11 @@ class UserRepository:
             User | None: Объект User, если найден, иначе None.
         """
         stmt = select(User).where(User.google_id == google_id)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    @staticmethod
-    def get_user_by_spotify_id(db: Session, spotify_id: str) -> User | None:
+    
+    def get_user_by_spotify_id(self, spotify_id: str) -> User | None:
         """
         Получает пользователя по его Spotify ID.
         
@@ -68,11 +71,11 @@ class UserRepository:
             User | None: Объект User, если найден, иначе None.
         """
         stmt = select(User).where(User.spotify_id == spotify_id)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
     
-    @staticmethod
-    def create_user(db: Session, user_data: dict) -> User:
+    
+    def create_user(self, user_data: dict) -> User:
         """
         Создает нового пользователя в базе данных.
         
@@ -99,14 +102,14 @@ class UserRepository:
             spotify_token_expires_at=user_data.get('spotify_token_expires_at')
         )
 
-        db.add(new_user)
-        db.flush() # Используем flush, чтобы получить ID нового пользователя до коммита
-        db.refresh(new_user) # Обновляем объект, чтобы убедиться, что все поля (включая ID) актуальны
-        db.commit()
+        self.db.add(new_user)
+        self.db.flush() # Используем flush, чтобы получить ID нового пользователя до коммита
+        self.db.refresh(new_user) # Обновляем объект, чтобы убедиться, что все поля (включая ID) актуальны
+        self.db.commit()
         return new_user
     
-    @staticmethod
-    def update_user(db: Session, user: User, update_data: dict) -> User:
+    
+    def update_user(self, user: User, update_data: dict) -> User:
         """
         Обновляет существующего пользователя в базе данных.
         
@@ -123,15 +126,15 @@ class UserRepository:
         for key, value in update_data.items():
             setattr(user, key, value)
         
-        db.add(user) # Добавляем (или повторно добавляем) объект в сессию для отслеживания изменений.
-        db.flush() # Выполняем операции в БД, но без коммита.
-        db.refresh(user) # Обновляем объект, чтобы убедиться, что все поля (включая updated_at) актуальны.
-        db.commit()
+        self.db.add(user) # Добавляем (или повторно добавляем) объект в сессию для отслеживания изменений.
+        self.db.flush() # Выполняем операции в БД, но без коммита.
+        self.db.refresh(user) # Обновляем объект, чтобы убедиться, что все поля (включая updated_at) актуальны.
+        self.db.commit()
         return user
 
 
-    #@staticmethod
-    #def soft_delete_user(db: Session, user_id: uuid.UUID) -> bool:
+    #
+    #def soft_delete_user(self, user_id: uuid.UUID) -> bool:
     #    """
     #    "Мягко" удаляет пользователя, устанавливая его флаг is_active в False.
     #    Данные пользователя остаются в базе данных.
@@ -148,8 +151,8 @@ class UserRepository:
     #    db.flush() # Применяем изменения в рамках текущей транзакции
     #    return True
 
-    @staticmethod
-    def hard_delete_user(db: Session, user_id: uuid.UUID) -> bool:
+    
+    def hard_delete_user(self, user_id: uuid.UUID) -> bool:
         """
         Полностью удаляет пользователя из базы данных.
         Использовать с крайней осторожностью, так как данные будут безвозвратно утеряны.
@@ -162,6 +165,6 @@ class UserRepository:
             bool: True, если пользователь был удален, иначе False.
         """
         stmt = delete(User).where(User.id == user_id)
-        result = db.execute(stmt)
-        db.commit()
+        result = self.db.execute(stmt)
+        self.db.commit()
         return result.rowcount > 0 

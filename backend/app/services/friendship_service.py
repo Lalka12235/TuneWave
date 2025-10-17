@@ -10,7 +10,7 @@ from app.ws.connection_manager import manager
 from datetime import datetime
 from app.repositories.user_repo import UserRepository
 from app.services.notification_service import NotificationService
-from app.schemas.enum import NotificationType
+from app.models.notification import NotificationType
 from app.logger.log_config import logger
 
 class FriendshipService:
@@ -165,7 +165,7 @@ class FriendshipService:
             db.rollback()
             logger.error(
                 f'FriendshipService: Непредвиденная ошибка при отправке заявки на дружбу от {requester_id} к {accepter_id}.',
-                exc_info=True
+                exc_info=True # Это добавит полную трассировку стека в логи!
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -251,15 +251,16 @@ class FriendshipService:
             logger.error(
                 f'RoomService: Произошла ошибка при приглашении пользователя '
                 f'в комнату . Причина: {http_exc.detail if hasattr(http_exc, "detail") else http_exc}', 
-                exc_info=True
+                exc_info=True # Добавляем полную информацию о трассировке стека
             )
             db.rollback()
-            raise http_exc
-        except Exception as general_exc:
+            raise http_exc # Снова выбрасываем исключение
+        
+        except Exception as general_exc: # Переименовано в 'general_exc'
             logger.error(
                 'RoomService: Неизвестная ошибка при приглашении пользователя '
                 'в комнату .', 
-                exc_info=True
+                exc_info=True # Добавляем полную информацию о трассировке стека
             )
             db.rollback()
             raise HTTPException(
@@ -333,16 +334,16 @@ class FriendshipService:
             )
             raise http_exc
         
-        except Exception as general_exc:
+        except Exception as general_exc: # 💡 ИСПРАВЛЕНИЕ: Добавлено 'as general_exc'
             db.rollback()
             logger.error(
                 f'FriendshipService: Непредвиденная ошибка при отклонении запроса на дружбу {friendship_id} пользователем {current_accepter_id}.',
-                exc_info=True
+                exc_info=True # Это добавит полную трассировку стека в логи!
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось отклонить запрос на дружбу из-за внутренней ошибки сервера."
-            ) from general_exc
+            ) from general_exc # Цепочка исключений для сохранения исходной причины
         
     @staticmethod
     async def delete_friendship(db: Session,friendship_id: uuid.UUID, current_user_id: uuid.UUID) -> dict[str,str]:
@@ -421,13 +422,13 @@ class FriendshipService:
             )
             raise http_exc
         
-        except Exception as general_exc:
+        except Exception as general_exc: # 💡 ИСПРАВЛЕНИЕ: Добавлено 'as general_exc'
             db.rollback()
             logger.error(
                 f'FriendshipService: Непредвиденная ошибка при отклонении запроса на дружбу {friendship_id} пользователем .',
-                exc_info=True
+                exc_info=True # Это добавит полную трассировку стека в логи!
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось отклонить запрос на дружбу из-за внутренней ошибки сервера."
-            ) from general_exc
+            ) from general_exc # Цепочка исключений для сохранения исходной причины

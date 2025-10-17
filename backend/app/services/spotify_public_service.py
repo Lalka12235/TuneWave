@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 import time
 from typing import Any
 from app.schemas.spotify_schemas import SpotifyPlaylistsSearchPaging,SpotifyTrackDetails,SpotifyPlaylistTracksPaging
-from app.logger.log_config import logger
+
 
 class SpotifyPublicService:
     """
@@ -25,7 +25,6 @@ class SpotifyPublicService:
         Если токен уже есть и не истёк, возвращает его.
         """
         if self._token_expires_at > time.time():
-            logger.debug('SpotifyPublicService: Токен еще не истек возвращаем')
             return self._access_token
 
         token_url = f"{self.SPOTIFY_AUTH_URL}"
@@ -37,21 +36,18 @@ class SpotifyPublicService:
 
         try:
             async with httpx.AsyncClient() as client:
-                logger.debug('SpotifyPublicService: Делаем запрос для получения клиентского токена')
                 response = await client.post(url=token_url,data=token_data)
                 response.raise_for_status()
                 spotify_token: dict = response.json()
         except httpx.HTTPStatusError as e:
-            logger.error('SpotifyPublicService: Произошла ошибка авторизации Spotify: %r',e.response.text,exc_info=True)
             raise HTTPException(
                 status_code=e.response.status_code,
                 detail=f"Ошибка авторизации Spotify (Client Credentials Flow): {e.response.text}"
             )
         except Exception as e:
-            logger.error('SpotifyPublicService: Неизвестная ошибка при получении токена Spotify: %r',e.response.text,exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Неизвестная ошибка при получении токена Spotify"
+                detail=f"Неизвестная ошибка при получении токена Spotify: {e}"
             )
 
 
@@ -73,28 +69,24 @@ class SpotifyPublicService:
 
         try:
             async with httpx.AsyncClient() as client:
-                logger.debug('SpotifyPublicService: Делаем запрос на Spotify API по URl %s',full_url)
                 response = await client.request(method, full_url, headers=headers, **kwargs)
                 response.raise_for_status()
                 spotify_response = response.json()
                 return spotify_response
         except httpx.HTTPStatusError as e:
             if e.response.status_code == status.HTTP_401_UNAUTHORIZED:
-                logger.error('SpotifyPublicService: Произошла ошибка при отправке запроса на Spotify API по URl %s endpint %s. Проверьте клиентские токены: %r',full_url,endpoint,e.response.text,exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Неавторизованный запрос к Spotify API. Возможно, требуется переавторизация"
+                    detail=f"Неавторизованный запрос к Spotify API. Возможно, требуется переавторизация: {e.response.text}"
                 )
-            logger.error('SpotifyPublicService: Произошла ошибка при отправке запроса на Spotify API по URl %s ednpoint %s. %r',full_url,endpoint,e.response.text,exc_info=True)
             raise HTTPException(
                 status_code=e.response.status_code,
-                detail="Ошибка Spotify API"
+                detail=f"Ошибка Spotify API ({endpoint}): {e.response.text}"
             )
         except Exception as e:
-            logger.error('SpotifyPublicService: Неизвестная ошибка при запросе к Spotify API URl %s endpoint %s. %r',full_url,endpoint,e,exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Неизвестная ошибка при запросе к Spotify API"
+                detail=f"Неизвестная ошибка при запросе к Spotify API ({endpoint}): {e}"
             )
         
         

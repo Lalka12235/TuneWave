@@ -1,9 +1,10 @@
 from fastapi import APIRouter,Depends,status
 from app.schemas.ban_schemas import BanResponse
 from app.services.ban_service import BanService
+from app.repositories.ban_repo import BanRepository
 from typing import Annotated
 from app.auth.auth import get_current_user
-from app.models import User
+from app.models.user import User
 from app.config.session import get_db
 from sqlalchemy.orm import Session
 from fastapi_limiter.depends import RateLimiter
@@ -16,6 +17,8 @@ ban = APIRouter(
 db_dependencies = Annotated[Session,Depends(get_db)]
 user_dependencies = Annotated[User,Depends(get_current_user)]
 
+ban_service = BanService(BanRepository(db_dependencies))
+
 
 @ban.get(
     '/my-issued',
@@ -26,6 +29,7 @@ user_dependencies = Annotated[User,Depends(get_current_user)]
 async def get_bans_by_admin(
     db: db_dependencies,
     user: user_dependencies,
+    
 ) -> list[BanResponse]:
     """
     Получает список всех банов, которые были выданы текущим аутентифицированным пользователем.

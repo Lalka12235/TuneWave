@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Annotated,Any
 from app.config.session import get_db
 from app.auth.auth import get_current_user
-from app.models import User
+from app.models.user import User
 from app.services.spotify_sevice import SpotifyService
 from app.services.spotify_public_service import SpotifyPublicService
 

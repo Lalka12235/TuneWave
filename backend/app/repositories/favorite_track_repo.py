@@ -1,13 +1,16 @@
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session,joinedload
-from app.models import FavoriteTrack
+from app.models.favorite_track import FavoriteTrack
 import uuid
 
 
 class FavoriteTrackRepository:
 
-    @staticmethod
-    def get_favorite_tracks(db: Session, user_id: uuid.UUID) -> list[FavoriteTrack]:
+    def __init__(self, db: Session):
+        self.self = db
+
+    
+    def get_favorite_tracks(self, user_id: uuid.UUID) -> list[FavoriteTrack]:
         """
         Получает все записи любимых треков для указанного пользователя,
         включая связанные объекты треков.
@@ -26,12 +29,12 @@ class FavoriteTrackRepository:
         ).options(
             joinedload(FavoriteTrack.track)
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().all()
     
 
-    @staticmethod
-    def add_favorite_track(db: Session,user_id: uuid.UUID,track_id: uuid.UUID) -> FavoriteTrack | None:
+    
+    def add_favorite_track(self,user_id: uuid.UUID,track_id: uuid.UUID) -> FavoriteTrack | None:
         """
         Добавляет трек в список избранных треков пользователя.
 
@@ -48,13 +51,13 @@ class FavoriteTrackRepository:
             user_id=user_id,
             track_id=track_id
         )
-        db.add(new_favorite_track)
-        db.refresh(new_favorite_track)
+        self.db.add(new_favorite_track)
+        self.db.refresh(new_favorite_track)
         return new_favorite_track
     
 
-    @staticmethod
-    def remove_favorite_track(db: Session,user_id: uuid.UUID,track_id: uuid.UUID) -> bool:
+    
+    def remove_favorite_track(self,user_id: uuid.UUID,track_id: uuid.UUID) -> bool:
         """
         Удаляет трек из списка избранных треков пользователя.
 
@@ -71,12 +74,12 @@ class FavoriteTrackRepository:
             FavoriteTrack.user_id == user_id,
             FavoriteTrack.track_id == track_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.rowcount > 0
     
 
-    @staticmethod
-    def is_favorite_track(db: Session,user_id: uuid.UUID,track_id: uuid.UUID) -> bool:
+    
+    def is_favorite_track(self,user_id: uuid.UUID,track_id: uuid.UUID) -> bool:
         """
         Проверяет, является ли указанный трек любимым для данного пользователя.
 
@@ -92,5 +95,5 @@ class FavoriteTrackRepository:
             FavoriteTrack.user_id == user_id,
             FavoriteTrack.track_id == track_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return bool(result.first())

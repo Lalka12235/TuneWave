@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete,or_,and_,update
 from sqlalchemy.orm import Session,joinedload
-from app.models import Friendship
+from app.models.friendship import Friendship
 import uuid
 from app.schemas.enum import FriendshipStatus
 from datetime import datetime
@@ -12,8 +12,11 @@ class FriendshipRepository:
     Отвечает за управление записями о дружбе и запросах на дружбу.
     """
 
-    @staticmethod
-    def get_friendship_by_id(db: Session,friendship_id: uuid.UUID) -> Friendship | None:
+    def __init__(self, db: Session):
+        self.self = db
+
+    
+    def get_friendship_by_id(self,friendship_id: uuid.UUID) -> Friendship | None:
         """
         Получает запись о дружбе по её ID.
         Загружает отношения requester и accepter для удобства.
@@ -31,12 +34,12 @@ class FriendshipRepository:
             joinedload(Friendship.requester),
             joinedload(Friendship.accepter),
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
     
 
-    @staticmethod
-    def get_friendship_by_users(db: Session,user1_id: uuid.UUID,user2_id: uuid.UUID) -> Friendship | None:
+    
+    def get_friendship_by_users(self,user1_id: uuid.UUID,user2_id: uuid.UUID) -> Friendship | None:
         """
         Получает запись о дружбе между двумя конкретными пользователями,
         независимо от того, кто отправитель, а кто получатель.
@@ -59,12 +62,12 @@ class FriendshipRepository:
             joinedload(Friendship.requester),
             joinedload(Friendship.accepter),
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
     
 
-    @staticmethod
-    def get_user_friends(db: Session,user_id: uuid.UUID) -> list[Friendship]:
+    
+    def get_user_friends(self,user_id: uuid.UUID) -> list[Friendship]:
         """
         Получает список всех принятых друзей для указанного пользователя.
         Загружает отношения requester и accepter.
@@ -86,12 +89,12 @@ class FriendshipRepository:
             joinedload(Friendship.requester),
             joinedload(Friendship.accepter),
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().all()
     
 
-    @staticmethod
-    def get_sent_requests(db: Session,requester_id: uuid.UUID) -> list[Friendship]:
+    
+    def get_sent_requests(self,requester_id: uuid.UUID) -> list[Friendship]:
         """
         Получает список всех запросов на дружбу, отправленных указанным пользователем,
         которые находятся в статусе PENDING.
@@ -110,12 +113,12 @@ class FriendshipRepository:
         ).options(
             joinedload(Friendship.accepter),
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().all()
     
 
-    @staticmethod
-    def get_received_requests(db: Session,accepter_id: uuid.UUID) -> list[Friendship]:
+    
+    def get_received_requests(self,accepter_id: uuid.UUID) -> list[Friendship]:
         """
         Получает список всех запросов на дружбу, полученных указанным пользователем,
         которые находятся в статусе PENDING.
@@ -134,13 +137,13 @@ class FriendshipRepository:
         ).options(
             joinedload(Friendship.requester),
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().all()
 
 
 
-    @staticmethod
-    def add_friend_requet(db: Session,requester_id: uuid.UUID,accepter_id: uuid.UUID) -> Friendship:
+    
+    def add_friend_requet(self,requester_id: uuid.UUID,accepter_id: uuid.UUID) -> Friendship:
         """
         Создает новый запрос на дружбу со статусом PENDING.
 
@@ -156,13 +159,13 @@ class FriendshipRepository:
             requester_id=requester_id,
             accepter_id=accepter_id,
         )
-        db.add(new_friendship)
-        db.flush()
+        self.db.add(new_friendship)
+        self.db.flush()
         return new_friendship
     
     
-    @staticmethod
-    def update_friendship_status(db: Session,friendship_id: uuid.UUID,new_status: FriendshipStatus,accepted_at: datetime | None = None) -> bool:
+    
+    def update_friendship_status(self,friendship_id: uuid.UUID,new_status: FriendshipStatus,accepted_at: datetime | None = None) -> bool:
         """
         Обновляет статус существующего запроса на дружбу.
 
@@ -177,12 +180,12 @@ class FriendshipRepository:
         stmt = update(Friendship).where(
             Friendship.id == friendship_id,
         ).values(status=new_status,accepted_at=accepted_at)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.rowcount > 0
     
 
-    @staticmethod
-    def delete_friendship(db: Session,friendship_id: uuid.UUID) -> bool:
+    
+    def delete_friendship(self,friendship_id: uuid.UUID) -> bool:
         """
         Удаляет запись о дружбе (или запрос) по её ID.
 
@@ -196,5 +199,5 @@ class FriendshipRepository:
         stmt = delete(Friendship).where(
             Friendship.id == friendship_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.rowcount > 0

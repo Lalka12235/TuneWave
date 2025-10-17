@@ -1,7 +1,9 @@
 from sqlalchemy import select,delete,update,and_
 from sqlalchemy.orm import Session,joinedload
-from app.models import Member_room_association,RoomTrackAssociationModel,Room
+from app.models.member_room_association import Member_room_association
+from app.models.room import Room
 import uuid
+from app.models.room_track_association import RoomTrackAssociationModel
 
 
 class MemberRoomAssociationRepository:
@@ -10,8 +12,11 @@ class MemberRoomAssociationRepository:
     Отвечает за управление связями между пользователями и комнатами (членство).
     """
 
-    @staticmethod
-    def add_member(db: Session,user_id: uuid.UUID,room_id: uuid.UUID,role: str) -> Member_room_association:
+    def __init__(self, db: Session):
+        self.self = db
+
+    
+    def add_member(self,user_id: uuid.UUID,room_id: uuid.UUID,role: str) -> Member_room_association:
         """
         Добавляет пользователя в комнату (создает запись о членстве).
         
@@ -28,12 +33,12 @@ class MemberRoomAssociationRepository:
             room_id=room_id,
             role=role,
         )
-        db.add(new_member_room)
+        self.db.add(new_member_room)
         return new_member_room
     
 
-    @staticmethod
-    def remove_member(db: Session,user_id: uuid.UUID, room_id: uuid.UUID) -> bool:
+    
+    def remove_member(self,user_id: uuid.UUID, room_id: uuid.UUID) -> bool:
         """
         Удаляет пользователя из комнаты (удаляет запись о членстве).
         
@@ -49,12 +54,12 @@ class MemberRoomAssociationRepository:
             Member_room_association.room_id==room_id,
             Member_room_association.user_id==user_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.rowcount > 0
     
 
-    @staticmethod
-    def get_association_by_ids(db: Session, user_id: uuid.UUID, room_id: uuid.UUID) -> Member_room_association | None:
+    
+    def get_association_by_ids(self, user_id: uuid.UUID, room_id: uuid.UUID) -> Member_room_association | None:
         """
         Получает запись об ассоциации (членстве) по ID пользователя и ID комнаты.
         
@@ -71,12 +76,12 @@ class MemberRoomAssociationRepository:
             Member_room_association.room_id==room_id,
             Member_room_association.user_id==user_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
     
 
-    @staticmethod
-    def get_members_by_room_id(db: Session, room_id: uuid.UUID) -> list[Member_room_association]:
+    
+    def get_members_by_room_id(self, room_id: uuid.UUID) -> list[Member_room_association]:
         """
         Получает список объектов User, которые являются участниками данной комнаты.
         
@@ -92,12 +97,12 @@ class MemberRoomAssociationRepository:
         ).options(
             joinedload(Member_room_association.user)
         )
-        result = db.execute(stmt)
+        result = self.b.execute(stmt)
         return result.scalars().all()
     
 
-    @staticmethod
-    def get_rooms_by_user_id(db: Session, user_id: uuid.UUID) -> list[Room]:
+    
+    def get_rooms_by_user_id(self, user_id: uuid.UUID) -> list[Room]:
         """
         Получает список объектов Room, в которых состоит данный пользователь.
         /        Args:
@@ -114,12 +119,12 @@ class MemberRoomAssociationRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.unique().scalars().all()
     
 
-    @staticmethod
-    def update_role(db: Session,room_id: uuid.UUID,user_id: uuid.UUID,role: str) -> Member_room_association | None:
+    
+    def update_role(self,room_id: uuid.UUID,user_id: uuid.UUID,role: str) -> Member_room_association | None:
         """
         Обновляет роль члена комнаты в базе данных.
         
@@ -136,12 +141,12 @@ class MemberRoomAssociationRepository:
                 Member_room_association.user_id == user_id,
                 Member_room_association.room_id == room_id,
             ).values(role=role).returning(Member_room_association)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
     
 
-    @staticmethod
-    def get_member_room_association(db: Session, room_id: uuid.UUID, user_id: uuid.UUID) -> Member_room_association | None:
+    
+    def get_member_room_association(self, room_id: uuid.UUID, user_id: uuid.UUID) -> Member_room_association | None:
         """
         Получает запись об участии пользователя в конкретной комнате.
         Загружает отношения user и room.
@@ -164,5 +169,5 @@ class MemberRoomAssociationRepository:
                Member_room_association.user_id == user_id
            )
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().first()

@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete,update
 from sqlalchemy.orm import Session,joinedload
-from app.models import Notification
+from app.models.notification import Notification
 import uuid
 from app.schemas.enum import NotificationType
 
@@ -11,9 +11,12 @@ class NotificationRepository:
     Отвечает за управление записями уведомлений.
     """
 
+    def __init__(self, db: Session):
+        self.self = db
 
-    @staticmethod
-    def get_notification_by_id(db: Session,notification_id: uuid.UUID) -> Notification | None:
+
+    
+    def get_notification_by_id(self,notification_id: uuid.UUID) -> Notification | None:
         """
         Получает запись об уведомлении по её ID.
         Загружает отношения user, sender и room для удобства.
@@ -30,12 +33,12 @@ class NotificationRepository:
                 joinedload(Notification.sender),
                 joinedload(Notification.room)
         ).where(Notification.id == notification_id)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
     
 
-    @staticmethod
-    def get_user_notification(db: Session,user_id: uuid.UUID,limit: int = 10, offset: int = 0) -> list[Notification]:
+    
+    def get_user_notification(self,user_id: uuid.UUID,limit: int = 10, offset: int = 0) -> list[Notification]:
         """
         Получает список уведомлений для указанного пользователя.
         Может быть отфильтрован по статусу прочитанности.
@@ -58,13 +61,13 @@ class NotificationRepository:
             ).order_by(Notification.created_at.desc()
             ).limit(limit
             ).offset(offset)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().all()
     
 
-    @staticmethod
+    
     def add_notification(
-        db: Session,
+        self,
         user_id: uuid.UUID,
         notification_type: NotificationType,
         message: str,
@@ -95,13 +98,13 @@ class NotificationRepository:
             message=message,
             related_object_id=related_object_id,
         )
-        db.add(new_notification)
-        db.flush()
+        self.db.add(new_notification)
+        self.db.flush()
         return new_notification
     
 
-    @staticmethod
-    def mark_notification_as_read(db: Session,notification_id: uuid.UUID) -> Notification:
+    
+    def mark_notification_as_read(self,notification_id: uuid.UUID) -> Notification:
         """
         Отмечает конкретное уведомление как прочитанное.
 
@@ -115,12 +118,12 @@ class NotificationRepository:
         stmt = update(Notification).where(
             Notification.id == notification_id
         ).values(is_read=True)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result
     
 
-    @staticmethod
-    def delete_notification(db: Session,notification_id: uuid.UUID) -> bool:
+    
+    def delete_notification(self,notification_id: uuid.UUID) -> bool:
         """
         Удаляет запись об уведомлении по её ID.
 
@@ -134,5 +137,5 @@ class NotificationRepository:
         stmt = delete(Notification).where(
             Notification.id == notification_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.rowcount > 0

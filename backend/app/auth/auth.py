@@ -1,4 +1,4 @@
-from app.utils import decode_access_token
+from app.utils.jwt import decode_access_token
 from fastapi import HTTPException,status,Depends
 from typing import Annotated
 from app.repositories.user_repo import UserRepository
@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 
 import uuid
 from app.config.session import get_db
-from app.models import User
+from app.models.user import User
 from app.logger.log_config import logger
 
 #oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")

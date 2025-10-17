@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.config.loggingMiddleware import LogMiddleware
 from app.api.v1.auth_api import auth
 from app.api.v1.user_api import user
@@ -109,3 +110,4 @@ app.include_router(friendship)
 app.include_router(notification)
 
 os.makedirs(settings.AVATARS_STORAGE_DIR,exist_ok=True)
+app.mount("/avatars", StaticFiles(directory=settings.AVATARS_STORAGE_DIR), name="avatars")

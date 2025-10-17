@@ -3,7 +3,8 @@ from app.repositories.ban_repo import BanRepository
 import uuid
 from sqlalchemy.orm import Session
 from app.schemas.ban_schemas import BanResponse,BanCreate,BanRemove
-from app.models import Ban,User
+from app.models.ban import Ban
+from app.models.user import User
 from typing import Any
 from app.logger.log_config import logger
 
@@ -30,10 +31,8 @@ class BanService:
         """
         bans = BanRepository.get_bans_by_admin(db,user_id)
         if not bans:
-            logger.info('BanService: Список забаненных пользователей пуст у %s',str(user_id))
             return []
         
-        logger.info('BanService: Список банов пользователя найден у %s',str(user_id))        
         return [BanService._map_ban_to_response(ban) for ban in bans]
 
     @staticmethod
@@ -50,10 +49,8 @@ class BanService:
         """
         bans = BanRepository.get_bans_on_user(db,user_id)
         if not bans:
-            logger.info('BanService: Список банов пользователя пуст у %s',str(user_id))
             return []
         
-        logger.info('BanService: Спсисок банов пользователя найден у %s',str(user_id))
         return [BanService._map_ban_to_response(ban) for ban in bans]
     
 
@@ -109,11 +106,9 @@ class BanService:
         
         except HTTPException as e:
             db.rollback()
-            logger.error('BanService: произошла ошибка при выдаче бана от %s для %s. %r',str(current_user.id),str(data_ban.ban_user_id),e.detail,exc_info=True)
             raise e
         except Exception:
             db.rollback()
-            logger.error('BanService: Не удалось добавить бан из-за внутренней ошибки сервера')
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось добавить бан из-за внутренней ошибки сервера."
@@ -177,6 +172,6 @@ class BanService:
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Не удалось снять бан из-за внутренней ошибки сервера" 
+                detail=f"Не удалось снять бан из-за внутренней ошибки сервера: {e}" 
             )
 

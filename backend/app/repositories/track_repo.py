@@ -1,56 +1,59 @@
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session
-from app.models import Track
+from app.models.track import Track
 from app.schemas.track_schemas import TrackCreate
 import uuid
 
 
 class TrackRepository:
 
-    @staticmethod
-    def get_track_by_id(db: Session,track_id: uuid.UUID) -> Track | None:
+    def __init__(self, db: Session):
+        self.self = db
+
+    
+    def get_track_by_id(self,track_id: uuid.UUID) -> Track | None:
         """Получает трек по его UUID."""
         stmt = select(Track).where(
             Track.id == track_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
     
 
-    @staticmethod
-    def get_track_by_spotify_id(db: Session,spotify_id: str) -> Track | None:
+    
+    def get_track_by_spotify_id(self,spotify_id: str) -> Track | None:
         """Получает трек по его Spotify ID."""
         stmt = select(Track).where(
             Track.spotify_id == spotify_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalar_one_or_none()
     
 
-    @staticmethod
-    def create_track(db: Session,track_data: TrackCreate) -> Track:
+    
+    def create_track(self,track_data: TrackCreate) -> Track:
         """Создает новый трек в базе данных."""
         new_track = Track(**track_data.model_dump()) 
-        db.add(new_track)
-        db.flush()
+        self.db.add(new_track)
+        self.db.flush()
         return new_track
     
     
-    @staticmethod
-    def delete_track(db: Session, track_id: uuid.UUID) -> bool:
+    
+    def delete_track(self, track_id: uuid.UUID) -> bool:
         """Удаляет трек по его UUID."""
         stmt = delete(Track).where(
             Track.id == track_id,
         )
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.rowcount > 0
     
 
-    @staticmethod
-    def get_all_tracks(db: Session) -> list[Track]:
+    
+    def get_all_tracks(self) -> list[Track]:
         """Получает все треки из базы данных."""
         stmt = select(Track)
-        result = db.execute(stmt)
+        result = self.db.execute(stmt)
         return result.scalars().all()
     
 

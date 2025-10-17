@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.config.session import get_db
 from app.auth.auth import get_current_user
 from typing import Annotated
-from app.models import User
+from app.models.user import User
 from app.services.friendship_service import FriendshipService
 from fastapi_limiter.depends import RateLimiter
 from infrastructure.redis.redis import get_redis_client
