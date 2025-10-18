@@ -1,10 +1,10 @@
-from app.config.session import get_db
-from app.services.room_service import RoomService
-from app.repositories.room_repo import RoomRepository
-from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
-
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+
+from app.config.session import get_db
+from app.repositories.room_repo import RoomRepository
+from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
+from app.services.room_service import RoomService
 from app.services.spotify_sevice import SpotifyService
 
 

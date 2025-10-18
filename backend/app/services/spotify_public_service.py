@@ -1,9 +1,15 @@
-from app.config.settings import settings
-import httpx
-from fastapi import HTTPException, status
 import time
 from typing import Any
-from app.schemas.spotify_schemas import SpotifyPlaylistsSearchPaging,SpotifyTrackDetails,SpotifyPlaylistTracksPaging
+
+import httpx
+from fastapi import HTTPException, status
+
+from app.config.settings import settings
+from app.schemas.spotify_schemas import (
+    SpotifyPlaylistsSearchPaging,
+    SpotifyPlaylistTracksPaging,
+    SpotifyTrackDetails,
+)
 
 
 class SpotifyPublicService:

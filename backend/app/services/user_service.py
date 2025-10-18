@@ -1,17 +1,26 @@
-from fastapi import HTTPException,status, UploadFile
-from app.repositories.user_repo import UserRepository
-from app.models.user import User
-from app.schemas.user_schemas import UserResponse, UserCreate, UserUpdate,Token,GoogleOAuthData, SpotifyOAuthData
+import os
 import uuid
 from typing import Any
-from app.config.settings import settings
-from app.utils.jwt import decode_access_token,create_access_token
-from jwt import exceptions
+
+from fastapi import HTTPException, UploadFile, status
 from infrastructure.celery.tasks import send_email_task
-import os
-from app.repositories.ban_repo import BanRepository
-from app.logger.log_config import logger
+from jwt import exceptions
 from sqlalchemy.orm import Session
+
+from app.config.settings import settings
+from app.logger.log_config import logger
+from app.models.user import User
+from app.repositories.ban_repo import BanRepository
+from app.repositories.user_repo import UserRepository
+from app.schemas.user_schemas import (
+    GoogleOAuthData,
+    SpotifyOAuthData,
+    Token,
+    UserCreate,
+    UserResponse,
+    UserUpdate,
+)
+from app.utils.jwt import create_access_token, decode_access_token
 
 
 class UserService:

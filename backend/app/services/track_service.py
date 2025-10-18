@@ -1,11 +1,13 @@
-from fastapi import HTTPException,status
-from app.repositories.track_repo import TrackRepository
-from app.schemas.track_schemas import TrackResponse,TrackCreate
-from sqlalchemy.orm import Session
-from app.models.track import Track
-from app.services.spotify_public_service import SpotifyPublicService
 import uuid
+
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
 from app.logger.log_config import logger
+from app.models.track import Track
+from app.repositories.track_repo import TrackRepository
+from app.schemas.track_schemas import TrackCreate, TrackResponse
+from app.services.spotify_public_service import SpotifyPublicService
 
 
 class TrackService:

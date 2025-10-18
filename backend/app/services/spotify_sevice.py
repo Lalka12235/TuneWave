@@ -1,13 +1,20 @@
-from fastapi import HTTPException,status
-from sqlalchemy.orm import Session
-from app.models.user import User
 from time import time
 from typing import Any
+
 import httpx
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
 from app.config.settings import settings
-from app.services.spotify_public_service import SpotifyPublicService
-from app.schemas.spotify_schemas import SpotifyPlaylistsSearchPaging,SpotifyTrackDetails,SpotifyPlaylistTracksPaging
 from app.logger.log_config import logger
+from app.models.user import User
+from app.schemas.spotify_schemas import (
+    SpotifyPlaylistsSearchPaging,
+    SpotifyPlaylistTracksPaging,
+    SpotifyTrackDetails,
+)
+from app.services.spotify_public_service import SpotifyPublicService
+
 
 class SpotifyService:
     """

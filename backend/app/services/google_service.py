@@ -1,9 +1,11 @@
-from app.models.user import User
-from sqlalchemy.orm import Session
-from app.config.settings import settings
-import httpx
-from fastapi import HTTPException,status
 import time
+
+import httpx
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.config.settings import settings
+from app.models.user import User
 from app.services.user_service import UserService
 
 

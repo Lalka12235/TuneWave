@@ -1,17 +1,20 @@
-from fastapi import HTTPException,status
+import json
+import uuid
+from datetime import datetime
+
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.logger.log_config import logger
+from app.models.friendship import Friendship
+from app.models.notification import NotificationType
 from app.repositories.friendship_repo import FriendshipRepository
+from app.repositories.user_repo import UserRepository
 from app.schemas.enum import FriendshipStatus
 from app.schemas.friendship_schemas import FriendshipResponse
-from sqlalchemy.orm import Session
-import uuid
-from app.models.friendship import Friendship
-import json
-from app.ws.connection_manager import manager
-from datetime import datetime
-from app.repositories.user_repo import UserRepository
 from app.services.notification_service import NotificationService
-from app.models.notification import NotificationType
-from app.logger.log_config import logger
+from app.ws.connection_manager import manager
+
 
 class FriendshipService:
 

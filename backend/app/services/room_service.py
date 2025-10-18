@@ -1,44 +1,48 @@
-from fastapi import HTTPException,status
-from app.repositories.room_repo import RoomRepository
-from app.repositories.member_room_association_repo import MemberRoomAssociationRepository
-from app.schemas.room_member_schemas import RoomMemberResponse
-from app.models.member_room_association import Member_room_association
-from sqlalchemy.orm import Session
-from app.schemas.room_schemas import RoomResponse, RoomCreate, RoomUpdate,TrackInQueueResponse
-from app.schemas.user_schemas import UserResponse
-from app.services.user_service import UserService
-from app.models.room import Room
-from app.services.track_service import TrackService
-from app.services.spotify_sevice import SpotifyService
+import json
 import uuid
 from typing import Any
-from app.utils.hash import make_hash_pass,verify_pass
-from app.models.user import User
-from app.models.room_track_association import RoomTrackAssociationModel
-from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
+
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
 from app.exceptions.exception import (
-    TrackNotFoundException, 
-    TrackAlreadyInQueueException, 
     RoomNotFoundException,
-    UnauthorizedRoomActionException
+    TrackAlreadyInQueueException,
+    TrackNotFoundException,
+    UnauthorizedRoomActionException,
 )
-from app.ws.connection_manager import manager,GLOBAL_ROOM_ID
-import json
-from app.schemas.enum import Role,NotificationType
-from app.repositories.ban_repo import BanRepository
-from app.services.ban_service import BanService
-from app.schemas.ban_schemas import BanResponse,BanCreate
-from app.services.notification_service import NotificationService
-from app.repositories.notification_repo import NotificationRepository
-from app.schemas.notification_schemas import NotificationResponse
-from app.repositories.user_repo import UserRepository
 from app.logger.log_config import logger
+from app.models.member_room_association import Member_room_association
+from app.models.room import Room
+from app.models.room_track_association import RoomTrackAssociationModel
+from app.models.user import User
+from app.repositories.ban_repo import BanRepository
+from app.repositories.member_room_association_repo import (
+    MemberRoomAssociationRepository,
+)
+from app.repositories.notification_repo import NotificationRepository
+from app.repositories.room_repo import RoomRepository
+from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
+from app.repositories.user_repo import UserRepository
+from app.schemas.ban_schemas import BanCreate, BanResponse
+from app.schemas.enum import NotificationType, Role
+from app.schemas.notification_schemas import NotificationResponse
+from app.schemas.room_member_schemas import RoomMemberResponse
+from app.schemas.room_schemas import (
+    RoomCreate,
+    RoomResponse,
+    RoomUpdate,
+    TrackInQueueResponse,
+)
 from app.schemas.spotify_schemas import SpotifyTrackDetails
-
-
-
-
-
+from app.schemas.user_schemas import UserResponse
+from app.services.ban_service import BanService
+from app.services.notification_service import NotificationService
+from app.services.spotify_sevice import SpotifyService
+from app.services.track_service import TrackService
+from app.services.user_service import UserService
+from app.utils.hash import make_hash_pass, verify_pass
+from app.ws.connection_manager import GLOBAL_ROOM_ID, manager
 
 
 class RoomService:
