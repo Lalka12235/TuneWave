@@ -2,19 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.config.loggingMiddleware import LogMiddleware
-from app.api.v1.auth_api import auth
-from app.api.v1.user_api import user
-from app.api.v1.room_api import room
-from app.api.v1.spotify_api import spotify
-from app.api.v1.spotify_public_api import spotify_public
-from app.api.v1.track_api import track
-from app.api.v1.ws_chat_api import chat_ws
-from app.api.v1.chat_api import chat
-from app.api.v1.favorite_track_api import ft
-from app.api.v1.friendship_api import friendship
-from app.api.v1.ban_api import ban
-from app.api.v1.notification_api import notification
-from app.api.v1.ws_api import ws
+from app.api.v1.all_route import V1_ROUTERS
 from app.logger.log_config import configure_logging
 from app.services.scheduler_service import SchedulerService
 from contextlib import asynccontextmanager
@@ -35,7 +23,7 @@ async def lifespan(app: FastAPI):
     r = redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
     await FastAPILimiter.init(r)
     
-    yield  # Здесь приложение начинает обрабатывать запросы
+    yield
 
     scheduler_service.scheduler.shutdown()
 
@@ -95,19 +83,8 @@ app.add_middleware(
 
 app.add_middleware(LogMiddleware)
 
-app.include_router(auth)
-app.include_router(user)
-app.include_router(room)
-app.include_router(spotify)
-app.include_router(ws)
-app.include_router(spotify_public)
-app.include_router(track)
-app.include_router(chat_ws)
-app.include_router(chat)
-app.include_router(ft)
-app.include_router(ban)
-app.include_router(friendship)
-app.include_router(notification)
+for route in V1_ROUTERS:
+    app.include_router(route)
 
 os.makedirs(settings.AVATARS_STORAGE_DIR,exist_ok=True)
 app.mount("/avatars", StaticFiles(directory=settings.AVATARS_STORAGE_DIR), name="avatars")
