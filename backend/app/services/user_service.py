@@ -5,17 +5,21 @@ from app.schemas.user_schemas import UserResponse, UserCreate, UserUpdate,Token,
 import uuid
 from typing import Any
 from app.config.settings import settings
-from app.utils.jwt import decode_access_token
+from app.utils.jwt import decode_access_token,create_access_token
 from jwt import exceptions
 from infrastructure.celery.tasks import send_email_task
 import os
 from app.repositories.ban_repo import BanRepository
 from app.logger.log_config import logger
+from sqlalchemy.orm import Session
+
 
 class UserService:
 
-    def __init__(self,user_repo: UserRepository):
+    def __init__(self,db: Session,user_repo: UserRepository,ban_repo: BanRepository):
+        self.db = db
         self.user_repo = user_repo
+        self.ban_repo = ban_repo
         
         
     def _check_for_existing_user_and_raise_if_found(
@@ -207,7 +211,7 @@ class UserService:
                 logger.warning(f'Сообщение на почту не отправилось {email_sent}')
                 pass
         except Exception as e:
-            self.user_repo.db.rollback()
+            self.db.rollback()
             logger.error(f"Ошибка при создании пользователя '{user_data.email}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -247,7 +251,7 @@ class UserService:
             updated_user = self.user_repo.update_user( user, data_to_update)
             logger.info(f"Профиль пользователя '{user_id}' успешно обновлен.")
         except Exception as e:
-            self.user_repo.db.rollback()
+            self.db.rollback()
             logger.error(f"Ошибка при обновлении профиля пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -282,7 +286,7 @@ class UserService:
         try:
             self.user_repo.hard_delete_user(user_id)
         except Exception as e:
-            self.user_repo.db.rollback()
+            self.db.rollback()
             logger.error(f"Ошибка при физическом удалении пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -311,7 +315,7 @@ class UserService:
         
 
         if user:
-            global_ban = BanRepository.is_user_banned_global(user.id)
+            global_ban = self.ban_repo.is_user_banned_global(user.id)
             if global_ban:
                 logger.warning(f"Попытка входа забаненного пользователя Google: ID '{user.id}'.")
                 raise HTTPException(
@@ -335,7 +339,7 @@ class UserService:
                 user = self.user_repo.update_user( user, update_data)
                 logger.info(f"Пользователь '{user.id}' успешно обновлен через Google OAuth.")
             except Exception as e:
-                self.user_repo.db.rollback()
+                self.db.rollback()
                 logger.error(f"Ошибка при обновлении пользователя '{user.id}' через Google OAuth: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -367,7 +371,7 @@ class UserService:
                 """
                 send_email_task.delay(google_data.email, subject, body)
             except Exception as e:
-                self.user_repo.db.rollback()
+                self.db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Google OAuth '{google_data.email}': {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -375,7 +379,6 @@ class UserService:
                 )
             
         from datetime import timedelta
-        from app.utils.jwt import create_access_token
 
         access_token = create_access_token(
             payload={'sub': str(user.id)},
@@ -402,7 +405,7 @@ class UserService:
         
 
         if user:
-            global_ban = BanRepository.is_user_banned_global(user.id)
+            global_ban = self.ban_repo.is_user_banned_global(user.id)
             if global_ban:
                 logger.warning(f"Попытка входа забаненного пользователя Spotify: ID '{user.id}'.")
                 raise HTTPException(
@@ -426,7 +429,7 @@ class UserService:
                     user = self.user_repo.update_user(user,update_data)
                     logger.info(f"Пользователь '{user.id}' успешно обновлен через Spotify OAuth.")
             except Exception as e:
-                self.user_repo.db.rollback()
+                self.db.rollback()
                 logger.error(f"Ошибка при обновлении пользователя '{user.id}' через Spotify OAuth: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -462,7 +465,7 @@ class UserService:
                 """
                 send_email_task.delay(spotify_data.email, subject, body)
             except Exception as e:
-                self.user_repo.db.rollback()
+                self.db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Spotify OAuth '{spotify_data.email}': {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -470,7 +473,6 @@ class UserService:
                 )
         
         from datetime import timedelta
-        from app.utils.jwt import create_access_token
 
         access_token = create_access_token(
             payload={'sub': str(user.id)},
@@ -563,7 +565,7 @@ class UserService:
             return updated_user
             
         except Exception as e:
-            self.user_repo.db.rollback()
+            self.db.rollback()
             if os.path.exists(file_path):
                 os.remove(file_path)
             logger.error(f"Ошибка сервера при загрузке аватара для пользователя '{user.id}': {e}", exc_info=True)
