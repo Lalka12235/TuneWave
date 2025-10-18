@@ -7,7 +7,7 @@ from infrastructure.celery.tasks import send_email_task
 from jwt import exceptions
 from sqlalchemy.orm import Session
 
-from app.config.settings import settings
+from app.config.settings import Settings
 from app.logger.log_config import logger
 from app.models.user import User
 from app.repositories.ban_repo import BanRepository
@@ -25,8 +25,9 @@ from app.utils.jwt import create_access_token, decode_access_token
 
 class UserService:
 
-    def __init__(self,db: Session,user_repo: UserRepository,ban_repo: BanRepository):
+    def __init__(self,db: Session,settings: Settings,user_repo: UserRepository,ban_repo: BanRepository):
         self.db = db
+        self.settings = settings
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         
@@ -391,7 +392,7 @@ class UserService:
 
         access_token = create_access_token(
             payload={'sub': str(user.id)},
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            expires_delta=timedelta(minutes=self.self.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
         return UserService._map_user_to_response(user), Token(access_token=access_token)
@@ -485,7 +486,7 @@ class UserService:
 
         access_token = create_access_token(
             payload={'sub': str(user.id)},
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            expires_delta=timedelta(minutes=self.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
         return UserService._map_user_to_response(user), Token(access_token=access_token)
@@ -548,8 +549,8 @@ class UserService:
             )
         
         content = await avatar_file.read()
-        if len(content) > settings.MAX_AVATAR_SIZE_BYTES:
-            logger.warning(f"Размер загруженного файла аватара ({len(content)} байт) превышает лимит ({settings.MAX_AVATAR_SIZE_BYTES} байт).")
+        if len(content) > self.settings.MAX_AVATAR_SIZE_BYTES:
+            logger.warning(f"Размер загруженного файла аватара ({len(content)} байт) превышает лимит ({self.settings.MAX_AVATAR_SIZE_BYTES} байт).")
             raise HTTPException(
                 status_code=400,
                 detail='Ограничения размера файла 5мб'
@@ -557,13 +558,13 @@ class UserService:
         file_extension = avatar_file.filename.split('.')[-1] if '.' in avatar_file.filename else 'png'
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
         
-        file_path = settings.AVATARS_STORAGE_DIR / unique_filename
+        file_path = self.settings.AVATARS_STORAGE_DIR / unique_filename
 
         try:
             with open(f"{file_path}", 'wb') as f:
                 f.write(content)
 
-            new_avatar_url = f"{settings.BASE_URL}/avatars/{unique_filename}"
+            new_avatar_url = f"{self.settings.BASE_URL}/avatars/{unique_filename}"
             
             updated_user = await UserService.update_user_profile(
                  

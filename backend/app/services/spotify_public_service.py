@@ -4,7 +4,7 @@ from typing import Any
 import httpx
 from fastapi import HTTPException, status
 
-from app.config.settings import settings
+from app.config.settings import Settings
 from app.schemas.spotify_schemas import (
     SpotifyPlaylistsSearchPaging,
     SpotifyPlaylistTracksPaging,
@@ -17,12 +17,18 @@ class SpotifyPublicService:
     Сервис для взаимодействия с публичным Spotify API (без авторизации пользователя),
     используя Client Credentials Flow.
     """
+    def __init__(self,settings: Settings):
+        self.settings = settings
+        
+
 
     SPOTIFY_API_BASE_URL = 'https://api.spotify.com/v1'
     SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/api/token'
     
     _access_token = None
     _token_expires_at = 0
+
+    
 
 
     async def _get_access_token_client(self) -> str:
@@ -36,8 +42,8 @@ class SpotifyPublicService:
         token_url = f"{self.SPOTIFY_AUTH_URL}"
         token_data = {
             'grant_type': 'client_credentials',
-            'client_id': settings.SPOTIFY_CLIENT_ID,
-            'client_secret': settings.SPOTIFY_CLIENT_SECRET,
+            'client_id': self.settings.SPOTIFY_CLIENT_ID,
+            'client_secret': self.settings.SPOTIFY_CLIENT_SECRET,
         }
 
         try:
