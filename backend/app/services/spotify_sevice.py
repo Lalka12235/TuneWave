@@ -5,7 +5,7 @@ import httpx
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.config.settings import Settings
+from app.config.settings import settings
 from app.logger.log_config import logger
 from app.models.user import User
 from app.schemas.spotify_schemas import (
@@ -25,9 +25,8 @@ class SpotifyService:
     SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
     SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com/api"
 
-    def __init__(self,db: Session,settings: Settings,user: User,spotify_public: SpotifyPublicService | None = None):
+    def __init__(self,db: Session,user: User,spotify_public: SpotifyPublicService | None = None):
         self.db = db
-        self.settings = settings
         self.user = user
         self._check_user_spotify_credentials()
         self.spotify_public_service = spotify_public
@@ -117,8 +116,8 @@ class SpotifyService:
         token_data = {
             'grant_type': 'refresh_token',
             'refresh_token': self.user.spotify_refresh_token,
-            'client_id': self.settings.SPOTIFY_CLIENT_ID,
-            'client_secret': self.settings.SPOTIFY_CLIENT_SECRET
+            'client_id': settings.SPOTIFY_CLIENT_ID,
+            'client_secret': settings.SPOTIFY_CLIENT_SECRET
         }
 
         headers = {
