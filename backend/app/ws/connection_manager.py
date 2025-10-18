@@ -1,13 +1,15 @@
 from fastapi import WebSocket
 import uuid
 
-GLOBAL_ROOM_ID = uuid.UUID('00000000-0000-0000-0000-000000000000')
+
 
 
 class ConnectionManager:
     def __init__(self):
         self.active_connections: dict[uuid.UUID,list[WebSocket]] = {}
         self.user_connections: dict[uuid.UUID,WebSocket] =  {}
+
+    GLOBAL_ROOM_ID = uuid.UUID('00000000-0000-0000-0000-000000000000')
 
 
     async def connect(self,room_id: uuid.UUID,user_id: uuid.UUID,websocket: WebSocket):
@@ -51,6 +53,3 @@ class ConnectionManager:
         if user_id in self.user_connections:
             websocket = self.user_connections[user_id]
             await websocket.send_text(message)
-
-
-manager = ConnectionManager()

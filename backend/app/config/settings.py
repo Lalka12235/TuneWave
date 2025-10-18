@@ -106,6 +106,3 @@ class Settings(BaseSettings):
         env_file=BASE_DIR / '.env',
         extra='ignore'          
     )
-
-
-settings = Settings()
