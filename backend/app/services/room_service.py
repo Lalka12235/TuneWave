@@ -24,6 +24,7 @@ from app.repositories.notification_repo import NotificationRepository
 from app.repositories.room_repo import RoomRepository
 from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
 from app.repositories.user_repo import UserRepository
+
 from app.schemas.ban_schemas import BanCreate, BanResponse
 from app.schemas.enum import NotificationType, Role
 from app.schemas.notification_schemas import NotificationResponse
@@ -36,24 +37,36 @@ from app.schemas.room_schemas import (
 )
 from app.schemas.spotify_schemas import SpotifyTrackDetails
 from app.schemas.user_schemas import UserResponse
+
 from app.services.ban_service import BanService
 from app.services.notification_service import NotificationService
 from app.services.spotify_sevice import SpotifyService
 from app.services.track_service import TrackService
 from app.services.user_service import UserService
+
 from app.utils.hash import make_hash_pass, verify_pass
 from app.ws.connection_manager import ConnectionManager
 
 
 class RoomService:
 
-    def __init__(self,db: Session,manager: ConnectionManager,user_repo: UserRepository,ban_repo: BanRepository):
-        self.db = db
+    def __init__(
+            self,
+            db: Session,
+            manager: ConnectionManager,
+            user_repo: UserRepository,
+            ban_repo: BanRepository,
+            notify_repo: NotificationRepository,
+            room_track_repo: RoomTrackAssociationRepository,
+        ):
+        self._db = db
         self.manager = manager
         self.user_repo = user_repo
         self.ban_repo = ban_repo
+        self.notify_repo = notify_repo
+        self.room_track_repo = room_track_repo
 
-    
+    @staticmethod
     def _map_room_to_response(room: Room) -> RoomResponse:
         """
         Преобразует объект модели Room в Pydantic-схему RoomResponse,
@@ -99,7 +112,7 @@ class RoomService:
         return room_data
     
     
-    
+    @staticmethod
     def _map_member_to_response(member: Member_room_association) -> RoomMemberResponse:
         """
         Вспомогательный метод для маппинга Member_room_association (включая загруженный User)
@@ -183,14 +196,14 @@ class RoomService:
         room_data_dict.pop('password', None)
         try:
             new_room = RoomRepository.create_room(room_data_dict)
-            self.self.db.flush()
+            self.self._db.flush()
             MemberRoomAssociationRepository.add_member(
                 owner.id,
                 new_room.id,
                 role=Role.OWNER.value
             )
-            self.self.db.commit()
-            self.self.db.refresh(new_room)
+            self.self._db.commit()
+            self.self._db.refresh(new_room)
 
             room_response = RoomService._map_room_to_response(new_room)
             websocket_message = {
@@ -201,7 +214,7 @@ class RoomService:
 
             return RoomService._map_room_to_response(new_room)
         except Exception as e:
-            self.self.db.rollback()
+            self.self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка при создании комнаты: {e}"
@@ -249,12 +262,12 @@ class RoomService:
         try:
             updated_room_db = RoomRepository.update_room(room, data_to_update)
             
-            self.self.db.commit()
-            self.self.db.refresh(updated_room_db)
+            self.self._db.commit()
+            self.self._db.refresh(updated_room_db)
 
             return RoomService._map_room_to_response(updated_room_db)
         except Exception as e:
-            self.self.db.rollback()
+            self.self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка при обновлении комнаты: {e}"
@@ -289,7 +302,7 @@ class RoomService:
         try:
             deleted_successfully = RoomRepository.delete_room(room_id)
 
-            self.self.db.commit()
+            self.self._db.commit()
 
             if deleted_successfully:
                 return {
@@ -298,7 +311,7 @@ class RoomService:
                     'id': str(room_id),
                 }
         except Exception as e:
-            self.self.db.rollback()
+            self.self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Не удалось удалить комнату. {e}"
@@ -376,8 +389,8 @@ class RoomService:
         try:
             new_association = MemberRoomAssociationRepository.add_member(user.id,room_id,role=Role.MEMBER.value)
 
-            self.self.db.commit()
-            self.self.db.refresh(new_association)
+            self.self._db.commit()
+            self.self._db.refresh(new_association)
 
             websocket_message_for_room = {
             "action": "join_room",
@@ -398,7 +411,7 @@ class RoomService:
 
             return RoomService._map_room_to_response(room)
         except Exception as e:
-            self.self.db.rollback()
+            self.self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Не удалось присоединиться к комнате. {e}"
@@ -430,7 +443,7 @@ class RoomService:
             room_name_for_message = existing_association.room.name
             deleted_successfully = MemberRoomAssociationRepository.remove_member(user.id,room_id)
 
-            self.self.db.commit()
+            self.self._db.commit()
 
             websocket_message_for_room = {
             "action": "leave_room",
@@ -457,7 +470,7 @@ class RoomService:
                     'room_id': str(room_id)
                 }
         except Exception as e:
-            self.self.db.rollback()
+            self.self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Не удалось покинуть комнату.{e}"
@@ -544,25 +557,25 @@ class RoomService:
         if not track:
             raise TrackNotFoundException()
         
-        dublicate_in_queue = RoomTrackAssociationRepository.get_association_by_room_and_track(room_id,track.id)
+        dublicate_in_queue = self.room_track_repo.get_association_by_room_and_track(room_id,track.id)
         if dublicate_in_queue:
             raise TrackAlreadyInQueueException()
         
-        order_in_queue = RoomTrackAssociationRepository.get_last_order_in_queue(room_id)
+        order_in_queue = self.room_track_repo.get_last_order_in_queue(room_id)
 
         try:
-            add_track = RoomTrackAssociationRepository.add_track_to_queue(room_id,track.id,order_in_queue,current_user.id)
+            add_track = self.room_track_repo.add_track_to_queue(room_id,track.id,order_in_queue,current_user.id)
 
-            self.self.db.commit()
-            self.self.db.refresh(add_track)
+            self.self._db.commit()
+            self.self._db.refresh(add_track)
         except Exception as e:
-            self.self.db.rollback()
+            self.self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Не удалось добавить трек в очередь{e}."
             )
         try:
-            updated_queue = RoomTrackAssociationRepository.get_queue_for_room( room_id)
+            updated_queue = self.room_track_repo.get_queue_for_room( room_id)
             update_message = {
                 "action": "add",
                 "queue": [
@@ -640,25 +653,25 @@ class RoomService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="У вас недостаточно прав.")
 
         
-        self.db_association = RoomTrackAssociationRepository.get_association_by_id(association_id)
+        self.db_association = self.room_track_repo.get_association_by_id(association_id)
         if not self.db_association or str(self.db_association.room_id) != str(room_id):
             raise ValueError("Ассоциация не найдена или не принадлежит этой комнате.")
         
         try:
-            deleted_successfully = RoomTrackAssociationRepository.remove_track_from_queue_by_association_id(
+            deleted_successfully = self.room_track_repo.remove_track_from_queue_by_association_id(
                 association_id
             )
             if deleted_successfully:
                 RoomService._reorder_queue(room_id)
-                self.self.db.commit()
+                self.self._db.commit()
         except Exception as e:
-            self.self.db.rollback()
+            self.self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Не удалось удалить трек из очередь{e}."
             )
         try:
-            updated_queue = RoomTrackAssociationRepository.get_queue_for_room( room_id)
+            updated_queue = self.room_track_repo.get_queue_for_room( room_id)
             update_message = {
                 "action": "remove",
                 "queue": [
@@ -689,18 +702,18 @@ class RoomService:
         """
         Переупорядочивает order_in_queue для всех оставшихся треков в очереди.
         """
-        queue_association = self.self.db.query(RoomTrackAssociationModel).where(
+        queue_association = self.self._db.query(RoomTrackAssociationModel).where(
             RoomTrackAssociationModel.room_id == room_id,
         ).order_by(RoomTrackAssociationModel.order_in_queue).all()
 
         try:
             for index,assoc in enumerate(queue_association):
                 assoc.order_in_queue = index
-                self.self.db.add(assoc)
+                self.self._db.add(assoc)
 
-            self.self.db.flush()
+            self.self._db.flush()
         except Exception as e:
-            self.self.db.rollback()
+            self.self._db.rollback()
             raise HTTPException(
                 status_code=500,
                 detail=f'Не удалось перепорядочить очередь.{e}'
@@ -717,7 +730,7 @@ class RoomService:
         if room.owner_id != current_user.id:
             raise  UnauthorizedRoomActionException()
         
-        queue = RoomTrackAssociationRepository.get_queue_for_room(room_id)
+        queue = self.room_track_repo.get_queue_for_room(room_id)
         if not queue:
             raise ValueError("Очередь комнаты пуста.")
         
@@ -742,16 +755,16 @@ class RoomService:
             for index, assoc in enumerate(queue):
                 assoc.order_in_queue = index
             
-            self.db.commit()
+            self._db.commit()
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=500,
                 detail=f'Не удалось перепорядочить очередь.{e}'
             )
 
         try:
-            updated_queue = RoomTrackAssociationRepository.get_queue_for_room( room_id)
+            updated_queue = self.room_track_repo.get_queue_for_room( room_id)
             update_message = {
                 "action": "move",
                 "queue": [
@@ -827,12 +840,12 @@ class RoomService:
         room.is_playing = False
 
         try:
-            self.db.add(room)
-            self.db.commit()
-            self.db.refresh(room)
+            self._db.add(room)
+            self._db.commit()
+            self._db.refresh(room)
             logger.info(f"RoomService: Пользователь '{user_id}' успешно назначен хостом воспроизведения для комнаты '{room_id}'.")
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"RoomService: Ошибка при сохранении хоста воспроизведения для комнаты '{room_id}': {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось назначить хоста воспроизведения.")
         
@@ -870,9 +883,9 @@ class RoomService:
             room.is_playing = False
             room.current_track_id = None
             room.current_track_position_ms = 0
-            self.db.add(room)
-            self.db.commit()
-            self.db.refresh(room)
+            self._db.add(room)
+            self._db.commit()
+            self._db.refresh(room)
             logger.info(f"RoomService: Хост воспроизведения для комнаты '{room_id}' (бывший хост: '{old_host_id}') успешно очищен.")
         except Exception as e:
             logger.error(f"RoomService: Ошибка при очистке хоста воспроизведения для комнаты '{room_id}': {e}", exc_info=True)
@@ -913,12 +926,12 @@ class RoomService:
 
 
         try:
-            self.db.add(room)
-            self.db.commit()
-            self.db.refresh(room)
+            self._db.add(room)
+            self._db.commit()
+            self._db.refresh(room)
             logger.debug(f"RoomService: Обновлено состояние воспроизведения для комнаты '{room_id}'. Трек: '{current_playing_track_assoc_id}', Прогресс: {progress_ms}ms, Играет: {is_playing}.")
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"RoomService: Ошибка при обновлении состояния воспроизведения для комнаты '{room_id}': {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось обновить состояние воспроизведения комнаты.")
         
@@ -926,7 +939,7 @@ class RoomService:
         current_track_details: SpotifyTrackDetails | None = None
         current_track_assoc = None
         if current_playing_track_assoc_id:
-            current_track_assoc = RoomTrackAssociationRepository.get_association_by_id( current_playing_track_assoc_id)
+            current_track_assoc = self.room_track_repo.get_association_by_id( current_playing_track_assoc_id)
             if current_track_assoc and current_track_assoc.track:
                 current_track_details = SpotifyTrackDetails.model_validate(current_track_assoc.track)
         
@@ -996,9 +1009,9 @@ class RoomService:
                 logger.info(f"RoomService: Хост '{host_user.id}' по команде пользователя '{current_user.id}' возобновил воспроизведение в комнате '{room_id}'.")
             
             room.is_playing = True
-            self.db.add(room)
-            self.db.commit()
-            self.db.refresh(room)
+            self._db.add(room)
+            self._db.commit()
+            self._db.refresh(room)
 
             playback_state = await spotify_service.get_playback_state()
             if playback_state:
@@ -1011,11 +1024,11 @@ class RoomService:
                 
                 await RoomService.update_room_playback_state(room_id,current_track_assoc_id, playback_state.get('progress_ms', 0), playback_state.get('is_playing', False))
         except HTTPException as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"RoomService: Ошибка HTTP при команде 'play' в комнате '{room_id}' через хоста '{host_user.id}': {e.detail}", exc_info=True)
             raise e
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"RoomService: Неизвестная ошибка при команде 'play' в комнате '{room_id}' через хоста '{host_user.id}': {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при управлении плеером Spotify.")
         
@@ -1062,9 +1075,9 @@ class RoomService:
             )
             logger.info(f"RoomService: Хост '{host_user.id}' по команде пользователя '{current_user.id}' остановил воспроизведение трека '{room.current_track_id}' в комнате '{room_id}'.")
             room.is_playing = False
-            self.db.add(room)
-            self.db.commit()
-            self.db.refresh(room)
+            self._db.add(room)
+            self._db.commit()
+            self._db.refresh(room)
 
             playback_state = await spotify_service.get_playback_state()
             if playback_state:
@@ -1077,11 +1090,11 @@ class RoomService:
                 
                 await RoomService.update_room_playback_state(room_id,current_track_assoc_id, playback_state.get('progress_ms', 0), playback_state.get('is_playing', False))
         except HTTPException as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"RoomService: Ошибка HTTP при команде 'pause' в комнате '{room_id}' через хоста '{host_user.id}': {e.detail}", exc_info=True)
             raise e
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"RoomService: Неизвестная ошибка при команде 'pause' в комнате '{room_id}' через хоста '{host_user.id}': {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при управлении плеером Spotify.")
         
@@ -1139,11 +1152,11 @@ class RoomService:
                 
                 await RoomService.update_room_playback_state(room_id,current_track_assoc_id, playback_state.get('progress_ms', 0), playback_state.get('is_playing', False))
         except HTTPException as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"RoomService: Ошибка HTTP при команде 'skip next' в комнате '{room_id}' через хоста '{host_user.id}': {e.detail}", exc_info=True)
             raise e
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"RoomService: Неизвестная ошибка при команде 'skip next' в комнате '{room_id}' через хоста '{host_user.id}': {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при управлении плеером Spotify.")
         
@@ -1201,11 +1214,11 @@ class RoomService:
                 
                 await RoomService.update_room_playback_state(room_id,current_track_assoc_id, playback_state.get('progress_ms', 0), playback_state.get('is_playing', False))
         except HTTPException as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"RoomService: Ошибка HTTP при команде 'skip previous' в комнате '{room_id}' через хоста '{host_user.id}': {e.detail}", exc_info=True)
             raise e
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"RoomService: Неизвестная ошибка при команде 'skip previous' в комнате '{room_id}' через хоста '{host_user.id}': {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при управлении плеером Spotify.")
         
@@ -1255,7 +1268,7 @@ class RoomService:
         current_track_assoc = None
 
         if room.current_playing_track_association_id:
-            current_track_assoc = RoomTrackAssociationRepository.get_association_by_id( room.current_playing_track_association_id)
+            current_track_assoc = self.room_track_repo.get_association_by_id( room.current_playing_track_association_id)
             if current_track_assoc and current_track_assoc.track:
                 current_track_details = SpotifyTrackDetails.model_validate(current_track_assoc.track)
         
@@ -1353,7 +1366,7 @@ class RoomService:
                     detail="Не удалось обновить роль члена комнаты."
                 )
 
-            self.db.commit() 
+            self._db.commit() 
             
             final_association_for_response = MemberRoomAssociationRepository.get_association_by_ids(
                  target_user_id, room_id
@@ -1386,10 +1399,10 @@ class RoomService:
             return RoomService._map_member_to_response(final_association_for_response)
 
         except HTTPException as e:
-            self.db.rollback()
+            self._db.rollback()
             raise e
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка сервера при изменении роли: {e}"
@@ -1489,7 +1502,7 @@ class RoomService:
                 'detail': f'Вы были кикнуты из комнаты {room.name}'
             }
             MemberRoomAssociationRepository.remove_member(user_id,room_id)
-            self.db.commit()
+            self._db.commit()
             
             await self.manager.send_personal_message(json.dumps(kick_message_for_user),user_id)
             await self.manager.broadcast(room_id,json.dumps(kick_message_for_room))
@@ -1501,10 +1514,10 @@ class RoomService:
             }
             
         except HTTPException as e:
-            self.db.rollback()
+            self._db.rollback()
             raise e
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка сервера при кике пользователя: {e}"
@@ -1572,7 +1585,7 @@ class RoomService:
                 removed_from_room = MemberRoomAssociationRepository.remove_member( target_user_id, room_id)
                 if not removed_from_room:
                     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось подготовить пользователя к бану.")
-                self.db.flush()
+                self._db.flush()
 
             new_ban_entry = self.ban_repo.add_ban(
                 ban_user_id=target_user_id,
@@ -1581,8 +1594,8 @@ class RoomService:
                 by_ban_user_id=current_user.id
             )
 
-            self.db.commit()
-            self.db.refresh(new_ban_entry)
+            self._db.commit()
+            self._db.refresh(new_ban_entry)
 
 
             ban_notification_for_room = {
@@ -1608,10 +1621,10 @@ class RoomService:
             return BanService._map_ban_to_response(new_ban_entry)
 
         except HTTPException as e:
-            self.db.rollback()
+            self._db.rollback()
             raise e
         except Exception:
-            self.db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось забанить пользователя из-за внутренней ошибки сервера."
@@ -1671,7 +1684,7 @@ class RoomService:
             if not unbanned_successfully:
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось снять бан из-за внутренней ошибки сервера.")
             
-            self.db.commit()
+            self._db.commit()
 
             unban_notification_for_room = {
                 "action": "unban",
@@ -1696,10 +1709,10 @@ class RoomService:
             }
 
         except HTTPException as e:
-            self.db.rollback()
+            self._db.rollback()
             raise e
         except Exception:
-            self.db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось снять бан из-за внутренней ошибки сервера."
@@ -1803,7 +1816,7 @@ class RoomService:
                 f'в комнату {room_id}. Причина: {http_exc.detail if hasattr(http_exc, "detail") else http_exc}', 
                 exc_info=True # Добавляем полную информацию о трассировке стека
             )
-            self.db.rollback()
+            self._db.rollback()
             raise http_exc # Снова выбрасываем исключение
         
         except Exception as general_exc: # Переименовано в 'general_exc'
@@ -1812,7 +1825,7 @@ class RoomService:
                 f'в комнату {room_id}.', 
                 exc_info=True # Добавляем полную информацию о трассировке стека
             )
-            self.db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось создать уведомление из-за внутренней ошибки сервера."
@@ -1842,7 +1855,7 @@ class RoomService:
             HTTPException: Если уведомление не найдено, у пользователя нет прав,
                            уведомление не является приглашением, или возникла другая ошибка.
         """
-        notification = NotificationRepository.get_notification_by_id(notification_id)
+        notification = self.notify_repo.get_notification_by_id(notification_id)
         if not notification:
             raise HTTPException(
                 status_code=404,
@@ -1875,7 +1888,7 @@ class RoomService:
             room = RoomRepository.get_room_by_id( room_id)
             if not room:
                 NotificationService.mark_notification_as_read( notification_id, current_user_id)
-                self.db.commit() 
+                self._db.commit() 
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail='Комната, в которую вас пригласили, не найдена или удалена.'
@@ -1889,7 +1902,7 @@ class RoomService:
                 invited_member_in_room = MemberRoomAssociationRepository.get_member_room_association( room_id, invited_user_id)
                 if invited_member_in_room:
                     NotificationService.mark_notification_as_read( notification_id, current_user_id) # Помечаем как прочитанное
-                    self.db.commit() 
+                    self._db.commit() 
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail='Вы уже являетесь участником этой комнаты.'
@@ -1898,7 +1911,7 @@ class RoomService:
                 is_banned_local = self.ban_repo.is_user_banned_local( invited_user_id, room_id)
                 if is_banned_local:
                     NotificationService.mark_notification_as_read( notification_id, current_user_id) # Помечаем как прочитанное
-                    self.db.commit() 
+                    self._db.commit() 
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail='Вы забанены в этой комнате и не можете присоединиться.'
@@ -1910,8 +1923,8 @@ class RoomService:
                 
                 NotificationService.mark_notification_as_read( notification_id, current_user_id)
 
-                self.db.commit()
-                self.db.refresh(new_member_association)
+                self._db.commit()
+                self._db.refresh(new_member_association)
 
                 websocket_message = {
                     "action": "user_joined_room",
@@ -1936,7 +1949,7 @@ class RoomService:
 
             elif action == "decline":
                 NotificationService.mark_notification_as_read( notification_id, current_user_id)
-                self.db.commit()
+                self._db.commit()
 
                 if inviter:
                     await NotificationService.add_notification(
@@ -1956,10 +1969,10 @@ class RoomService:
                 )
 
         except HTTPException as e:
-            self.db.rollback()
+            self._db.rollback()
             raise e
         except Exception:
-            self.db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось обработать приглашение из-за внутренней ошибки сервера."

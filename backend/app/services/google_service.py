@@ -14,7 +14,7 @@ class GoogleService:
     GOOGLE_API_BASE_URl = 'https://oauth2.googleapis.com'
 
     def __init__(self,db: Session,user: User):
-        self.db = db
+        self._db = db
         self.user = user
 
 

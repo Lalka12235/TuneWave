@@ -26,7 +26,7 @@ class SpotifyService:
     SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com/api"
 
     def __init__(self,db: Session,user: User,spotify_public: SpotifyPublicService | None = None):
-        self.db = db
+        self._db = db
         self.user = user
         self._check_user_spotify_credentials()
         self.spotify_public_service = spotify_public
@@ -134,8 +134,8 @@ class SpotifyService:
                 self.user.spotify_access_token = None
                 self.user.spotify_refresh_token = None
                 self.user.spotify_token_expires_at = None
-                self.db.add(self.user)
-                self.db.commit()
+                self._db.add(self.user)
+                self._db.commit()
                 logger.error(f"SpotifyService: Ошибка 400 при обновлении токена Spotify для пользователя {self.user.id}. Refresh-токен недействителен. Ответ: {e.response.text}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -157,9 +157,9 @@ class SpotifyService:
         self.user.spotify_refresh_token = new_tokens.get('refresh_token',self.user.spotify_refresh_token)
         self.user.spotify_token_expires_at = int(time()+ new_tokens['expires_in'])
         
-        self.db.add(self.user)
-        self.db.commit()
-        self.db.refresh(self.user)
+        self._db.add(self.user)
+        self._db.commit()
+        self._db.refresh(self.user)
         
         return {
             'status': 'success',
@@ -234,7 +234,7 @@ class SpotifyService:
             logger.info(f"SpotifyService: Найдены треки для запроса '{query}'. Количество: {len(tracks_list)}.")
             return tracks_list
         logger.warning(f"SpotifyService: Поиск треков Spotify для запроса '{query}' не вернул ожидаемую структуру 'tracks.items': {response_data}")
-        return [] # Возвращаем пустой список, если структура ответа не та.
+        return []
     
 
 

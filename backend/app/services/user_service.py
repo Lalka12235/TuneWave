@@ -26,7 +26,7 @@ from app.utils.jwt import create_access_token, decode_access_token
 class UserService:
 
     def __init__(self,db: Session,user_repo: UserRepository,ban_repo: BanRepository):
-        self.db = db
+        self._db = db
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         
@@ -70,7 +70,7 @@ class UserService:
                 )
 
 
-    
+    @staticmethod
     def _map_user_to_response(user: User) -> UserResponse:
         """
         Вспомогательный метод для преобразования объекта User SQLAlchemy в Pydantic UserResponse.
@@ -220,7 +220,7 @@ class UserService:
                 logger.warning(f'Сообщение на почту не отправилось {email_sent}')
                 pass
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"Ошибка при создании пользователя '{user_data.email}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -260,7 +260,7 @@ class UserService:
             updated_user = self.user_repo.update_user( user, data_to_update)
             logger.info(f"Профиль пользователя '{user_id}' успешно обновлен.")
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"Ошибка при обновлении профиля пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -295,7 +295,7 @@ class UserService:
         try:
             self.user_repo.hard_delete_user(user_id)
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             logger.error(f"Ошибка при физическом удалении пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -348,7 +348,7 @@ class UserService:
                 user = self.user_repo.update_user( user, update_data)
                 logger.info(f"Пользователь '{user.id}' успешно обновлен через Google OAuth.")
             except Exception as e:
-                self.db.rollback()
+                self._db.rollback()
                 logger.error(f"Ошибка при обновлении пользователя '{user.id}' через Google OAuth: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -380,7 +380,7 @@ class UserService:
                 """
                 send_email_task.delay(google_data.email, subject, body)
             except Exception as e:
-                self.db.rollback()
+                self._db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Google OAuth '{google_data.email}': {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -438,7 +438,7 @@ class UserService:
                     user = self.user_repo.update_user(user,update_data)
                     logger.info(f"Пользователь '{user.id}' успешно обновлен через Spotify OAuth.")
             except Exception as e:
-                self.db.rollback()
+                self._db.rollback()
                 logger.error(f"Ошибка при обновлении пользователя '{user.id}' через Spotify OAuth: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -474,7 +474,7 @@ class UserService:
                 """
                 send_email_task.delay(spotify_data.email, subject, body)
             except Exception as e:
-                self.db.rollback()
+                self._db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Spotify OAuth '{spotify_data.email}': {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -574,7 +574,7 @@ class UserService:
             return updated_user
             
         except Exception as e:
-            self.db.rollback()
+            self._db.rollback()
             if os.path.exists(file_path):
                 os.remove(file_path)
             logger.error(f"Ошибка сервера при загрузке аватара для пользователя '{user.id}': {e}", exc_info=True)

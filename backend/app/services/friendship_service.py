@@ -13,10 +13,17 @@ from app.repositories.user_repo import UserRepository
 from app.schemas.enum import FriendshipStatus
 from app.schemas.friendship_schemas import FriendshipResponse
 from app.services.notification_service import NotificationService
-from app.ws.connection_manager import manager
+from app.ws.connection_manager import ConnectionManager
 
 
 class FriendshipService:
+
+    def __init__(self,db: Session,manager: ConnectionManager,friend_repo: FriendshipRepository,notify_service: NotificationService,user_repo: UserRepository):
+        self._db = db
+        self.manager = manager
+        self.friend_repo = friend_repo
+        self.notify_service = notify_service
+        self.user_repo = user_repo
 
     @staticmethod
     def _map_friendship_to_response(friendship: Friendship) -> FriendshipResponse:
@@ -26,8 +33,8 @@ class FriendshipService:
         return FriendshipResponse.model_validate(friendship)
     
 
-    @staticmethod
-    def get_my_fridns(db: Session,user_id: uuid.UUID) -> list[FriendshipResponse]:
+    
+    def get_my_fridns(self,user_id: uuid.UUID) -> list[FriendshipResponse]:
         """
         Получает список всех принятых друзей для указанного пользователя.
 
@@ -38,15 +45,15 @@ class FriendshipService:
         Returns:
             List[FriendshipResponse]: Список объектов FriendshipResponse со статусом ACCEPTED.
         """
-        friendships = FriendshipRepository.get_user_friends(db,user_id)
+        friendships = self.friend_repo.get_user_friends(user_id)
         if not friendships:
             return []
         
-        return [FriendshipService._map_friendship_to_response(friendship) for friendship in friendships]
+        return [self._map_friendship_to_response(friendship) for friendship in friendships]
     
     
-    @staticmethod
-    async def get_my_sent_requests(db: Session, user_id: uuid.UUID) -> list[FriendshipResponse]:
+    
+    async def get_my_sent_requests(self, user_id: uuid.UUID) -> list[FriendshipResponse]:
         """
         Получает список всех запросов на дружбу, отправленных указанным пользователем,
         которые находятся в статусе PENDING.
@@ -58,15 +65,15 @@ class FriendshipService:
         Returns:
             List[FriendshipResponse]: Список объектов FriendshipResponse со статусом PENDING.
         """
-        requests = FriendshipRepository.get_sent_requests(db,user_id)
+        requests = self.friend_repo.get_sent_requests(user_id)
         if not requests:
             return []
         
-        return [FriendshipService._map_friendship_to_response(request) for request in requests]
+        return [self._map_friendship_to_response(request) for request in requests]
     
 
-    @staticmethod
-    async def get_my_received_requests(db: Session,user_id: uuid.UUID) -> list[FriendshipResponse]:
+    
+    async def get_my_received_requests(self,user_id: uuid.UUID) -> list[FriendshipResponse]:
         """
         Получает список всех запросов на дружбу, полученных указанным пользователем,
         которые находятся в статусе PENDING.
@@ -78,15 +85,15 @@ class FriendshipService:
         Returns:
             List[FriendshipResponse]: Список объектов FriendshipResponse со статусом PENDING.
         """
-        requests = FriendshipRepository.get_received_requests(db,user_id)
+        requests = self.friend_repo.get_received_requests(user_id)
         if not requests:
             return []
         
-        return [FriendshipService._map_friendship_to_response(request) for request in requests]
+        return [self._map_friendship_to_response(request) for request in requests]
     
 
-    @staticmethod
-    async def send_friend_request(db: Session,requester_id: uuid.UUID,accepter_id: uuid.UUID) -> FriendshipResponse:
+    
+    async def send_friend_request(self,requester_id: uuid.UUID,accepter_id: uuid.UUID) -> FriendshipResponse:
         """
         Отправляет новый запрос на дружбу.
 
@@ -108,17 +115,17 @@ class FriendshipService:
                 detail='Вы не может добавить самого себя'
             )
         
-        req_user = UserRepository.get_user_by_id(db, requester_id)
+        req_user = self.user_repo.get_user_by_id( requester_id)
         if not req_user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Отправитель запроса не найден.")
         
-        acc_user = UserRepository.get_user_by_id(db, accepter_id)
+        acc_user = self.user_repo.get_user_by_id( accepter_id)
         if not acc_user:
 
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Получатель запроса не найден.")
 
         
-        friendship_by_user = FriendshipRepository.get_friendship_by_users(db,requester_id,accepter_id)
+        friendship_by_user = self.friend_repo.get_friendship_by_users(requester_id,accepter_id)
         if friendship_by_user:
             if friendship_by_user.status == FriendshipStatus.PENDING:
                 raise HTTPException(
@@ -137,11 +144,10 @@ class FriendshipService:
                 )
         
         try:
-            friendship = FriendshipRepository.add_friend_requet(db,requester_id,accepter_id)
-            db.commit()
-            db.refresh(friendship)
-            NotificationService.add_notification(
-                db=db,
+            friendship = self.friend_repo.add_friend_requet(requester_id,accepter_id)
+            self._db.commit()
+            self._db.refresh(friendship)
+            self.notify_service.add_notification(
                 user_id=accepter_id,
                 notification_type=NotificationType.FRIEND_REQUEST,
                 message=f"Вам пришел новый запрос на дружбу от {req_user.username}.",
@@ -155,29 +161,29 @@ class FriendshipService:
                 "requester_username": req_user.username,
                 "detail": f"Вы получили новый запрос на дружбу от {req_user.username}."
             }
-            await manager.send_personal_message(json.dumps(notification_data), str(accepter_id))
-            return FriendshipService._map_friendship_to_response(friendship)
+            await self.manager.send_personal_message(json.dumps(notification_data), str(accepter_id))
+            return self._map_friendship_to_response(friendship)
         except HTTPException as http_exc:
-            db.rollback()
+            self._db.rollback()
             logger.error(
                 f'FriendshipService: Ошибка HTTP при отправке заявки на дружбу от {requester_id} к {accepter_id}. Причина: {http_exc.detail}',
                 exc_info=True
             )
             raise http_exc
-        except Exception as general_exc: # Привязываем исключение к переменной 'general_exc'
-            db.rollback()
+        except Exception as general_exc:
+            self._db.rollback()
             logger.error(
                 f'FriendshipService: Непредвиденная ошибка при отправке заявки на дружбу от {requester_id} к {accepter_id}.',
-                exc_info=True # Это добавит полную трассировку стека в логи!
+                exc_info=True 
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось отправить запрос на дружбу из-за внутренней ошибки сервера."
-            ) from general_exc # Цепочка исключений для сохранения исходной причины
+            ) from general_exc 
         
     
-    @staticmethod
-    async def accept_friend_request(db: Session,friendship_id: uuid.UUID,current_accepter_id: uuid.UUID) -> FriendshipResponse:
+    
+    async def accept_friend_request(self,friendship_id: uuid.UUID,current_accepter_id: uuid.UUID) -> FriendshipResponse:
         """
         Принимает ожидающий запрос на дружбу.
 
@@ -192,7 +198,7 @@ class FriendshipService:
         Raises:
             HTTPException: Если запрос не найден, у пользователя нет прав, или запрос не в статусе PENDING.
         """
-        friendship = FriendshipRepository.get_friendship_by_id(db,friendship_id)
+        friendship = self.friend_repo.get_friendship_by_id(friendship_id)
         if not friendship:
             raise HTTPException(
                 status_code=404,
@@ -212,9 +218,9 @@ class FriendshipService:
             )
 
         try:
-            updated_friendship = FriendshipRepository.update_friendship_status(db,friendship_id,FriendshipStatus.ACCEPTED,datetime.utcnow())
+            updated_friendship = self.friend_repo.update_friendship_status(friendship_id,FriendshipStatus.ACCEPTED,datetime.utcnow())
             if updated_friendship:
-                db.commit()
+                self._db.commit()
             notification_data_requester = {
                 "action": "friend_request_accepted",
                 "friendship_id": str(friendship.id),
@@ -222,16 +228,14 @@ class FriendshipService:
                 "accepter_username": friendship.accepter.username,
                 "detail": f"Ваш запрос на дружбу к {friendship.accepter.username} принят. Вы теперь друзья!"
             }
-            NotificationService.add_notification(
-                db=db,
+            self.notify_service.add_notification(
                 user_id=friendship.requester_id,
                 notification_type=NotificationType.FRIEND_ACCEPTED,
                 message=f"{friendship.accepter.username} принял(а) ваш запрос на дружбу.",
                 sender_id=current_accepter_id, # Тот, кто принял
                 related_object_id=friendship.id
             )
-            NotificationService.add_notification(
-                db=db,
+            self.notify_service.add_notification(
                 user_id=current_accepter_id,
                 notification_type=NotificationType.FRIEND_ACCEPTED,
                 message=f"Вы приняли запрос на дружбу от {friendship.requester.username}. Теперь вы друзья!",
@@ -246,34 +250,34 @@ class FriendshipService:
                 "detail": f"Вы приняли запрос на дружбу от {friendship.requester.username}. Вы теперь друзья!"
             }
 
-            await manager.send_personal_message(json.dumps(notification_data_accepter), str(current_accepter_id))
-            await manager.send_personal_message(json.dumps(notification_data_requester), str(friendship.requester_id))
+            await self.manager.send_personal_message(json.dumps(notification_data_accepter), str(current_accepter_id))
+            await self.manager.send_personal_message(json.dumps(notification_data_requester), str(friendship.requester_id))
             
-            return FriendshipService._map_friendship_to_response(updated_friendship)
-        except HTTPException as http_exc: # Переименовано 'e' в 'http_exc'
+            return self._map_friendship_to_response(updated_friendship)
+        except HTTPException as http_exc:
             logger.error(
                 f'RoomService: Произошла ошибка при приглашении пользователя '
                 f'в комнату . Причина: {http_exc.detail if hasattr(http_exc, "detail") else http_exc}', 
-                exc_info=True # Добавляем полную информацию о трассировке стека
+                exc_info=True
             )
-            db.rollback()
-            raise http_exc # Снова выбрасываем исключение
+            self._db.rollback()
+            raise http_exc
         
-        except Exception as general_exc: # Переименовано в 'general_exc'
+        except Exception as general_exc:
             logger.error(
                 'RoomService: Неизвестная ошибка при приглашении пользователя '
                 'в комнату .', 
-                exc_info=True # Добавляем полную информацию о трассировке стека
+                exc_info=True 
             )
-            db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось создать уведомление из-за внутренней ошибки сервера."
-            ) from general_exc # Цепочка исключений для сохранения исходной причины
+            ) from general_exc #
         
     
-    @staticmethod
-    async def decline_friend_request(db: Session,friendship_id: uuid.UUID,current_accepter_id: uuid.UUID) -> FriendshipResponse:
+    
+    async def decline_friend_request(self,friendship_id: uuid.UUID,current_accepter_id: uuid.UUID) -> FriendshipResponse:
         """
         Отклоняет ожидающий запрос на дружбу.
 
@@ -288,7 +292,7 @@ class FriendshipService:
         Raises:
             HTTPException: Если запрос не найден, у пользователя нет прав, или запрос не в статусе PENDING.
         """
-        friendship = FriendshipRepository.get_friendship_by_id(db,friendship_id)
+        friendship = self.friend_repo.get_friendship_by_id(friendship_id)
         if not friendship:
             raise HTTPException(
                 status_code=404,
@@ -308,9 +312,9 @@ class FriendshipService:
             )
 
         try:
-            updated_friendship = FriendshipRepository.update_friendship_status(db,friendship_id,FriendshipStatus.DECLINED)
+            updated_friendship = self.friend_repo.update_friendship_status(friendship_id,FriendshipStatus.DECLINED)
             if updated_friendship:
-                db.commit()
+                self._db.commit()
             notification_data_requester = {
                 "action": "friend_request_declined",
                 "friendship_id": str(friendship.id),
@@ -318,18 +322,17 @@ class FriendshipService:
                 "accepter_username": friendship.accepter.username,
                 "detail": f"Ваш запрос на дружбу к {friendship.accepter.username} отклонен."
             }
-            NotificationService.add_notification(
-                db=db,
+            self.notify_service.add_notification(
                 user_id=friendship.requester_id, # Уведомление для отправителя запроса
                 notification_type=NotificationType.FRIEND_DECLINED, # Тип уведомления
                 message=f"{friendship.accepter.username} отклонил(а) ваш запрос на дружбу.",
                 sender_id=current_accepter_id, # Тот, кто отклонил
                 related_object_id=friendship.id
             )
-            await manager.send_personal_message(json.dumps(notification_data_requester), str(friendship.requester_id))
-            return FriendshipService._map_friendship_to_response(friendship)
+            await self.manager.send_personal_message(json.dumps(notification_data_requester), str(friendship.requester_id))
+            return self._map_friendship_to_response(friendship)
         except HTTPException as http_exc:
-            db.rollback()
+            self._db.rollback()
             logger.error(
                 f'FriendshipService: HTTP-ошибка при отклонении запроса на дружбу {friendship_id} пользователем {current_accepter_id}. '
                 f'Причина: {http_exc.detail}', 
@@ -337,19 +340,19 @@ class FriendshipService:
             )
             raise http_exc
         
-        except Exception as general_exc: # 💡 ИСПРАВЛЕНИЕ: Добавлено 'as general_exc'
-            db.rollback()
+        except Exception as general_exc:
+            self._db.rollback()
             logger.error(
                 f'FriendshipService: Непредвиденная ошибка при отклонении запроса на дружбу {friendship_id} пользователем {current_accepter_id}.',
-                exc_info=True # Это добавит полную трассировку стека в логи!
+                exc_info=True
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось отклонить запрос на дружбу из-за внутренней ошибки сервера."
-            ) from general_exc # Цепочка исключений для сохранения исходной причины
+            ) from general_exc
         
-    @staticmethod
-    async def delete_friendship(db: Session,friendship_id: uuid.UUID, current_user_id: uuid.UUID) -> dict[str,str]:
+    
+    async def delete_friendship(self,friendship_id: uuid.UUID, current_user_id: uuid.UUID) -> dict[str,str]:
         """
         Отклоняет ожидающий запрос на дружбу.
 
@@ -364,7 +367,7 @@ class FriendshipService:
         Raises:
             HTTPException: Если запрос не найден, у пользователя нет прав, или запрос не в статусе PENDING.
         """
-        friendship = FriendshipRepository.get_friendship_by_id(db,friendship_id)
+        friendship = self.friend_repo.get_friendship_by_id(friendship_id)
         if not friendship:
             raise HTTPException(
                 status_code=404,
@@ -379,24 +382,23 @@ class FriendshipService:
                 )
         
         try:
-            removed_successfully = FriendshipRepository.delete_friendship(db,friendship_id)
+            removed_successfully = self.friend_repo.delete_friendship(friendship_id)
             if not removed_successfully:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Не удалось удалить запись о дружбе из-за внутренней ошибки сервера."
                 )
-            db.commit()
+            self._db.commit()
             other_user_id = None
             if friendship.requester_id == current_user_id:
                 other_user_id = friendship.accepter_id
                 notification_message = f"{friendship.requester.username} удалил(а) запись о вашей дружбе."
-            else: # current_user_id == friendship.accepter_id
+            else:
                 other_user_id = friendship.requester_id
                 notification_message = f"{friendship.accepter.username} удалил(а) запись о вашей дружбе."
             
             if other_user_id:
-                NotificationService.add_notification(
-                    db=db,
+                self.notify_service.add_notification(
                     user_id=other_user_id, # Уведомление для "другой" стороны
                     notification_type=NotificationType.FRIENDSHIP_DELETED, # Новый тип уведомления
                     message=notification_message,
@@ -411,13 +413,13 @@ class FriendshipService:
                 "deleted_by": str(current_user_id),
                 "detail": f"Запись о дружбе с пользователем {current_user_id} удалена."
             }
-            await manager.send_personal_message(json.dumps(notification_data), target_user_id_for_notification)
+            await self.manager.send_personal_message(json.dumps(notification_data), target_user_id_for_notification)
             return {
                 'action': 'delete friendship',
                 'status': 'success'
             }
         except HTTPException as http_exc:
-            db.rollback()
+            self._db.rollback()
             logger.error(
                 f'FriendshipService: HTTP-ошибка при отклонении запроса на дружбу {friendship_id} пользователем . '
                 f'Причина: {http_exc.detail}', 
@@ -425,13 +427,13 @@ class FriendshipService:
             )
             raise http_exc
         
-        except Exception as general_exc: # 💡 ИСПРАВЛЕНИЕ: Добавлено 'as general_exc'
-            db.rollback()
+        except Exception as general_exc:
+            self._db.rollback()
             logger.error(
                 f'FriendshipService: Непредвиденная ошибка при отклонении запроса на дружбу {friendship_id} пользователем .',
-                exc_info=True # Это добавит полную трассировку стека в логи!
+                exc_info=True
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось отклонить запрос на дружбу из-за внутренней ошибки сервера."
-            ) from general_exc # Цепочка исключений для сохранения исходной причины
+            ) from general_exc

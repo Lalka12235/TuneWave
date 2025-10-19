@@ -14,6 +14,12 @@ from app.schemas.notification_schemas import NotificationResponse
 
 class NotificationService:
 
+    def __init__(self,db: Session,notify_repo: NotificationRepository,user_repo: UserRepository,room_repo: RoomRepository):
+        self._db = db
+        self.notify_repo = notify_repo
+        self.user_repo = user_repo
+        self.room_repo = room_repo
+
     @staticmethod
     def _map_notification_to_response(notification: Notification) -> NotificationResponse:
         """
@@ -22,41 +28,41 @@ class NotificationService:
         return NotificationResponse.model_validate(notification)
     
 
-    @staticmethod
-    def _check_user_exists(db: Session, user_id: uuid.UUID, detail_message: str):
+    
+    def _check_user_exists(self, user_id: uuid.UUID, detail_message: str):
         """Вспомогательный метод для проверки существования пользователя."""
-        user = UserRepository.get_user_by_id(db, user_id)
+        user = self.user_repo.get_user_by_id( user_id)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail_message)
         return user
 
 
-    @staticmethod
-    def _check_room_exists(db: Session, room_id: uuid.UUID, detail_message: str):
+    
+    def _check_room_exists(self, room_id: uuid.UUID, detail_message: str):
         """Вспомогательный метод для проверки существования комнаты."""
-        room = RoomRepository.get_room_by_id(db, room_id)
+        room = self.room_repo.get_room_by_id( room_id)
         if not room:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail_message)
         return room
         
 
-    @staticmethod
-    def get_user_notifications(db: Session, user_id: uuid.UUID,limit: int = 10, offset: int = 0) -> list[NotificationResponse]:
+    
+    def get_user_notifications(self, user_id: uuid.UUID,limit: int = 10, offset: int = 0) -> list[NotificationResponse]:
         """
         Получает список уведомлений для указанного пользователя.
         """
-        NotificationService._check_user_exists(db, user_id, "Пользователь для получения уведомлений не найден.")
-        notifications = NotificationRepository.get_user_notification(db,user_id,limit,offset)
+        self._check_user_exists( user_id, "Пользователь для получения уведомлений не найден.")
+        notifications = self.notify_repo.get_user_notification(user_id,limit,offset)
         if not notifications:
             return []
         
 
-        return [NotificationService._map_notification_to_response(notification) for notification in notifications]
+        return [self._map_notification_to_response(notification) for notification in notifications]
     
 
-    @staticmethod
+    
     def add_notification(
-        db: Session,
+        self,
         user_id: uuid.UUID,
         notification_type: NotificationType,
         message: str,
@@ -79,41 +85,41 @@ class NotificationService:
         Returns:
             NotificationResponse: Детали созданного уведомления.
         """
-        NotificationService._check_user_exists(db, user_id, "Пользователь-получатель уведомления не найден.")
+        self._check_user_exists( user_id, "Пользователь-получатель уведомления не найден.")
 
         if sender_id:
-            NotificationService._check_user_exists(db, sender_id, "Отправитель уведомления не найден.")
+            self._check_user_exists( sender_id, "Отправитель уведомления не найден.")
 
         if room_id:
-            NotificationService._check_room_exists(db, room_id, "Комната, связанная с уведомлением, не найдена.")
+            self._check_room_exists( room_id, "Комната, связанная с уведомлением, не найдена.")
 
         
         try:
-            new_notification = NotificationRepository.add_notification(
-                db, user_id, notification_type, message, sender_id, room_id,related_object_id
+            new_notification = self.notify_repo.add_notification(
+                 user_id, notification_type, message, sender_id, room_id,related_object_id
             )
-            db.commit()
-            db.refresh(new_notification)
+            self._db.commit()
+            self._db.refresh(new_notification)
 
-            return NotificationService._map_notification_to_response(new_notification)
+            return self._map_notification_to_response(new_notification)
         except HTTPException as e:
-            db.rollback()
+            self._db.rollback()
             raise e
         except Exception:
-            db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось создать уведомление из-за внутренней ошибки сервера."
             )
         
     
-    @staticmethod
-    def mark_notification_as_read(db: Session, notification_id: uuid.UUID, current_user_id: uuid.UUID) -> NotificationResponse:
+    
+    def mark_notification_as_read(self, notification_id: uuid.UUID, current_user_id: uuid.UUID) -> NotificationResponse:
         """
         Отмечает конкретное уведомление как прочитанное.
         Только владелец уведомления может его отметить как прочитанное.
         """
-        notification = NotificationRepository.get_notification_by_id(db,notification_id)
+        notification = self.notify_repo.get_notification_by_id(notification_id)
         if not notification:
             raise HTTPException(
                 status_code=404,
@@ -127,31 +133,31 @@ class NotificationService:
             )
         
         if notification.is_read:
-            return NotificationService._map_notification_to_response(notification)
+            return self._map_notification_to_response(notification)
         
         try:
-            notification_update = NotificationRepository.mark_notification_as_read(db,notification_id)
-            db.commit()
-            db.refresh(notification_update)
-            return NotificationService._map_notification_to_response(notification_update)
+            notification_update = self.notify_repo.mark_notification_as_read(notification_id)
+            self._db.commit()
+            self._db.refresh(notification_update)
+            return self._map_notification_to_response(notification_update)
         except HTTPException as e:
             logger.error(f'NotificationService: произошла ошибка при попытке прочтения уведомления {notification_id} от пользователя {notification.sender_id} к пользователю {notification.user_id}.{e}',exc_info=True)
-            db.rollback()
+            self._db.rollback()
             raise e
         except Exception:
-            db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось отметить уведомление как прочитанное из-за внутренней ошибки сервера."
             )
         
     
-    @staticmethod
-    def delete_notification(db: Session, notification_id: uuid.UUID, current_user_id: uuid.UUID) -> dict[str, str]:
+    
+    def delete_notification(self, notification_id: uuid.UUID, current_user_id: uuid.UUID) -> dict[str, str]:
         """
         Удаляет уведомление. Только владелец уведомления может его удалить.
         """
-        notification = NotificationRepository.get_notification_by_id(db,notification_id)
+        notification = self.notify_repo.get_notification_by_id(notification_id)
         if not notification:
             raise HTTPException(
                 status_code=404,
@@ -165,17 +171,17 @@ class NotificationService:
             )
         
         try:
-            NotificationRepository.delete_notification(db,notification_id)
-            db.commit()
+            self.notify_repo.delete_notification(notification_id)
+            self._db.commit()
             return {
                 "status": "success",
                 "detail": "Уведомление успешно удалено."
             }
         except HTTPException as e:
-            db.rollback()
+            self._db.rollback()
             raise e
         except Exception:
-            db.rollback()
+            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось удалить уведомление из-за внутренней ошибки сервера."
