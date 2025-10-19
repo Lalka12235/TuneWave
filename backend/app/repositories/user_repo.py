@@ -6,7 +6,7 @@ import uuid
 class UserRepository:
 
     def __init__(self,db : Session):
-        self.db = db
+        self._db = db
 
     
     def get_user_by_id(self, user_id: uuid.UUID) -> User | None:
@@ -23,7 +23,7 @@ class UserRepository:
         stmt = select(User).where(
             User.id == user_id
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
 
     
@@ -39,7 +39,7 @@ class UserRepository:
             User | None: Объект User, если найден, иначе None.
         """
         stmt = select(User).where(User.email == email)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
 
     
@@ -55,7 +55,7 @@ class UserRepository:
             User | None: Объект User, если найден, иначе None.
         """
         stmt = select(User).where(User.google_id == google_id)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
 
     
@@ -71,7 +71,7 @@ class UserRepository:
             User | None: Объект User, если найден, иначе None.
         """
         stmt = select(User).where(User.spotify_id == spotify_id)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
     
     
@@ -102,10 +102,10 @@ class UserRepository:
             spotify_token_expires_at=user_data.get('spotify_token_expires_at')
         )
 
-        self.db.add(new_user)
-        self.db.flush() # Используем flush, чтобы получить ID нового пользователя до коммита
-        self.db.refresh(new_user) # Обновляем объект, чтобы убедиться, что все поля (включая ID) актуальны
-        self.db.commit()
+        self._db.add(new_user)
+        self._db.flush() # Используем flush, чтобы получить ID нового пользователя до коммита
+        self._db.refresh(new_user) # Обновляем объект, чтобы убедиться, что все поля (включая ID) актуальны
+        self._db.commit()
         return new_user
     
     
@@ -126,10 +126,10 @@ class UserRepository:
         for key, value in update_data.items():
             setattr(user, key, value)
         
-        self.db.add(user) # Добавляем (или повторно добавляем) объект в сессию для отслеживания изменений.
-        self.db.flush() # Выполняем операции в БД, но без коммита.
-        self.db.refresh(user) # Обновляем объект, чтобы убедиться, что все поля (включая updated_at) актуальны.
-        self.db.commit()
+        self._db.add(user) # Добавляем (или повторно добавляем) объект в сессию для отслеживания изменений.
+        self._db.flush() # Выполняем операции в БД, но без коммита.
+        self._db.refresh(user) # Обновляем объект, чтобы убедиться, что все поля (включая updated_at) актуальны.
+        self._db.commit()
         return user
 
 
@@ -165,6 +165,6 @@ class UserRepository:
             bool: True, если пользователь был удален, иначе False.
         """
         stmt = delete(User).where(User.id == user_id)
-        result = self.db.execute(stmt)
-        self.db.commit()
+        result = self._db.execute(stmt)
+        self._db.commit()
         return result.rowcount > 0 

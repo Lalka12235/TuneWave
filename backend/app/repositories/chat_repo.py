@@ -8,7 +8,7 @@ import uuid
 class ChatRepository:
 
     def __init__(self, db: Session):
-        self.db: Session = db
+        self._db: Session = db
 
     
     def get_message_for_room(self,room_id: uuid.UUID,limit: int = 50,before_timestamp: datetime | None = None) -> list[Message]:
@@ -32,7 +32,7 @@ class ChatRepository:
         if before_timestamp:
             stmt = stmt.where(Message.created_at < before_timestamp)
 
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
 
     
@@ -55,6 +55,6 @@ class ChatRepository:
             user_id=user_id,
             text=text,
         )
-        self.db.add(new_message)
-        self.db.flush()
+        self._db.add(new_message)
+        self._db.flush()
         return new_message

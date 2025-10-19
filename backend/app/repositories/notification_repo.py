@@ -12,7 +12,7 @@ class NotificationRepository:
     """
 
     def __init__(self, db: Session):
-        self.self = db
+        self._db = db
 
 
     
@@ -33,7 +33,7 @@ class NotificationRepository:
                 joinedload(Notification.sender),
                 joinedload(Notification.room)
         ).where(Notification.id == notification_id)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
     
 
@@ -61,7 +61,7 @@ class NotificationRepository:
             ).order_by(Notification.created_at.desc()
             ).limit(limit
             ).offset(offset)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
     
 
@@ -98,8 +98,8 @@ class NotificationRepository:
             message=message,
             related_object_id=related_object_id,
         )
-        self.db.add(new_notification)
-        self.db.flush()
+        self._db.add(new_notification)
+        self._db.flush()
         return new_notification
     
 
@@ -118,7 +118,7 @@ class NotificationRepository:
         stmt = update(Notification).where(
             Notification.id == notification_id
         ).values(is_read=True)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result
     
 
@@ -137,5 +137,5 @@ class NotificationRepository:
         stmt = delete(Notification).where(
             Notification.id == notification_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0

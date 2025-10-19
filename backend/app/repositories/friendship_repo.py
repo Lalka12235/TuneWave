@@ -13,7 +13,7 @@ class FriendshipRepository:
     """
 
     def __init__(self, db: Session):
-        self.self = db
+        self._db = db
 
     
     def get_friendship_by_id(self,friendship_id: uuid.UUID) -> Friendship | None:
@@ -34,7 +34,7 @@ class FriendshipRepository:
             joinedload(Friendship.requester),
             joinedload(Friendship.accepter),
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
     
 
@@ -62,7 +62,7 @@ class FriendshipRepository:
             joinedload(Friendship.requester),
             joinedload(Friendship.accepter),
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
     
 
@@ -89,7 +89,7 @@ class FriendshipRepository:
             joinedload(Friendship.requester),
             joinedload(Friendship.accepter),
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
     
 
@@ -113,7 +113,7 @@ class FriendshipRepository:
         ).options(
             joinedload(Friendship.accepter),
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
     
 
@@ -137,7 +137,7 @@ class FriendshipRepository:
         ).options(
             joinedload(Friendship.requester),
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
 
 
@@ -159,8 +159,8 @@ class FriendshipRepository:
             requester_id=requester_id,
             accepter_id=accepter_id,
         )
-        self.db.add(new_friendship)
-        self.db.flush()
+        self._db.add(new_friendship)
+        self._db.flush()
         return new_friendship
     
     
@@ -180,7 +180,7 @@ class FriendshipRepository:
         stmt = update(Friendship).where(
             Friendship.id == friendship_id,
         ).values(status=new_status,accepted_at=accepted_at)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0
     
 
@@ -199,5 +199,5 @@ class FriendshipRepository:
         stmt = delete(Friendship).where(
             Friendship.id == friendship_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0

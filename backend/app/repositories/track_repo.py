@@ -8,7 +8,7 @@ import uuid
 class TrackRepository:
 
     def __init__(self, db: Session):
-        self.self = db
+        self._db = db
 
     
     def get_track_by_id(self,track_id: uuid.UUID) -> Track | None:
@@ -16,7 +16,7 @@ class TrackRepository:
         stmt = select(Track).where(
             Track.id == track_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
     
 
@@ -26,7 +26,7 @@ class TrackRepository:
         stmt = select(Track).where(
             Track.spotify_id == spotify_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
     
 
@@ -34,8 +34,8 @@ class TrackRepository:
     def create_track(self,track_data: TrackCreate) -> Track:
         """Создает новый трек в базе данных."""
         new_track = Track(**track_data.model_dump()) 
-        self.db.add(new_track)
-        self.db.flush()
+        self._db.add(new_track)
+        self._db.flush()
         return new_track
     
     
@@ -45,7 +45,7 @@ class TrackRepository:
         stmt = delete(Track).where(
             Track.id == track_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0
     
 
@@ -53,7 +53,7 @@ class TrackRepository:
     def get_all_tracks(self) -> list[Track]:
         """Получает все треки из базы данных."""
         stmt = select(Track)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
     
 

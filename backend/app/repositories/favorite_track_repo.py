@@ -7,7 +7,7 @@ import uuid
 class FavoriteTrackRepository:
 
     def __init__(self, db: Session):
-        self.self = db
+        self._db = db
 
     
     def get_favorite_tracks(self, user_id: uuid.UUID) -> list[FavoriteTrack]:
@@ -29,7 +29,7 @@ class FavoriteTrackRepository:
         ).options(
             joinedload(FavoriteTrack.track)
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
     
 
@@ -51,8 +51,8 @@ class FavoriteTrackRepository:
             user_id=user_id,
             track_id=track_id
         )
-        self.db.add(new_favorite_track)
-        self.db.refresh(new_favorite_track)
+        self._db.add(new_favorite_track)
+        self._db.refresh(new_favorite_track)
         return new_favorite_track
     
 
@@ -74,7 +74,7 @@ class FavoriteTrackRepository:
             FavoriteTrack.user_id == user_id,
             FavoriteTrack.track_id == track_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0
     
 
@@ -95,5 +95,5 @@ class FavoriteTrackRepository:
             FavoriteTrack.user_id == user_id,
             FavoriteTrack.track_id == track_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return bool(result.first())

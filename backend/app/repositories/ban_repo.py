@@ -10,7 +10,7 @@ class BanRepository:
     Отвечает за управление записями о банах пользователей.
     """
     def __init__(self, db: Session):
-        self.db: Session = db
+        self._db: Session = db
 
     
     def get_bans_by_admin(self,user_id: uuid.UUID) -> list[Ban]:
@@ -27,7 +27,7 @@ class BanRepository:
         stmt = select(Ban).where(
             Ban.by_ban_user_id== user_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
     
 
@@ -46,7 +46,7 @@ class BanRepository:
         stmt = select(Ban).where(
             Ban.ban_user_id == user_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
     
 
@@ -71,8 +71,8 @@ class BanRepository:
             reason=reason,
             by_ban_user_id=by_ban_user_id,
         )
-        self.db.add(new_ban_user)
-        self.db.flush()
+        self._db.add(new_ban_user)
+        self._db.flush()
         return new_ban_user
     
 
@@ -93,7 +93,7 @@ class BanRepository:
             Ban.room_id == room_id,
             Ban.ban_user_id == ban_user_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0
     
 
@@ -112,7 +112,7 @@ class BanRepository:
                 Ban.ban_user_id == ban_user_id,
                 Ban.room_id.is_(None)
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0
     
 
@@ -133,7 +133,7 @@ class BanRepository:
                 Ban.ban_user_id == user_id,
                 Ban.room_id.is_(None)
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
     
     
@@ -154,5 +154,5 @@ class BanRepository:
                 Ban.ban_user_id == user_id,
                 Ban.room_id == room_id
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()

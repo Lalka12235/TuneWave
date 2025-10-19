@@ -13,7 +13,7 @@ class MemberRoomAssociationRepository:
     """
 
     def __init__(self, db: Session):
-        self.self = db
+        self._db = db
 
     
     def add_member(self,user_id: uuid.UUID,room_id: uuid.UUID,role: str) -> Member_room_association:
@@ -33,7 +33,7 @@ class MemberRoomAssociationRepository:
             room_id=room_id,
             role=role,
         )
-        self.db.add(new_member_room)
+        self._db.add(new_member_room)
         return new_member_room
     
 
@@ -54,7 +54,7 @@ class MemberRoomAssociationRepository:
             Member_room_association.room_id==room_id,
             Member_room_association.user_id==user_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0
     
 
@@ -76,7 +76,7 @@ class MemberRoomAssociationRepository:
             Member_room_association.room_id==room_id,
             Member_room_association.user_id==user_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
     
 
@@ -119,7 +119,7 @@ class MemberRoomAssociationRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.unique().scalars().all()
     
 
@@ -141,7 +141,7 @@ class MemberRoomAssociationRepository:
                 Member_room_association.user_id == user_id,
                 Member_room_association.room_id == room_id,
             ).values(role=role).returning(Member_room_association)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
     
 
@@ -169,5 +169,5 @@ class MemberRoomAssociationRepository:
                Member_room_association.user_id == user_id
            )
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().first()

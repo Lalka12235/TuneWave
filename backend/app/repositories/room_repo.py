@@ -15,7 +15,7 @@ class RoomRepository:
     """
 
     def __init__(self, db: Session):
-        self.self = db
+        self._db = db
 
     
     def get_room_by_id(self, room_id: uuid.UUID) -> Room | None:
@@ -34,7 +34,7 @@ class RoomRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user), # Загружаем участников и их пользователей
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track) # Загружаем очередь и связанные треки
         ).filter(Room.id == room_id)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         # КРИТИЧНО: .unique() для joinedload с коллекциями
         return result.unique().scalar_one_or_none()
     
@@ -55,7 +55,7 @@ class RoomRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         ).filter(Room.name == name)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.unique().scalar_one_or_none()
 
     
@@ -74,7 +74,7 @@ class RoomRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.unique().scalars().all()
     
 
@@ -93,7 +93,7 @@ class RoomRepository:
             Room: Созданный объект комнаты.
         """
         new_room = Room(**room_data)
-        self.db.add(new_room)
+        self._db.add(new_room)
         return new_room
     
     
@@ -127,7 +127,7 @@ class RoomRepository:
             bool: True, если комната была успешно удалена, иначе False.
         """
         stmt = delete(Room).where(Room.id == room_id)
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0
     
 
@@ -142,7 +142,7 @@ class RoomRepository:
         ).options(
             joinedload(Room.room_track),
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
     
 
@@ -162,6 +162,6 @@ class RoomRepository:
         ).options(
             joinedload(Room.owner),
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalar_one_or_none()
     

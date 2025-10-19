@@ -8,7 +8,7 @@ import uuid
 class RoomTrackAssociationRepository:
 
     def __init__(self, db: Session):
-        self.self = db
+        self._db = db
 
     
     def add_track_to_queue(
@@ -25,8 +25,8 @@ class RoomTrackAssociationRepository:
             order_in_queue=order_in_queue,
             added_by_user_id=user_id,
         )
-        self.db.add(new_room_track)
-        self.db.flush()
+        self._db.add(new_room_track)
+        self._db.flush()
         return new_room_track
     
 
@@ -39,7 +39,7 @@ class RoomTrackAssociationRepository:
                 joinedload(RoomTrackAssociationModel.track),
                 joinedload(RoomTrackAssociationModel.user)
             )
-        return self.db.execute(stmt).scalars().all()
+        return self._db.execute(stmt).scalars().all()
     
 
     
@@ -49,7 +49,7 @@ class RoomTrackAssociationRepository:
             RoomTrackAssociationModel.room_id == room_id,
             RoomTrackAssociationModel.track_id == track_id,
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0
     
 
@@ -59,7 +59,7 @@ class RoomTrackAssociationRepository:
         stmt = select(func.max(RoomTrackAssociationModel.order_in_queue)).where(
             RoomTrackAssociationModel.room_id == room_id
         )
-        max_order = self.db.execute(stmt).scalar_one_or_none()
+        max_order = self._db.execute(stmt).scalar_one_or_none()
         return (max_order if max_order is not None else -1) + 1
     
 
@@ -72,7 +72,7 @@ class RoomTrackAssociationRepository:
                 joinedload(RoomTrackAssociationModel.track),
                 joinedload(RoomTrackAssociationModel.user)
             )
-        return self.db.execute(stmt).scalars().first()
+        return self._db.execute(stmt).scalars().first()
 
 
     
@@ -81,7 +81,7 @@ class RoomTrackAssociationRepository:
         stmt = delete(RoomTrackAssociationModel).where(
             RoomTrackAssociationModel.id == association_id
         )
-        result = self.db.execute(stmt)
+        result = self._db.execute(stmt)
         return result.rowcount > 0
     
 
@@ -95,7 +95,7 @@ class RoomTrackAssociationRepository:
                 joinedload(RoomTrackAssociationModel.track),
                 joinedload(RoomTrackAssociationModel.user)
             )
-        return self.db.execute(stmt).scalars().first()
+        return self._db.execute(stmt).scalars().first()
     
 
     
@@ -115,4 +115,4 @@ class RoomTrackAssociationRepository:
                 joinedload(RoomTrackAssociationModel.track),
                 joinedload(RoomTrackAssociationModel.user)
             ).limit(1)
-        return self.db.execute(stmt).scalars().first()
+        return self._db.execute(stmt).scalars().first()
