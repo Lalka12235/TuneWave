@@ -1,6 +1,6 @@
 from infrastructure.celery.celery import celery_app
 from app.logger.log_config import logger
-from app.utils import send_email
+from infrastructure.celery.email import send_email
 
 
 @celery_app.task(

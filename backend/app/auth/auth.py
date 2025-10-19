@@ -1,4 +1,4 @@
-from app.utils.jwt import decode_access_token
+from app.auth.jwt import decode_access_token
 from fastapi import HTTPException,status,Depends
 from typing import Annotated
 from app.repositories.user_repo import UserRepository
