@@ -20,7 +20,7 @@ from app.schemas.user_schemas import (
     UserResponse,
     UserUpdate,
 )
-from app.utils.jwt import create_access_token, decode_access_token
+from app.auth.jwt import create_access_token, decode_access_token
 
 
 class UserService:

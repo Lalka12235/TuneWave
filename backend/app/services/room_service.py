@@ -44,7 +44,7 @@ from app.services.spotify_sevice import SpotifyService
 from app.services.track_service import TrackService
 from app.services.user_service import UserService
 
-from app.utils.hash import make_hash_pass, verify_pass
+from backend.app.auth.hash import make_hash_pass, verify_pass
 from app.ws.connection_manager import ConnectionManager
 
 
@@ -58,6 +58,7 @@ class RoomService:
             ban_repo: BanRepository,
             notify_repo: NotificationRepository,
             room_track_repo: RoomTrackAssociationRepository,
+            room_repo: RoomRepository
         ):
         self._db = db
         self.manager = manager
@@ -65,6 +66,7 @@ class RoomService:
         self.ban_repo = ban_repo
         self.notify_repo = notify_repo
         self.room_track_repo = room_track_repo
+        self.room_repo = room_repo
 
     @staticmethod
     def _map_room_to_response(room: Room) -> RoomResponse:
@@ -127,7 +129,7 @@ class RoomService:
         """
         Получает комнату по ее уникальному ID.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise HTTPException(
                 status_code=404,
@@ -142,7 +144,7 @@ class RoomService:
         """
         Получает комнату по ее названию.
         """
-        room = RoomRepository.get_room_by_name(name)
+        room = self.room_repo.get_room_by_name(name)
         if not room:
             raise HTTPException(
                 status_code=404,
@@ -157,7 +159,7 @@ class RoomService:
         """
         Получает список всех комнат из базы данных.
         """
-        rooms_list = RoomRepository.get_all_rooms()
+        rooms_list = self.room_repo.get_all_rooms()
         
         return [RoomService._map_room_to_response(room) for room in rooms_list]
     
@@ -169,7 +171,7 @@ class RoomService:
         Включает проверку уникальности имени и хэширование пароля.
         """
 
-        room = RoomRepository.get_room_by_name(room_data.name)
+        room = self.room_repo.get_room_by_name(room_data.name)
         if room:
             raise HTTPException(
                 status_code=404,
@@ -195,7 +197,7 @@ class RoomService:
         
         room_data_dict.pop('password', None)
         try:
-            new_room = RoomRepository.create_room(room_data_dict)
+            new_room = self.room_repo.create_room(room_data_dict)
             self.self._db.flush()
             MemberRoomAssociationRepository.add_member(
                 owner.id,
@@ -227,7 +229,7 @@ class RoomService:
         Обновляет существующую комнату.
         Только владелец комнаты может ее обновить.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -260,7 +262,7 @@ class RoomService:
             data_to_update['password_hash'] = None
         
         try:
-            updated_room_db = RoomRepository.update_room(room, data_to_update)
+            updated_room_db = self.room_repo.update_room(room, data_to_update)
             
             self.self._db.commit()
             self.self._db.refresh(updated_room_db)
@@ -287,7 +289,7 @@ class RoomService:
             dict[str,Any]: _description_
         """
 
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -300,7 +302,7 @@ class RoomService:
                 detail="У вас нет прав для обновления этой комнаты."
             )
         try:
-            deleted_successfully = RoomRepository.delete_room(room_id)
+            deleted_successfully = self.room_repo.delete_room(room_id)
 
             self.self._db.commit()
 
@@ -346,7 +348,7 @@ class RoomService:
             HTTPException: Если комната не найдена, пользователь уже является участником,
                            неверный пароль, или комната переполнена.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -492,7 +494,7 @@ class RoomService:
         Raises:
             HTTPException: Если комната не найдена.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -532,7 +534,7 @@ class RoomService:
         """
         Добавляет трек в очередь конкретной комнаты.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise HTTPException(
                 status_code=404,
@@ -602,7 +604,7 @@ class RoomService:
         """
         Получает текущую очередь треков для комнаты.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise RoomNotFoundException()
         
@@ -634,7 +636,7 @@ class RoomService:
         """
         Удаляет конкретный трек из очереди комнаты по ID ассоциации.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise RoomNotFoundException()
         
@@ -723,7 +725,7 @@ class RoomService:
     
     async def move_track_in_queue(self,room_id: uuid.UUID,association_id: uuid.UUID,current_user: User,new_position: int,) -> RoomTrackAssociationModel:
         """Перемещает трек в очереди."""
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise RoomNotFoundException()
         
@@ -791,7 +793,7 @@ class RoomService:
         Назначает пользователя хостом воспроизведения для комнаты.
         Пользователь должен быть членом комнаты и иметь авторизацию Spotify с активным устройством.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             logger.warning(f'RoomService: Комната с такпим id {room_id} не найдена')
             raise RoomNotFoundException()
@@ -869,7 +871,7 @@ class RoomService:
         """
         Очищает хоста воспроизведения для комнаты и сбрасывает состояние плеера.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room.playback_host_id:
             logger.info(f"RoomService: Для комнаты '{room_id}' нет активного хоста воспроизведения для сброса.")
             return RoomService._map_room_to_response(room)
@@ -915,7 +917,7 @@ class RoomService:
         Обновляет состояние воспроизведения в полях комнаты. 
         Используется, например, планировщиком или при получении состояния плеера от хоста.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             logger.warning(f'RoomService: Комната с такпим id {room_id} не найдена')
             raise RoomNotFoundException()
@@ -967,7 +969,7 @@ class RoomService:
         """
         Отправляет команду "PLAY" на Spotify плеер комнаты через хоста воспроизведения.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             logger.warning(f'RoomService: Комната с такпим id {room_id} не найдена')
             raise RoomNotFoundException()
@@ -1043,7 +1045,7 @@ class RoomService:
         """
         Отправляет команду "PAUSE" на Spotify плеер комнаты через хоста воспроизведения.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             logger.warning(f'RoomService: Комната с такпим id {room_id} не найдена')
             raise RoomNotFoundException()
@@ -1109,7 +1111,7 @@ class RoomService:
         """
         Отправляет команду "SKIP NEXT" на Spotify плеер комнаты через хоста воспроизведения.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             logger.warning(f'RoomService: Комната с такпим id {room_id} не найдена')
             raise RoomNotFoundException()
@@ -1171,7 +1173,7 @@ class RoomService:
         """
         Отправляет команду "SKIP PREVIOUS" на Spotify плеер комнаты через хоста воспроизведения.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             logger.warning(f'RoomService: Комната с такпим id {room_id} не найдена')
             raise RoomNotFoundException()
@@ -1234,7 +1236,7 @@ class RoomService:
         """
         Получает текущее состояние Spotify плеера для комнаты.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             logger.warning(f'RoomService: Комната с такпим id {room_id} не найдена')
             raise RoomNotFoundException()
@@ -1310,7 +1312,7 @@ class RoomService:
                            целевой пользователь не является членом комнаты,
                            или роль недействительна.
         """
-        room = RoomRepository.get_room_by_id( room_id)
+        room = self.room_repo.get_room_by_id( room_id)
         if not room:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Комната не найдена.")
 
@@ -1436,7 +1438,7 @@ class RoomService:
             HTTPException (400 BAD REQUEST): Если пользователь пытается кикнуть самого себя.
             HTTPException (500 INTERNAL SERVER ERROR): При внутренних ошибках сервера во время операции.
         """
-        room = RoomRepository.get_room_by_id( room_id)
+        room = self.room_repo.get_room_by_id( room_id)
         if not room:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Комната не найдена.")
 
@@ -1554,7 +1556,7 @@ class RoomService:
                            или произошла внутренняя ошибка.
         """
         try:
-            room = RoomRepository.get_room_by_id( room_id)
+            room = self.room_repo.get_room_by_id( room_id)
             if not room:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Комната не найдена.")
 
@@ -1655,7 +1657,7 @@ class RoomService:
             HTTPException: Если комната не найдена, недостаточно прав,
                            пользователь не забанен, или произошла внутренняя ошибка.
         """
-        room = RoomRepository.get_room_by_id( room_id)
+        room = self.room_repo.get_room_by_id( room_id)
         if not room:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Комната не найдена.")
 
@@ -1742,7 +1744,7 @@ class RoomService:
             HTTPException: Если комната/пользователи не найдены, права недостаточны,
                            или приглашение невозможно отправить по другим причинам.
         """
-        room = RoomRepository.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise HTTPException(
                 status_code=404,
@@ -1885,7 +1887,7 @@ class RoomService:
         invited_user_id = notification.user_id 
 
         try:
-            room = RoomRepository.get_room_by_id( room_id)
+            room = self.room_repo.get_room_by_id( room_id)
             if not room:
                 NotificationService.mark_notification_as_read( notification_id, current_user_id)
                 self._db.commit() 
