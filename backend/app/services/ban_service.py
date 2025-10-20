@@ -13,8 +13,7 @@ from app.schemas.ban_schemas import BanCreate, BanRemove, BanResponse
 
 class BanService:
 
-    def __init__(self,db: Session,ban_repo: BanRepository):
-        self._db = db
+    def __init__(self,ban_repo: BanRepository):
         self.ban_repo = ban_repo
 
     @staticmethod
@@ -104,17 +103,12 @@ class BanService:
                 reason=data_ban.reason,
                 by_ban_user_id=current_user.id
             )
-            
-            self._db.commit()
-            self._db.refresh(new_ban_entry)
 
             return self._map_ban_to_response(new_ban_entry)
         
         except HTTPException as e:
-            self._db.rollback()
             raise e
         except Exception:
-            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось добавить бан из-за внутренней ошибки сервера."
@@ -153,7 +147,6 @@ class BanService:
                 self.ban_repo.remove_ban_local(data_ban.room_id,data_ban.ban_user_id)
             else:
                 self.ban_repo.remove_ban_global(data_ban.ban_user_id)
-            self._db.commit()
             logger.info(f"BanService: Бан успешно снят для user_id={data_ban.ban_user_id}, room_id={data_ban.room_id}")
             
             return {
@@ -162,7 +155,6 @@ class BanService:
             }
 
         except HTTPException as e:
-            self._db.rollback()
             logger.warning(
                 f"HTTPException при снятии бана. user_id: {data_ban.ban_user_id}, "
                 f"room_id: {data_ban.room_id if data_ban.room_id else 'глобальный'}. Ошибка: {e.detail}",
@@ -170,7 +162,6 @@ class BanService:
             )
             raise e
         except Exception as e:
-            self._db.rollback()
             logger.error(
                 f"Внутренняя ошибка сервера при снятии бана. user_id: {data_ban.ban_user_id}, "
                 f"room_id: {data_ban.room_id if data_ban.room_id else 'глобальный'}. Ошибка: {e}",

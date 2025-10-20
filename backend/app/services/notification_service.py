@@ -15,7 +15,6 @@ from app.schemas.notification_schemas import NotificationResponse
 class NotificationService:
 
     def __init__(self,db: Session,notify_repo: NotificationRepository,user_repo: UserRepository,room_repo: RoomRepository):
-        self._db = db
         self.notify_repo = notify_repo
         self.user_repo = user_repo
         self.room_repo = room_repo
@@ -98,15 +97,10 @@ class NotificationService:
             new_notification = self.notify_repo.add_notification(
                  user_id, notification_type, message, sender_id, room_id,related_object_id
             )
-            self._db.commit()
-            self._db.refresh(new_notification)
-
             return self._map_notification_to_response(new_notification)
         except HTTPException as e:
-            self._db.rollback()
             raise e
         except Exception:
-            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось создать уведомление из-за внутренней ошибки сервера."
@@ -137,15 +131,11 @@ class NotificationService:
         
         try:
             notification_update = self.notify_repo.mark_notification_as_read(notification_id)
-            self._db.commit()
-            self._db.refresh(notification_update)
             return self._map_notification_to_response(notification_update)
         except HTTPException as e:
             logger.error(f'NotificationService: произошла ошибка при попытке прочтения уведомления {notification_id} от пользователя {notification.sender_id} к пользователю {notification.user_id}.{e}',exc_info=True)
-            self._db.rollback()
             raise e
         except Exception:
-            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось отметить уведомление как прочитанное из-за внутренней ошибки сервера."
@@ -172,16 +162,13 @@ class NotificationService:
         
         try:
             self.notify_repo.delete_notification(notification_id)
-            self._db.commit()
             return {
                 "status": "success",
                 "detail": "Уведомление успешно удалено."
             }
         except HTTPException as e:
-            self._db.rollback()
             raise e
         except Exception:
-            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось удалить уведомление из-за внутренней ошибки сервера."

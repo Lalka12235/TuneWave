@@ -1,21 +1,23 @@
 import time
 
 import httpx
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import HTTPException, status, Depends
+from typing import Annotated
 
 from app.config.settings import settings
 from app.models.user import User
+from app.services.dep import get_user_service
 from app.services.user_service import UserService
+
 
 
 class GoogleService:
 
     GOOGLE_API_BASE_URl = 'https://oauth2.googleapis.com'
 
-    def __init__(self,db: Session,user: User):
-        self._db = db
+    def __init__(self,user: User,user_service: Annotated[UserService,Depends(get_user_service)]):
         self.user = user
+        self.user_service = user_service
 
 
     
@@ -78,6 +80,6 @@ class GoogleService:
         if 'refresh_token' in new_tokens:
             update_data['google_refresh_token'] = new_tokens['refresh_token']
         
-        UserService.update_user_profile(self.db, self.user, update_data)
+        self.user_service.update_user_profile(self.user, update_data)
         
         return new_tokens

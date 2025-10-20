@@ -19,7 +19,6 @@ from app.ws.connection_manager import ConnectionManager
 class FriendshipService:
 
     def __init__(self,db: Session,manager: ConnectionManager,friend_repo: FriendshipRepository,notify_service: NotificationService,user_repo: UserRepository):
-        self._db = db
         self.manager = manager
         self.friend_repo = friend_repo
         self.notify_service = notify_service
@@ -145,8 +144,6 @@ class FriendshipService:
         
         try:
             friendship = self.friend_repo.add_friend_requet(requester_id,accepter_id)
-            self._db.commit()
-            self._db.refresh(friendship)
             self.notify_service.add_notification(
                 user_id=accepter_id,
                 notification_type=NotificationType.FRIEND_REQUEST,
@@ -164,14 +161,12 @@ class FriendshipService:
             await self.manager.send_personal_message(json.dumps(notification_data), str(accepter_id))
             return self._map_friendship_to_response(friendship)
         except HTTPException as http_exc:
-            self._db.rollback()
             logger.error(
                 f'FriendshipService: Ошибка HTTP при отправке заявки на дружбу от {requester_id} к {accepter_id}. Причина: {http_exc.detail}',
                 exc_info=True
             )
             raise http_exc
         except Exception as general_exc:
-            self._db.rollback()
             logger.error(
                 f'FriendshipService: Непредвиденная ошибка при отправке заявки на дружбу от {requester_id} к {accepter_id}.',
                 exc_info=True 
@@ -219,8 +214,6 @@ class FriendshipService:
 
         try:
             updated_friendship = self.friend_repo.update_friendship_status(friendship_id,FriendshipStatus.ACCEPTED,datetime.utcnow())
-            if updated_friendship:
-                self._db.commit()
             notification_data_requester = {
                 "action": "friend_request_accepted",
                 "friendship_id": str(friendship.id),
@@ -260,7 +253,6 @@ class FriendshipService:
                 f'в комнату . Причина: {http_exc.detail if hasattr(http_exc, "detail") else http_exc}', 
                 exc_info=True
             )
-            self._db.rollback()
             raise http_exc
         
         except Exception as general_exc:
@@ -269,7 +261,6 @@ class FriendshipService:
                 'в комнату .', 
                 exc_info=True 
             )
-            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось создать уведомление из-за внутренней ошибки сервера."
@@ -313,8 +304,6 @@ class FriendshipService:
 
         try:
             updated_friendship = self.friend_repo.update_friendship_status(friendship_id,FriendshipStatus.DECLINED)
-            if updated_friendship:
-                self._db.commit()
             notification_data_requester = {
                 "action": "friend_request_declined",
                 "friendship_id": str(friendship.id),
@@ -332,7 +321,6 @@ class FriendshipService:
             await self.manager.send_personal_message(json.dumps(notification_data_requester), str(friendship.requester_id))
             return self._map_friendship_to_response(friendship)
         except HTTPException as http_exc:
-            self._db.rollback()
             logger.error(
                 f'FriendshipService: HTTP-ошибка при отклонении запроса на дружбу {friendship_id} пользователем {current_accepter_id}. '
                 f'Причина: {http_exc.detail}', 
@@ -341,7 +329,6 @@ class FriendshipService:
             raise http_exc
         
         except Exception as general_exc:
-            self._db.rollback()
             logger.error(
                 f'FriendshipService: Непредвиденная ошибка при отклонении запроса на дружбу {friendship_id} пользователем {current_accepter_id}.',
                 exc_info=True
@@ -388,7 +375,6 @@ class FriendshipService:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Не удалось удалить запись о дружбе из-за внутренней ошибки сервера."
                 )
-            self._db.commit()
             other_user_id = None
             if friendship.requester_id == current_user_id:
                 other_user_id = friendship.accepter_id
@@ -419,7 +405,6 @@ class FriendshipService:
                 'status': 'success'
             }
         except HTTPException as http_exc:
-            self._db.rollback()
             logger.error(
                 f'FriendshipService: HTTP-ошибка при отклонении запроса на дружбу {friendship_id} пользователем . '
                 f'Причина: {http_exc.detail}', 
@@ -428,7 +413,6 @@ class FriendshipService:
             raise http_exc
         
         except Exception as general_exc:
-            self._db.rollback()
             logger.error(
                 f'FriendshipService: Непредвиденная ошибка при отклонении запроса на дружбу {friendship_id} пользователем .',
                 exc_info=True

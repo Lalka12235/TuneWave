@@ -5,7 +5,6 @@ from typing import Any
 from fastapi import HTTPException, UploadFile, status
 from infrastructure.celery.tasks import send_email_task
 from jwt import exceptions
-from sqlalchemy.orm import Session
 
 from app.config.settings import settings
 from app.logger.log_config import logger
@@ -25,8 +24,7 @@ from app.auth.jwt import create_access_token, decode_access_token
 
 class UserService:
 
-    def __init__(self,db: Session,user_repo: UserRepository,ban_repo: BanRepository):
-        self._db = db
+    def __init__(self,user_repo: UserRepository,ban_repo: BanRepository):
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         
@@ -104,7 +102,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return UserService._map_user_to_response(user)
+        return self._map_user_to_response(user)
     
     
     def get_user_by_email(self,email: str) -> UserResponse:
@@ -129,7 +127,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return UserService._map_user_to_response(user)
+        return self._map_user_to_response(user)
     
 
     
@@ -155,7 +153,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return UserService._map_user_to_response(user)
+        return self._map_user_to_response(user)
     
     
     
@@ -181,7 +179,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return UserService._map_user_to_response(user)
+        return self._map_user_to_response(user)
     
 
 
@@ -196,7 +194,7 @@ class UserService:
         Returns:
             UserResponse: Информация о создании
         """
-        UserService._check_for_existing_user_and_raise_if_found(
+        self._check_for_existing_user_and_raise_if_found(
             
             user_data.email,
             user_data.google_id,
@@ -220,7 +218,6 @@ class UserService:
                 logger.warning(f'Сообщение на почту не отправилось {email_sent}')
                 pass
         except Exception as e:
-            self._db.rollback()
             logger.error(f"Ошибка при создании пользователя '{user_data.email}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -228,7 +225,7 @@ class UserService:
             )
         
 
-        return UserService._map_user_to_response(new_user)
+        return self._map_user_to_response(new_user)
     
     
     async def update_user_profile(self, user_id: uuid.UUID, update_data: UserUpdate) -> UserResponse:
@@ -260,14 +257,13 @@ class UserService:
             updated_user = self.user_repo.update_user( user, data_to_update)
             logger.info(f"Профиль пользователя '{user_id}' успешно обновлен.")
         except Exception as e:
-            self._db.rollback()
             logger.error(f"Ошибка при обновлении профиля пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Ошибка при обновлении пользователя"
             )
 
-        return UserService._map_user_to_response(updated_user)
+        return self._map_user_to_response(updated_user)
     
 
     
@@ -295,7 +291,6 @@ class UserService:
         try:
             self.user_repo.hard_delete_user(user_id)
         except Exception as e:
-            self._db.rollback()
             logger.error(f"Ошибка при физическом удалении пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -348,7 +343,6 @@ class UserService:
                 user = self.user_repo.update_user( user, update_data)
                 logger.info(f"Пользователь '{user.id}' успешно обновлен через Google OAuth.")
             except Exception as e:
-                self._db.rollback()
                 logger.error(f"Ошибка при обновлении пользователя '{user.id}' через Google OAuth: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -380,7 +374,6 @@ class UserService:
                 """
                 send_email_task.delay(google_data.email, subject, body)
             except Exception as e:
-                self._db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Google OAuth '{google_data.email}': {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -394,7 +387,7 @@ class UserService:
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
-        return UserService._map_user_to_response(user), Token(access_token=access_token)
+        return self._map_user_to_response(user), Token(access_token=access_token)
     
 
     
@@ -438,7 +431,6 @@ class UserService:
                     user = self.user_repo.update_user(user,update_data)
                     logger.info(f"Пользователь '{user.id}' успешно обновлен через Spotify OAuth.")
             except Exception as e:
-                self._db.rollback()
                 logger.error(f"Ошибка при обновлении пользователя '{user.id}' через Spotify OAuth: {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -474,7 +466,6 @@ class UserService:
                 """
                 send_email_task.delay(spotify_data.email, subject, body)
             except Exception as e:
-                self._db.rollback()
                 logger.error(f"Ошибка при создании пользователя через Spotify OAuth '{spotify_data.email}': {e}", exc_info=True)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -488,7 +479,7 @@ class UserService:
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
-        return UserService._map_user_to_response(user), Token(access_token=access_token)
+        return self._map_user_to_response(user), Token(access_token=access_token)
     
 
     
@@ -511,7 +502,7 @@ class UserService:
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail='Невалидный токен: отсутствует ID пользователя'
                 )
-            user = UserService.get_user_by_id(user_id)
+            user = self.get_user_by_id(user_id)
             return user
         except exceptions.DecodeError:
             logger.warning("Невалидный JWT-токен: ошибка декодирования.")
@@ -565,7 +556,7 @@ class UserService:
 
             new_avatar_url = f"{settings.BASE_URL}/avatars/{unique_filename}"
             
-            updated_user = await UserService.update_user_profile(
+            updated_user = await self.update_user_profile(
                  
                 user.id, 
                 UserUpdate(avatar_url=new_avatar_url)
@@ -574,7 +565,6 @@ class UserService:
             return updated_user
             
         except Exception as e:
-            self._db.rollback()
             if os.path.exists(file_path):
                 os.remove(file_path)
             logger.error(f"Ошибка сервера при загрузке аватара для пользователя '{user.id}': {e}", exc_info=True)

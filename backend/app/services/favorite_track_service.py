@@ -17,8 +17,7 @@ from app.services.spotify_sevice import SpotifyService
 
 class FavoriteTrackService:
 
-    def __init__(self,db: Session,ft_repo: FavoriteTrackRepository,track_repo: TrackRepository):
-        self._db = db
+    def __init__(self,ft_repo: FavoriteTrackRepository,track_repo: TrackRepository):
         self.ft_repo = ft_repo
         self.track_repo = track_repo
 
@@ -76,15 +75,11 @@ class FavoriteTrackService:
             track_create_data = TrackCreate(**spotify_detail)
 
             new_track = self.track_repo.create_track( track_create_data)
-            self._db.commit() 
-            self._db.refresh(new_track) 
             return new_track
 
-        except HTTPException as e:
-            self._db.rollback() 
+        except HTTPException as e: 
             raise e
         except Exception as e:
-            self._db.rollback() 
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка сервера при обработке трека из Spotify: {e}"
@@ -140,15 +135,11 @@ class FavoriteTrackService:
             )
         try:
             new_favorite_track = self.ft_repo.add_favorite_track( user_id, track.id)
-            self._db.commit()
-            self._db.refresh(new_favorite_track)
             return self._map_favorite_track_to_response(new_favorite_track)
 
         except HTTPException:
-            self._db.rollback()
             raise 
         except Exception:
-            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось добавить любимый трек из-за внутренней ошибки сервера."
@@ -186,7 +177,6 @@ class FavoriteTrackService:
             )
         try:
             removed_count = self.ft_repo.remove_favorite_track( user_id, track.id)
-            self._db.commit() 
         
             if removed_count: 
                 return {
@@ -201,10 +191,8 @@ class FavoriteTrackService:
                 )
 
         except HTTPException as e:
-            self._db.rollback()
             raise e
         except Exception:
-            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Не удалось удалить любимый трек из-за внутренней ошибки сервера."

@@ -13,8 +13,7 @@ from app.services.room_service import RoomService
 
 class ChatService():
 
-    def __init__(self,db: Session,chat_repo: ChatRepository,room_service: RoomService):
-        self._db = db
+    def __init__(self,chat_repo: ChatRepository,room_service: RoomService):
         self.chat_repo = chat_repo
         self.room_service = room_service
 
@@ -86,11 +85,8 @@ class ChatService():
             )
         try:
             new_message = self.chat_repo.create_message(room_id,user_id,message.text)
-            self._db.commit()
-            self._db.refresh(new_message)
         except Exception as e:
             logger.error(f'ChatService: произошла ошибка при отправке сообщения от пользователя {user_id} в комнату {room_id}.{e}',exc_info=True)
-            self._db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка при создании сообщения: {e}"
