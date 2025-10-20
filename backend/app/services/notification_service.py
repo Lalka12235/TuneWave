@@ -14,7 +14,7 @@ from app.schemas.notification_schemas import NotificationResponse
 
 class NotificationService:
 
-    def __init__(self,db: Session,notify_repo: NotificationRepository,user_repo: UserRepository,room_repo: RoomRepository):
+    def __init__(self,notify_repo: NotificationRepository,user_repo: UserRepository,room_repo: RoomRepository):
         self.notify_repo = notify_repo
         self.user_repo = user_repo
         self.room_repo = room_repo

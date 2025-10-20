@@ -4,7 +4,7 @@ from typing import Annotated,Any
 from app.config.session import get_db
 from app.auth.auth import get_current_user
 from app.models.user import User
-from app.services.spotify_sevice import SpotifyService
+from backend.app.services.spotify_service import SpotifyService
 from app.services.spotify_public_service import SpotifyPublicService
 
 

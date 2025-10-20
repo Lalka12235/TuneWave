@@ -5,7 +5,7 @@ from app.config.session import get_db
 from app.repositories.room_repo import RoomRepository
 from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
 from app.services.room_service import RoomService
-from app.services.spotify_sevice import SpotifyService
+from backend.app.services.spotify_service import SpotifyService
 
 
 class SchedulerService:

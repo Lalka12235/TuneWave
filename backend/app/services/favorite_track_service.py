@@ -12,7 +12,7 @@ from app.repositories.track_repo import TrackRepository
 from app.schemas.favorite_track_schemas import FavoriteTrackResponse
 from app.schemas.track_schemas import TrackCreate
 from app.services.spotify_public_service import SpotifyPublicService
-from app.services.spotify_sevice import SpotifyService
+from backend.app.services.spotify_service import SpotifyService
 
 
 class FavoriteTrackService:

@@ -53,3 +53,6 @@ class ConnectionManager:
         if user_id in self.user_connections:
             websocket = self.user_connections[user_id]
             await websocket.send_text(message)
+
+
+manager = ConnectionManager()

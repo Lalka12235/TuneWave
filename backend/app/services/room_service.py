@@ -13,7 +13,6 @@ from app.exceptions.exception import (
 from app.logger.log_config import logger
 from app.models.member_room_association import Member_room_association
 from app.models.room import Room
-from app.models.room_track_association import RoomTrackAssociationModel
 from app.models.user import User
 from app.repositories.ban_repo import BanRepository
 from app.repositories.member_room_association_repo import (
@@ -35,52 +34,58 @@ from app.schemas.room_schemas import (
     TrackInQueueResponse,
 )
 from app.schemas.spotify_schemas import SpotifyTrackDetails
-from app.schemas.user_schemas import UserResponse
 
 from app.services.ban_service import BanService
 from app.services.notification_service import NotificationService
-from app.services.spotify_sevice import SpotifyService
+from backend.app.services.spotify_service import SpotifyService
 from app.services.track_service import TrackService
 from app.services.user_service import UserService
 
-from backend.app.auth.hash import make_hash_pass, verify_pass
-from app.ws.connection_manager import ConnectionManager
+from app.auth.hash import make_hash_pass, verify_pass
+from app.ws.connection_manager import manager
+from app.models.room_track_association import RoomTrackAssociationModel
+from app.schemas.user_schemas import UserResponse
+
 
 
 class RoomService:
 
     def __init__(
             self,
-            manager: ConnectionManager,
             user_repo: UserRepository,
             ban_repo: BanRepository,
             notify_repo: NotificationRepository,
             room_track_repo: RoomTrackAssociationRepository,
             room_repo: RoomRepository,
-            member_room_repo: MemberRoomAssociationRepository
+            member_room_repo: MemberRoomAssociationRepository,
+            ban_service: BanService,
+            notify_service: NotificationService,
+            track_service: TrackService,
+            user_service: UserService,
         ):
-
-        self.manager = manager
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         self.notify_repo = notify_repo
         self.room_track_repo = room_track_repo
         self.room_repo = room_repo
         self.member_room_repo = member_room_repo
+        self.ban_service = ban_service
+        self.notify_service = notify_service
+        self.track_service = track_service
+        self.user_service = user_service
 
-    @staticmethod
-    def _map_room_to_response(room: Room) -> RoomResponse:
+    def _map_room_to_response(self,room: Room) -> RoomResponse:
         """
         Преобразует объект модели Room в Pydantic-схему RoomResponse,
         включая информацию об участниках и очереди треков.
         """
-        owner_response = UserService._map_user_to_response(room.owner) if room.owner_id else None
+        owner_response = self.user_service._map_user_to_response(room.owner) if room.owner_id else None
         
         members_response = []
         if room.member_room:
             for member_association in room.member_room:
                 if member_association.user:
-                    members_response.append(UserService._map_user_to_response(member_association.user))
+                    members_response.append(self.user_service._map_user_to_response(member_association.user))
 
         queue_response = []
         if room.room_track:
@@ -89,7 +94,7 @@ class RoomService:
                 if assoc.track:
                     queue_response.append(
                         TrackInQueueResponse(
-                            track=TrackService._map_track_to_response(assoc.track),
+                            track=self.track_service._map_track_to_response(assoc.track),
                             order_in_queue=assoc.order_in_queue,
                             id=assoc.id,
                             added_at=assoc.added_at,
@@ -210,7 +215,7 @@ class RoomService:
             "action": "room_created",
             "room_data": room_response.model_dump_json()
             }
-            await self.manager.broadcast(self.manager.GLOBAL_ROOM_ID,websocket_message)
+            await manager.broadcast(manager.GLOBAL_ROOM_ID,websocket_message)
 
             return self._map_room_to_response(new_room)
         except Exception as e:
@@ -311,8 +316,6 @@ class RoomService:
                 detail=f"Не удалось удалить комнату. {e}"
             )
         
-    
-    
     def verify_room_password(room: Room, password: str) -> bool:
         """
         Проверяет предоставленный пароль для приватной комнаты.
@@ -321,8 +324,7 @@ class RoomService:
             return False 
 
         return verify_pass(password, room.password_hash)
-    
-    
+
     async def join_room(self,user: User,room_id: uuid.UUID,password: str | None = None) -> RoomResponse:
         """
         Пользователь присоединяется к комнате.
@@ -398,10 +400,10 @@ class RoomService:
             'username': user.username,
             'detail': f'Вы присоединились к комнате {room.name}'
             }
-            await self.manager.send_personal_message(json.dumps(websocket_message_for_user),user.id)
-            await self.manager.broadcast(room_id,json.dumps(websocket_message_for_room))
+            await manager.send_personal_message(json.dumps(websocket_message_for_user),user.id)
+            await manager.broadcast(room_id,json.dumps(websocket_message_for_room))
 
-            return self._map_room_to_response(room)
+            return self.room_service._map_room_to_response(room)
         except Exception as e:
             
             raise HTTPException(
@@ -451,8 +453,8 @@ class RoomService:
             'username': user.username,
             'detail': f'Вы вышли из комнате{room_name_for_message}'
             }
-            await self.manager.send_personal_message(json.dumps(websocket_message_for_user),user.id)
-            await self.manager.broadcast(room_id,json.dumps(websocket_message_for_room))
+            await manager.send_personal_message(json.dumps(websocket_message_for_user),user.id)
+            await manager.broadcast(room_id,json.dumps(websocket_message_for_room))
 
             if deleted_successfully:
                 return {
@@ -495,7 +497,7 @@ class RoomService:
         if not members:
             return []
         
-        return [UserService._map_user_to_response(member.user) for member in members]
+        return [self.user_service._map_user_to_response(member.user) for member in members]
     
 
     
@@ -511,16 +513,14 @@ class RoomService:
             List[RoomResponse]: Список объектов RoomResponse, в которых состоит пользователь.
         """
         rooms = self.member_room_repo.get_rooms_by_user_id(user.id)
-        return [self._map_room_to_response(room) for room in rooms]
-    
-
-    
+        return [self.room_service._map_room_to_response(room) for room in rooms]
+        
     async def add_track_to_queue(
-        self, 
-        room_id: uuid.UUID,
-        track_spotify_id: str, 
-        current_user: User,
-) -> RoomTrackAssociationModel:
+    self, 
+    room_id: uuid.UUID,
+    track_spotify_id: str, 
+    current_user: User,
+        ) -> RoomTrackAssociationModel:
         """
         Добавляет трек в очередь конкретной комнаты.
         """
@@ -545,7 +545,7 @@ class RoomService:
         if not is_owner and not is_moderator:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="У вас недостаточно прав.")
         
-        track = TrackService.get_track_by_Spotify_id(track_spotify_id)
+        track = self.track_service.get_track_by_Spotify_id(track_spotify_id)
         if not track:
             raise TrackNotFoundException()
         
@@ -578,7 +578,7 @@ class RoomService:
                     } for assoc in updated_queue
                 ]
             }
-            await self.manager.broadcast(room_id, json.dumps(update_message))
+            await manager.broadcast(room_id, json.dumps(update_message))
         except Exception as e:
             print(f"Ошибка при отправке WebSocket-сообщения: {e}")
 
@@ -602,7 +602,7 @@ class RoomService:
         for assoc in room.room_track:
             if assoc.track:
                 res = TrackInQueueResponse(
-                    track=TrackService._map_track_to_response(assoc.track),
+                    track=self.track_service._map_track_to_response(assoc.track),
                     order_in_queue=assoc.order_in_queue,
                     id=assoc.id,
                     added_at=assoc.added_at
@@ -674,7 +674,7 @@ class RoomService:
                     } for assoc in updated_queue
                 ]
             }
-            await self.manager.broadcast(room_id, json.dumps(update_message))
+            await manager.broadcast(room_id, json.dumps(update_message))
         except Exception as e:
             print(f"Ошибка при отправке WebSocket-сообщения: {e}")
 
@@ -687,26 +687,26 @@ class RoomService:
 
         
     #todo
-    def _reorder_queue(self,room_id: uuid.UUID):
-        """
-        Переупорядочивает order_in_queue для всех оставшихся треков в очереди.
-        """
-        queue_association = self.self._db.query(RoomTrackAssociationModel).where(
-            RoomTrackAssociationModel.room_id == room_id,
-        ).order_by(RoomTrackAssociationModel.order_in_queue).all()
-
-        try:
-            for index,assoc in enumerate(queue_association):
-                assoc.order_in_queue = index
-                self.self._db.add(assoc)
-
-            
-        except Exception as e:
-            
-            raise HTTPException(
-                status_code=500,
-                detail=f'Не удалось перепорядочить очередь.{e}'
-            )
+    #def _reorder_queue(self,room_id: uuid.UUID):
+    #    """
+    #    Переупорядочивает order_in_queue для всех оставшихся треков в очереди.
+    #    """
+    #    queue_association = self.self._db.query(RoomTrackAssociationModel).where(
+    #        RoomTrackAssociationModel.room_id == room_id,
+    #    ).order_by(RoomTrackAssociationModel.order_in_queue).all()
+#
+    #    try:
+    #        for index,assoc in enumerate(queue_association):
+    #            assoc.order_in_queue = index
+    #            self.self._db.add(assoc)
+#
+    #        
+    #    except Exception as e:
+    #        
+    #        raise HTTPException(
+    #            status_code=500,
+    #            detail=f'Не удалось перепорядочить очередь.{e}'
+    #        )
 
 
     
@@ -764,11 +764,12 @@ class RoomService:
                     } for assoc in updated_queue
                 ]
             }
-            await self.manager.broadcast(room_id, json.dumps(update_message))
+            await manager.broadcast(room_id, json.dumps(update_message))
         except Exception as e:
             print(f"Ошибка при отправке WebSocket-сообщения: {e}")
 
         return {"message": "Трек успешно перемещён."}
+    
     
 
     
@@ -841,7 +842,7 @@ class RoomService:
             "is_playing": room.is_playing,
             "message": f"'{host_user.username}' стал хостом воспроизведения."
         }
-        await self.manager.broadcast(room_id, json.dumps(ws_message))
+        await manager.broadcast(room_id, json.dumps(ws_message))
         logger.info(f"RoomService: Отправлено WS-уведомление о смене хоста воспроизведения в комнате '{room_id}'.")
         return self._map_room_to_response(room)
 
@@ -877,7 +878,7 @@ class RoomService:
             "message": "Хост воспроизведения комнаты был сброшен."
         }
 
-        await self.manager.broadcast(room_id, json.dumps(ws_message))
+        await manager.broadcast(room_id, json.dumps(ws_message))
         logger.info(f"RoomService: Отправлено WS-уведомление об очистке хоста воспроизведения в комнате '{room_id}'.")
         return self._map_room_to_response(room)
 
@@ -927,7 +928,7 @@ class RoomService:
             "progress_ms": progress_ms,
             "duration_ms": current_track_assoc.track.duration_ms if current_track_assoc and current_track_assoc.track else 0
         }
-        await self.manager.broadcast(room_id, json.dumps(ws_message))
+        await manager.broadcast(room_id, json.dumps(ws_message))
         logger.debug(f"RoomService: Отправлено WS-уведомление об изменении состояния плеера в комнате '{room_id}'.")
         return self._map_room_to_response(room)
 
@@ -1352,8 +1353,8 @@ class RoomService:
                 'moderator_username': current_user.username,
                 'detail': f'У вас была обновлена роль до {new_role}'
             }
-            await self.manager.send_personal_message(json.dumps(role_message_for_user))
-            await self.manager.broadcast(room_id,json.dumps(role_message_for_room))
+            await manager.send_personal_message(json.dumps(role_message_for_user))
+            await manager.broadcast(room_id,json.dumps(role_message_for_room))
 
             return self._map_member_to_response(final_association_for_response)
 
@@ -1460,8 +1461,8 @@ class RoomService:
             }
             self.member_room_repo.remove_member(user_id,room_id)
             
-            await self.manager.send_personal_message(json.dumps(kick_message_for_user),user_id)
-            await self.manager.broadcast(room_id,json.dumps(kick_message_for_room))
+            await manager.send_personal_message(json.dumps(kick_message_for_user),user_id)
+            await manager.broadcast(room_id,json.dumps(kick_message_for_room))
             return {
                 'action': 'kick member',
                 'status': 'success',
@@ -1563,11 +1564,11 @@ class RoomService:
                 "reason": ban_data.reason if ban_data.reason else "не указана",
                 "detail": f"Вы были забанены в комнате {room.name}."
             }
-            await self.manager.send_personal_message(json.dumps(ban_notification_for_user),target_user_id)
-            await self.manager.broadcast(room_id, json.dumps(ban_notification_for_room))
+            await manager.send_personal_message(json.dumps(ban_notification_for_user),target_user_id)
+            await manager.broadcast(room_id, json.dumps(ban_notification_for_room))
             
             
-            return BanService._map_ban_to_response(new_ban_entry)
+            return self.ban_service._map_ban_to_response(new_ban_entry)
 
         except HTTPException as e:
             raise e
@@ -1645,8 +1646,8 @@ class RoomService:
                 "unbanned_by": str(current_user.id),
                 "detail": f"Ваш бан в комнате{room.name} снят."
             }
-            await self.manager.send_personal_message(json.dumps(unban_notification_for_user),target_user_id)
-            await self.manager.broadcast(room_id, json.dumps(unban_notification_for_room))
+            await manager.send_personal_message(json.dumps(unban_notification_for_user),target_user_id)
+            await manager.broadcast(room_id, json.dumps(unban_notification_for_room))
 
             return {
                 "status": "success",
@@ -1733,7 +1734,7 @@ class RoomService:
             )
         
         try:
-            NotificationService.add_notification(
+            self.notify_service.add_notification(
                 
                 invited_user_id,
                 NotificationType.ROOM_INVITED,
@@ -1751,7 +1752,7 @@ class RoomService:
                 'inviter_username': inviter.username,
                 'detail': f"Вы получили приглашение в комнату {room.name} от {inviter.username}."
             }
-            await self.manager.send_personal_message(json.dumps(ws_message),invited_user_id)
+            await manager.send_personal_message(json.dumps(ws_message),invited_user_id)
             return {"status": "success", "detail": "Приглашение отправлено."}
         except HTTPException as http_exc:
             logger.error(
@@ -1828,7 +1829,7 @@ class RoomService:
         try:
             room = self.room_repo.get_room_by_id( room_id)
             if not room:
-                NotificationService.mark_notification_as_read( notification_id, current_user_id)
+                self.notify_service.mark_notification_as_read( notification_id, current_user_id)
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail='Комната, в которую вас пригласили, не найдена или удалена.'
@@ -1841,7 +1842,7 @@ class RoomService:
             if action == "accept":
                 invited_member_in_room = self.member_room_repo.get_member_room_association( room_id, invited_user_id)
                 if invited_member_in_room:
-                    NotificationService.mark_notification_as_read( notification_id, current_user_id)
+                    self.notify_service.mark_notification_as_read( notification_id, current_user_id)
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail='Вы уже являетесь участником этой комнаты.'
@@ -1849,7 +1850,7 @@ class RoomService:
                 
                 is_banned_local = self.ban_repo.is_user_banned_local( invited_user_id, room_id)
                 if is_banned_local:
-                    NotificationService.mark_notification_as_read( notification_id, current_user_id)
+                    self.notify_service.mark_notification_as_read( notification_id, current_user_id)
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail='Вы забанены в этой комнате и не можете присоединиться.'
@@ -1859,7 +1860,7 @@ class RoomService:
                      invited_user_id,room_id,Role.MEMBER 
                 )
                 
-                NotificationService.mark_notification_as_read( notification_id, current_user_id)
+                self.notify_service.mark_notification_as_read( notification_id, current_user_id)
 
                 websocket_message = {
                     "action": "user_joined_room",
@@ -1868,10 +1869,10 @@ class RoomService:
                     "username": invited_user.username,
                     "detail": f"{invited_user.username} присоединился(ась) к комнате."
                 }
-                await self.manager.broadcast(room_id, json.dumps(websocket_message))
+                await manager.broadcast(room_id, json.dumps(websocket_message))
 
                 if inviter:
-                    NotificationService.add_notification(
+                    self.notify_service.add_notification(
                         user_id=inviter_id,
                         notification_type=NotificationType.SYSTEM_MESSAGE, 
                         message=f"{invited_user.username} принял(а) ваше приглашение в комнату {room.name}.",
@@ -1883,10 +1884,10 @@ class RoomService:
                 return {"status": "success", "detail": "Вы успешно присоединились к комнате."}
 
             elif action == "decline":
-                NotificationService.mark_notification_as_read( notification_id, current_user_id)
+                self.notify_service.mark_notification_as_read( notification_id, current_user_id)
 
                 if inviter:
-                    await NotificationService.add_notification(
+                    await self.notify_service.add_notification(
                         user_id=inviter_id,
                         notification_type=NotificationType.SYSTEM_MESSAGE, 
                         message=f"{invited_user.username} отклонил(а) ваше приглашение в комнату {room.name}.",

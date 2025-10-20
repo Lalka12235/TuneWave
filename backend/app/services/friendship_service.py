@@ -18,7 +18,7 @@ from app.ws.connection_manager import ConnectionManager
 
 class FriendshipService:
 
-    def __init__(self,db: Session,manager: ConnectionManager,friend_repo: FriendshipRepository,notify_service: NotificationService,user_repo: UserRepository):
+    def __init__(self,manager: ConnectionManager,friend_repo: FriendshipRepository,notify_service: NotificationService,user_repo: UserRepository):
         self.manager = manager
         self.friend_repo = friend_repo
         self.notify_service = notify_service
