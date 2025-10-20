@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from typing import Generator
 from app.config.settings import settings 
+from app.logger.log_config import logger
 
 class DBSessionManager:
     """Инкапсулирует создание Engine и SessionLocal."""
@@ -24,10 +25,15 @@ db_manager = DBSessionManager(settings.sync_db_url)
 
 def get_db() -> Generator[Session, None, None]:
     """
-    FastAPI Dependency: Предоставляет сессию БД и закрывает её после запроса.
+    Предоставляет сессию БД и закрывает её после запроса.
     """
     db = db_manager.SessionLocal()
     try:
         yield db
+        db.commit()
+    except Exception as e:
+        logger.error("Database error occurred. %r",e, exc_info=True)
+        db.rollback()
+        raise
     finally:
         db.close()

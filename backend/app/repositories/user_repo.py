@@ -105,7 +105,6 @@ class UserRepository:
         self._db.add(new_user)
         self._db.flush() # Используем flush, чтобы получить ID нового пользователя до коммита
         self._db.refresh(new_user) # Обновляем объект, чтобы убедиться, что все поля (включая ID) актуальны
-        self._db.commit()
         return new_user
     
     
@@ -129,7 +128,6 @@ class UserRepository:
         self._db.add(user) # Добавляем (или повторно добавляем) объект в сессию для отслеживания изменений.
         self._db.flush() # Выполняем операции в БД, но без коммита.
         self._db.refresh(user) # Обновляем объект, чтобы убедиться, что все поля (включая updated_at) актуальны.
-        self._db.commit()
         return user
 
 
@@ -166,5 +164,4 @@ class UserRepository:
         """
         stmt = delete(User).where(User.id == user_id)
         result = self._db.execute(stmt)
-        self._db.commit()
         return result.rowcount > 0 

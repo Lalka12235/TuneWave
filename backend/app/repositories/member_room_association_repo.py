@@ -97,7 +97,7 @@ class MemberRoomAssociationRepository:
         ).options(
             joinedload(Member_room_association.user)
         )
-        result = self.b.execute(stmt)
+        result = self._db.execute(stmt)
         return result.scalars().all()
     
 
