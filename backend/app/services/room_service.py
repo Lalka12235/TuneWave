@@ -34,7 +34,7 @@ from app.schemas.room_schemas import (
 )
 from app.schemas.spotify_schemas import SpotifyTrackDetails
 
-from app.services.mapper import map_ban_to_response,map_track_to_response,map_user_to_response,map_member_to_response
+from app.services.mapper import map_ban_to_response,map_track_to_response,map_user_to_response,map_member_to_response,map_room_to_response
 from app.repositories.notification_repo import NotificationRepository
 from app.services.spotify_service import SpotifyService
 from app.repositories.track_repo import TrackRepository
@@ -65,50 +65,6 @@ class RoomService:
         self.room_repo = room_repo
         self.member_room_repo = member_room_repo
         self.track_repo = track_repo
-
-    def _map_room_to_response(self,room: Room) -> RoomResponse:
-        """
-        Преобразует объект модели Room в Pydantic-схему RoomResponse,
-        включая информацию об участниках и очереди треков.
-        """
-        owner_response = map_user_to_response(room.owner) if room.owner_id else None
-        
-        members_response = []
-        if room.member_room:
-            for member_association in room.member_room:
-                if member_association.user:
-                    members_response.append(map_user_to_response(member_association.user))
-
-        queue_response = []
-        if room.room_track:
-            sorted_associations = sorted(room.room_track, key=lambda x: x.order_in_queue)
-            for assoc in sorted_associations:
-                if assoc.track:
-                    queue_response.append(
-                        TrackInQueueResponse(
-                            track=map_track_to_response(assoc.track),
-                            order_in_queue=assoc.order_in_queue,
-                            id=assoc.id,
-                            added_at=assoc.added_at,
-                        )
-                    )
-
-        room_data = RoomResponse(
-            id=room.id,
-            name=room.name,
-            owner_id=room.owner_id,
-            max_members=room.max_members,
-            current_members_count=room.max_members, 
-            is_private=room.is_private,
-            created_at=room.created_at.isoformat() if room.created_at else None,
-            current_track_id=room.current_track_id,
-            current_track_position_ms=room.current_track_position_ms,
-            is_playing=room.is_playing,
-            owner=owner_response,
-            members=members_response,
-            queue=queue_response
-        )
-        return room_data
     
     
     async def get_room_by_id(self,room_id: uuid.UUID) -> dict[str,Any]:
@@ -122,7 +78,7 @@ class RoomService:
                 detail='Room not found'
             )
         
-        return self._map_room_to_response(room)
+        return map_room_to_response(room)
     
 
     
@@ -137,7 +93,7 @@ class RoomService:
                 detail='Room not found'
             )
         
-        return self._map_room_to_response(room) 
+        return map_room_to_response(room) 
     
 
     
@@ -147,7 +103,7 @@ class RoomService:
         """
         rooms_list = self.room_repo.get_all_rooms()
         
-        return [self._map_room_to_response(room) for room in rooms_list]
+        return [map_room_to_response(room) for room in rooms_list]
     
 
     
@@ -191,14 +147,14 @@ class RoomService:
                 role=Role.OWNER.value
             )
 
-            room_response = self._map_room_to_response(new_room)
+            room_response = map_room_to_response(new_room)
             websocket_message = {
             "action": "room_created",
             "room_data": room_response.model_dump_json()
             }
             await manager.broadcast(manager.GLOBAL_ROOM_ID,websocket_message)
 
-            return self._map_room_to_response(new_room)
+            return map_room_to_response(new_room)
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -247,7 +203,7 @@ class RoomService:
         try:
             updated_room_db = self.room_repo.update_room(room, data_to_update)
 
-            return self._map_room_to_response(updated_room_db)
+            return map_room_to_response(updated_room_db)
         except Exception as e:
             
             raise HTTPException(
@@ -384,7 +340,7 @@ class RoomService:
             await manager.send_personal_message(json.dumps(websocket_message_for_user),user.id)
             await manager.broadcast(room_id,json.dumps(websocket_message_for_room))
 
-            return self._map_room_to_response(room)
+            return map_room_to_response(room)
         except Exception as e:
             
             raise HTTPException(
@@ -494,7 +450,7 @@ class RoomService:
             List[RoomResponse]: Список объектов RoomResponse, в которых состоит пользователь.
         """
         rooms = self.member_room_repo.get_rooms_by_user_id(user.id)
-        return [self._map_room_to_response(room) for room in rooms]
+        return [map_room_to_response(room) for room in rooms]
         
     async def add_track_to_queue(
     self, 
@@ -825,7 +781,7 @@ class RoomService:
         }
         await manager.broadcast(room_id, json.dumps(ws_message))
         logger.info(f"RoomService: Отправлено WS-уведомление о смене хоста воспроизведения в комнате '{room_id}'.")
-        return self._map_room_to_response(room)
+        return map_room_to_response(room)
 
 
     
@@ -836,7 +792,7 @@ class RoomService:
         room = self.room_repo.get_room_by_id(room_id)
         if not room.playback_host_id:
             logger.info(f"RoomService: Для комнаты '{room_id}' нет активного хоста воспроизведения для сброса.")
-            return self._map_room_to_response(room)
+            return map_room_to_response(room)
         
         old_host_id = room.playback_host_id
 
@@ -861,7 +817,7 @@ class RoomService:
 
         await manager.broadcast(room_id, json.dumps(ws_message))
         logger.info(f"RoomService: Отправлено WS-уведомление об очистке хоста воспроизведения в комнате '{room_id}'.")
-        return self._map_room_to_response(room)
+        return map_room_to_response(room)
 
 
     
@@ -911,7 +867,7 @@ class RoomService:
         }
         await manager.broadcast(room_id, json.dumps(ws_message))
         logger.debug(f"RoomService: Отправлено WS-уведомление об изменении состояния плеера в комнате '{room_id}'.")
-        return self._map_room_to_response(room)
+        return map_room_to_response(room)
 
     
     async def player_command_play(
