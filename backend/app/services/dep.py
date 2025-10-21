@@ -76,11 +76,11 @@ def get_track_service(
 
 def get_friendship_service(
     friend_repo: Annotated[FriendshipRepository,Depends(get_friendship_repo)],
-    notify_service: Annotated[NotificationService,Depends(get_notify_service)],
+    notify_repo: Annotated[NotificationRepository,Depends(get_notification_repo)],
     user_repo: Annotated[UserRepository,Depends(get_user_repo)],
 ):
     """Get the friendship service."""
-    return FriendshipService(friend_repo,notify_service,user_repo)
+    return FriendshipService(friend_repo,notify_repo,user_repo)
 
 def get_room_service(
         user_repo: Annotated[UserRepository,Depends(get_user_repo)],
@@ -89,10 +89,7 @@ def get_room_service(
         room_track_repo: Annotated[RoomTrackAssociationRepository,Depends(get_room_track_repo)],
         room_repo: Annotated[RoomRepository,Depends(get_room_repo)],
         member_room_repo: Annotated[MemberRoomAssociationRepository,Depends(get_member_room_repo)],
-        ban_service: Annotated[BanService,Depends(get_ban_service)],
-        notify_service: Annotated[NotificationService,Depends(get_notify_service)],
-        track_service: Annotated[TrackService,Depends(get_track_service)],
-        user_service: Annotated[UserService,Depends(get_user_service)],
+        track_repo: Annotated[TrackRepository,Depends(get_track_repo)],
     ):
     """Get the room service."""
     return RoomService(
@@ -102,15 +99,11 @@ def get_room_service(
         room_track_repo,
         room_repo,
         member_room_repo,
-        ban_service,
-        notify_service,
-        track_service,
-        user_service
+        track_repo,
     )
 
 def get_chat_service(
     chat_repo: Annotated[ChatRepository, Depends(get_chat_repo)],
-    room_service: Annotated[RoomService, Depends(get_room_service)],
 ):
     """Get the chat service."""
-    return ChatService(chat_repo, room_service)
+    return ChatService(chat_repo)
