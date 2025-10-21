@@ -2,28 +2,19 @@ import uuid
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
 from app.logger.log_config import logger
-from app.models.ban import Ban
 from app.models.user import User
 from app.repositories.ban_repo import BanRepository
 from app.schemas.ban_schemas import BanCreate, BanRemove, BanResponse
+from app.services.mapper import map_ban_to_response
 
 
 class BanService:
 
     def __init__(self,ban_repo: BanRepository):
         self.ban_repo = ban_repo
-
-    @staticmethod
-    def _map_ban_to_response(ban: Ban) -> BanResponse:
-        """
-        Вспомогательный метод для маппинга объекта Ban SQLAlchemy в Pydantic BanResponse.
-        """
-        return BanResponse.model_validate(ban)
-
-    
+ 
     def get_bans_by_admin(self,user_id: uuid.UUID) -> list[BanResponse]:
         """
         Получает список банов, выданных указанным пользователем (кто забанил).
@@ -39,7 +30,7 @@ class BanService:
         if not bans:
             return []
         
-        return [self._map_ban_to_response(ban) for ban in bans]
+        return [map_ban_to_response(ban) for ban in bans]
 
     
     def get_bans_on_user(self,user_id: uuid.UUID) -> list[BanResponse]:
@@ -57,7 +48,7 @@ class BanService:
         if not bans:
             return []
         
-        return [self._map_ban_to_response(ban) for ban in bans]
+        return [map_ban_to_response(ban) for ban in bans]
     
 
     
@@ -104,7 +95,7 @@ class BanService:
                 by_ban_user_id=current_user.id
             )
 
-            return self._map_ban_to_response(new_ban_entry)
+            return map_ban_to_response(new_ban_entry)
         
         except HTTPException as e:
             raise e
@@ -133,6 +124,7 @@ class BanService:
         existing_ban_to_remove = None
         if data_ban.room_id:
             existing_ban_to_remove_local = self.ban_repo.is_user_banned_local( data_ban.ban_user_id, data_ban.room_id)
+            existing_ban_to_remove = True
         else:
             self.ban_repo.is_user_banned_global( data_ban.ban_user_id)
         

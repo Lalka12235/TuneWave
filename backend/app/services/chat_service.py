@@ -2,20 +2,19 @@ import uuid
 from datetime import datetime
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
 from app.logger.log_config import logger
 from app.models.message import Message
 from app.repositories.chat_repo import ChatRepository
 from app.schemas.message_schemas import MessageCreate, MessageResponse
-from app.services.room_service import RoomService
+from app.repositories.room_repo import RoomRepository
 
 
 class ChatService():
 
-    def __init__(self,chat_repo: ChatRepository,room_service: RoomService):
+    def __init__(self,chat_repo: ChatRepository,room_repo: RoomRepository):
         self.chat_repo = chat_repo
-        self.room_service = room_service
+        self.room_repo = room_repo
 
     @staticmethod
     def _map_message_to_response(message: Message) -> MessageResponse:
@@ -47,7 +46,12 @@ class ChatService():
         Returns:
             list[MessageResponse]: Список объектов Pydantic, представляющих сообщения.
         """
-        self.room_service.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
+        if not room:
+            raise HTTPException(
+                status_code=404,
+                detail='Комната не найдена'
+            )
         
         if before_timestamp:
             messages = self.chat_repo.get_message_for_room(room_id,limit,before_timestamp)
@@ -74,11 +78,25 @@ class ChatService():
         Returns:
             MessageResponse: Pydantic-схема созданного сообщения.
         """
-        self.room_service.get_room_by_id(room_id)
+        room = self.room_repo.get_room_by_id(room_id)
+        if not room:
+            raise HTTPException(
+                status_code=404,
+                detail='Комната не найдена'
+            )
+        
+        room = self.room_repo.get_room_by_id(room_id)
+        if not room:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Комната не найдена."
+            )
+        
+        members = room.member_room
+        if not members:
+            return []
 
-        user_in_room = self.room_service.get_room_members(room_id)
-
-        if user_id not in [member.id for member in user_in_room]:
+        if user_id not in [member.id for member in members]:
             raise HTTPException(
                 status_code=403,
                 detail='Вы не находитесь в комнате'

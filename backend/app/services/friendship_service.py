@@ -11,15 +11,15 @@ from app.repositories.friendship_repo import FriendshipRepository
 from app.repositories.user_repo import UserRepository
 from app.schemas.enum import FriendshipStatus
 from app.schemas.friendship_schemas import FriendshipResponse
-from app.services.notification_service import NotificationService
+from app.repositories.notification_repo import NotificationRepository
 from app.ws.connection_manager import manager
 
 
 class FriendshipService:
 
-    def __init__(self,friend_repo: FriendshipRepository,notify_service: NotificationService,user_repo: UserRepository):
+    def __init__(self,friend_repo: FriendshipRepository,notify_repo: NotificationRepository,user_repo: UserRepository):
         self.friend_repo = friend_repo
-        self.notify_service = notify_service
+        self.notify_repo = notify_repo
         self.user_repo = user_repo
 
     @staticmethod
@@ -142,7 +142,7 @@ class FriendshipService:
         
         try:
             friendship = self.friend_repo.add_friend_requet(requester_id,accepter_id)
-            self.notify_service.add_notification(
+            self.notify_repo.add_notification(
                 user_id=accepter_id,
                 notification_type=NotificationType.FRIEND_REQUEST,
                 message=f"Вам пришел новый запрос на дружбу от {req_user.username}.",
@@ -219,14 +219,14 @@ class FriendshipService:
                 "accepter_username": friendship.accepter.username,
                 "detail": f"Ваш запрос на дружбу к {friendship.accepter.username} принят. Вы теперь друзья!"
             }
-            self.notify_service.add_notification(
+            self.notify_repo.add_notification(
                 user_id=friendship.requester_id,
                 notification_type=NotificationType.FRIEND_ACCEPTED,
                 message=f"{friendship.accepter.username} принял(а) ваш запрос на дружбу.",
                 sender_id=current_accepter_id, # Тот, кто принял
                 related_object_id=friendship.id
             )
-            self.notify_service.add_notification(
+            self.notify_repo.add_notification(
                 user_id=current_accepter_id,
                 notification_type=NotificationType.FRIEND_ACCEPTED,
                 message=f"Вы приняли запрос на дружбу от {friendship.requester.username}. Теперь вы друзья!",
@@ -312,7 +312,7 @@ class FriendshipService:
                 "accepter_username": friendship.accepter.username,
                 "detail": f"Ваш запрос на дружбу к {friendship.accepter.username} отклонен."
             }
-            self.notify_service.add_notification(
+            self.notify_repo.add_notification(
                 user_id=friendship.requester_id, # Уведомление для отправителя запроса
                 notification_type=NotificationType.FRIEND_DECLINED, # Тип уведомления
                 message=f"{friendship.accepter.username} отклонил(а) ваш запрос на дружбу.",
@@ -385,7 +385,7 @@ class FriendshipService:
                 notification_message = f"{friendship.accepter.username} удалил(а) запись о вашей дружбе."
             
             if other_user_id:
-                self.notify_service.add_notification(
+                self.notify_repo.add_notification(
                     user_id=other_user_id, # Уведомление для "другой" стороны
                     notification_type=NotificationType.FRIENDSHIP_DELETED, # Новый тип уведомления
                     message=notification_message,
