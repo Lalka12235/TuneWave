@@ -16,32 +16,42 @@ from sqlalchemy.orm import Session
 
 
 def get_user_repo(db: Annotated[Session, Depends(get_db)]):
+    """Get the user repository."""
     return UserRepository(db)
 
 
 def get_ban_repo(db: Annotated[Session, Depends(get_db)]):
+    """Get the ban repository."""
     return BanRepository(db)
 
 def get_chat_repo(db: Annotated[Session, Depends(get_db)]):
+    """Get the chat repository."""
     return ChatRepository(db)
 
 def get_favorite_track_repo(db: Annotated[Session, Depends(get_db)]):
+    """Get the favorite track repository."""
     return FavoriteTrackRepository(db)
 
 def get_friendship_repo(db: Annotated[Session, Depends(get_db)]):
+    """Get the friendship repository."""
     return FriendshipRepository(db)
 
 def get_member_room_repo(db: Annotated[Session, Depends(get_db)]):
+    """Get the member room association repository."""
     return MemberRoomAssociationRepository(db)
 
 def get_notification_repo(db: Annotated[Session, Depends(get_db)]):
+    """Get the notification repository."""
     return NotificationRepository(db)
 
 def get_room_repo(db: Annotated[Session, Depends(get_db)]):
+    """Get the room repository."""
     return RoomRepository(db)
 
 def get_track_repo(db: Annotated[Session, Depends(get_db)]):
+    """Get the track repository."""
     return TrackRepository(db)
 
 def get_room_track_repo(db: Annotated[Session, Depends(get_db)]):
+    """Get the room track association repository."""
     return RoomTrackAssociationRepository(db)

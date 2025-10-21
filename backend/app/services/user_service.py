@@ -80,7 +80,7 @@ class UserService:
 
 
     
-    async def get_user_by_id(self,user_id: uuid.UUID) -> dict[str,Any]:
+    async def get_user_by_id(self,user_id: uuid.UUID) -> UserResponse:
         """
         Получает пользователя по его уникальному ID.
         
@@ -267,7 +267,7 @@ class UserService:
     
 
     
-    def hard_delete_user(self,user_id: uuid.UUID) -> dict[str,Any]:
+    def hard_delete_user(self,user_id: uuid.UUID) -> dict[str,str]:
         """_summary_
 
         Args:
@@ -289,7 +289,7 @@ class UserService:
                 detail='User not found'
             )
         try:
-            self.user_repo.hard_delete_user(user_id)
+            _ = self.user_repo.hard_delete_user(user_id)
         except Exception as e:
             logger.error(f"Ошибка при физическом удалении пользователя '{user_id}': {e}", exc_info=True)
             raise HTTPException(
@@ -300,7 +300,7 @@ class UserService:
         return {
             'detail': 'delete user',
             'status': 'success',
-            'id': user_id,
+            'id': str(user_id),
         }
     
 
@@ -387,7 +387,7 @@ class UserService:
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
-        return self._map_user_to_response(user), Token(access_token=access_token)
+        return self._map_user_to_response(user), Token(access_token=access_token,token_type='bearer')
     
 
     
@@ -414,7 +414,7 @@ class UserService:
                     status_code=403,
                     detail="Ваш аккаунт заблокирован. Свяжитесь с поддержкой для получения дополнительной информации."
                 )
-            update_data = {}
+            update_data= {}
             if not user.spotify_id:
                 update_data['spotify_id'] = spotify_data.spotify_id
                 update_data['spotify_image_url'] = spotify_data.spotify_image_url
@@ -479,7 +479,7 @@ class UserService:
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
-        return self._map_user_to_response(user), Token(access_token=access_token)
+        return self._map_user_to_response(user), Token(access_token=access_token,token_type="bearer")
     
 
     

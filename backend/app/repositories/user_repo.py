@@ -2,6 +2,7 @@ from sqlalchemy import select,delete
 from app.models.user import User
 from sqlalchemy.orm import Session
 import uuid
+from typing import Any
 
 class UserRepository:
 
@@ -75,7 +76,7 @@ class UserRepository:
         return result.scalar_one_or_none()
     
     
-    def create_user(self, user_data: dict) -> User:
+    def create_user(self, user_data: dict[str, Any]) -> User:
         """
         Создает нового пользователя в базе данных.
         
@@ -108,7 +109,7 @@ class UserRepository:
         return new_user
     
     
-    def update_user(self, user: User, update_data: dict) -> User:
+    def update_user(self, user: User, update_data: dict[str, Any]) -> User:
         """
         Обновляет существующего пользователя в базе данных.
         

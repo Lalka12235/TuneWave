@@ -39,12 +39,14 @@ def get_user_service(
     user_repo: Annotated[UserRepository, Depends(get_user_repo)],
     ban_repo: Annotated[BanRepository, Depends(get_ban_repo)],
 ):
+    """Get the user service."""
     return UserService(user_repo, ban_repo)
 
 
 def get_ban_service(
     ban_repo: Annotated[BanRepository, Depends(get_ban_repo)],
 ):
+    """Get the ban service."""
     return BanService(ban_repo)
 
 
@@ -52,6 +54,7 @@ def get_favorite_track_service(
         favorite_track_repo: Annotated[FavoriteTrackRepository,Depends(get_favorite_track_repo)],
         track_repo: Annotated[TrackRepository,Depends(get_track_repo)],
 ):
+    """Get the favorite track service."""
     return FavoriteTrackService(favorite_track_repo,track_repo)
 
 
@@ -60,12 +63,14 @@ def get_notify_service(
         user_repo: Annotated[UserRepository,Depends(get_user_repo)],
         room_repo: Annotated[RoomRepository,Depends(get_room_repo)],
 ):
+    """Get the notification service."""
     return NotificationService(notify_repo,user_repo,room_repo)
 
 
 def get_track_service(
         track_repo: Annotated[TrackRepository,Depends(get_track_repo)],
 ):
+    """Get the track service."""
     return TrackService(track_repo)
 
 
@@ -74,6 +79,7 @@ def get_friendship_service(
     notify_service: Annotated[NotificationService,Depends(get_notify_service)],
     user_repo: Annotated[UserRepository,Depends(get_user_repo)],
 ):
+    """Get the friendship service."""
     return FriendshipService(friend_repo,notify_service,user_repo)
 
 def get_room_service(
@@ -87,7 +93,8 @@ def get_room_service(
         notify_service: Annotated[NotificationService,Depends(get_notify_service)],
         track_service: Annotated[TrackService,Depends(get_track_service)],
         user_service: Annotated[UserService,Depends(get_user_service)],
-):
+    ):
+    """Get the room service."""
     return RoomService(
         user_repo,
         ban_repo,
@@ -105,4 +112,5 @@ def get_chat_service(
     chat_repo: Annotated[ChatRepository, Depends(get_chat_repo)],
     room_service: Annotated[RoomService, Depends(get_room_service)],
 ):
+    """Get the chat service."""
     return ChatService(chat_repo, room_service)
