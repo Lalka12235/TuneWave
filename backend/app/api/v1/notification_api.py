@@ -1,21 +1,20 @@
-from fastapi import APIRouter, Depends, Path, status, Query
-from sqlalchemy.orm import Session
 import uuid
 from typing import Annotated
-from app.config.session import get_db
-from app.auth.auth import get_current_user
-from app.models.user import User 
-from app.schemas.notification_schemas import NotificationResponse 
-from app.services.notification_service import NotificationService
+
+from fastapi import APIRouter, Depends, Path, Query, status
 from fastapi_limiter.depends import RateLimiter
 
+from app.auth.auth import get_current_user
+from app.models.user import User
+from app.schemas.notification_schemas import NotificationResponse
+from app.services.notification_service import NotificationService
+from app.services.dep import get_notify_service
 
 notification = APIRouter(
     tags=['Notifications'],
     prefix='/notifications'
 )
 
-db_dependencies = Annotated[Session,Depends(get_db)]
 user_dependencies = Annotated[User,Depends(get_current_user)]
 
 
@@ -26,8 +25,8 @@ user_dependencies = Annotated[User,Depends(get_current_user)]
     dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 )
 async def get_my_notifications(
-    db:db_dependencies,
     user:user_dependencies,
+    notify_service: Annotated[NotificationService,Depends(get_notify_service)],
     limit: Annotated[int, Query(ge=1, le=100, description="Максимальное количество уведомлений для возврата.")] = 10,
     offset: Annotated[int, Query(ge=0, description="Смещение для пагинации.")] = 0,
 ) -> list[NotificationResponse]:
@@ -44,8 +43,8 @@ async def get_my_notifications(
     Returns:
         List[NotificationResponse]: Список объектов NotificationResponse.
     """
-    return NotificationService.get_user_notifications(
-        db, user.id,limit=limit, offset=offset
+    return notify_service.get_user_notifications(
+        user.id,limit=limit, offset=offset
     )
 
 
@@ -56,8 +55,8 @@ async def get_my_notifications(
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def mark_notification_as_read(
+    notify_service: Annotated[NotificationService,Depends(get_notify_service)],
     notification_id: Annotated[uuid.UUID,Path(...,description="ID уведомления, которое нужно отметить как прочитанное.")],
-    db: db_dependencies,
     user: user_dependencies,
 ) -> NotificationResponse:
     """
@@ -71,8 +70,8 @@ async def mark_notification_as_read(
     Returns:
         NotificationResponse: Детали обновленного уведомления.
     """
-    return NotificationService.mark_notification_as_read(
-        db, notification_id, user.id
+    return notify_service.mark_notification_as_read(
+        notification_id, user.id
     )
 
 
@@ -82,8 +81,8 @@ async def mark_notification_as_read(
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def delete_notifications(
+    notify_service: Annotated[NotificationService,Depends(get_notify_service)],
     notification_id: Annotated[uuid.UUID,Path(...,description="ID уведомления, которое нужно отметить как прочитанное.")],
-    db: db_dependencies,
     user: user_dependencies,
 ) -> dict[str,str]:
     """
@@ -97,6 +96,6 @@ async def delete_notifications(
     Returns:
         dict[str, str]: Сообщение об успешном удалении.
     """
-    return NotificationService.delete_notification(
-        db, notification_id, user.id
+    return notify_service.delete_notification(
+        notification_id, user.id
     )

@@ -1,26 +1,24 @@
-from fastapi import APIRouter,Depends, UploadFile,Path
-from sqlalchemy.orm import Session
-from typing import Annotated
-from app.schemas.user_schemas import UserResponse,UserUpdate
-from app.services.user_service import UserService
-from app.auth.auth import get_current_user
-from app.config.session import get_db
-from app.models.user import User
-from fastapi_limiter.depends import RateLimiter
+import json
 import uuid
+from typing import Annotated, Callable
+
+from fastapi import APIRouter, Depends, Path, UploadFile
+from fastapi_limiter.depends import RateLimiter
 from infrastructure.redis.redis import get_redis_client
 from redis.asyncio import Redis
-from app.logger.log_config import logger
-import json
-from typing import Callable
 
+from app.auth.auth import get_current_user
+from app.logger.log_config import logger
+from app.models.user import User
+from app.schemas.user_schemas import UserResponse, UserUpdate
+from app.services.dep import get_user_service
+from app.services.user_service import UserService
 
 user = APIRouter(
     tags=['User'],
     prefix='/users'
 )
 
-db_dependencies = Annotated[Session,Depends(get_db)]
 user_dependencies = Annotated[User,Depends(get_current_user)]
 
 def cache(key_generator: Callable, expiration: int = 300):
@@ -63,7 +61,9 @@ def cache(key_generator: Callable, expiration: int = 300):
 @cache(key_generator=lambda user, **kwargs: f"user_me:{user.id}", expiration=300)
 async def get_me(
     user: user_dependencies,
-    redis_client: Redis = Depends(get_redis_client) 
+    redis_client: Annotated[Redis,Depends(get_redis_client)],
+    user_service: Annotated[UserService,Depends(get_user_service)]
+    
 ) -> UserResponse:
     """
     Получает профиль текущего аутентифицированного пользователя.
@@ -71,14 +71,14 @@ async def get_me(
     Returns:
         UserResponse: Pydantic-модель с данными профиля пользователя.
     """
-    return UserService._map_user_to_response(user)
+    return user_service._map_user_to_response(user)
 
 
 @user.put('/{user_id}',response_model=UserResponse)
 async def update_profile(
-    db: db_dependencies,
     user: user_dependencies,
-    update_data: UserUpdate
+    update_data: UserUpdate,
+    user_service: Annotated[UserService,Depends(get_user_service)]
 ) -> UserResponse:
     """_summary_
 
@@ -90,14 +90,14 @@ async def update_profile(
     Returns:
         UserResponse: _description_
     """
-    return UserService.update_user_profile(db,user.id,update_data)
+    return user_service.update_user_profile(user.id,update_data)
 
 
 @user.post('/me/avatar',response_model=UserResponse,dependencies=[Depends(RateLimiter(times=5, seconds=60))])
 async def load_avatar(
-    db:db_dependencies,
     user: user_dependencies,
     avatar_file: UploadFile,
+    user_service: Annotated[UserService,Depends(get_user_service)]
 ) -> UserResponse:
     """
     Загружает новую аватарку для текущего пользователя.
@@ -110,22 +110,22 @@ async def load_avatar(
     Returns:
         UserResponse: Обновленный профиль пользователя с новым URL аватарки.
     """
-    return await UserService.load_avatar(db,user,avatar_file) 
+    return await user_service.load_avatar(user,avatar_file) 
 
 
 @user.get(
     "/{user_id}",
     response_model=UserResponse,
-    dependencies=[Depends(RateLimiter(times=20, seconds=60))]
+    dependencies=[Depends(RateLimiter(times=20, seconds=60))],
 )
 @cache(key_generator=lambda user_id, **kwargs: f"user_profile:{user_id}", expiration=300)
 async def get_user_by_id(
     user_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID пользователя")],
-    db: db_dependencies,
-    redis_client: Redis = Depends(get_redis_client) 
+    user_service: Annotated[UserService,Depends(get_user_service)],
+    redis_client: Annotated[Redis,Depends(get_redis_client)],
 ) -> UserResponse:
     """
     Получает публичную информацию о пользователе по его ID.
     Не требует аутентификации, если предназначен для публичного просмотра.
     """
-    return await UserService.get_user_by_id(db, user_id)
+    return await user_service.get_user_by_id(user_id)

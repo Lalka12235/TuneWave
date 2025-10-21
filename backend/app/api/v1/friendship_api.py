@@ -1,27 +1,24 @@
-from fastapi import APIRouter,Depends,Path,status
-from app.schemas.friendship_schemas import FriendshipResponse,FriendshipRequestCreate
+import json
 import uuid
-from sqlalchemy.orm import Session
-from app.config.session import get_db
-from app.auth.auth import get_current_user
-from typing import Annotated
-from app.models.user import User
-from app.services.friendship_service import FriendshipService
+from typing import Annotated, Callable
+
+from fastapi import APIRouter, Depends, Path, status
 from fastapi_limiter.depends import RateLimiter
 from infrastructure.redis.redis import get_redis_client
 from redis.asyncio import Redis
+
+from app.auth.auth import get_current_user
 from app.logger.log_config import logger
-import json
-from typing import Callable
-
-
+from app.models.user import User
+from app.schemas.friendship_schemas import FriendshipRequestCreate, FriendshipResponse
+from app.services.friendship_service import FriendshipService
+from app.services.dep import get_friendship_service
 
 friendship = APIRouter(
     tags=['Friendship'],
     prefix='/friendships'
 )
 
-db_dependencies = Annotated[Session,Depends(get_db)]
 user_dependencies = Annotated[User,Depends(get_current_user)]
 
 
@@ -66,8 +63,8 @@ def cache(key_generator: Callable, expiration: int = 300):
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def send_friend_request(
+    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
     request_data: FriendshipRequestCreate,
-    db: db_dependencies,
     user: user_dependencies,
 ) -> FriendshipResponse:
     """
@@ -81,7 +78,7 @@ async def send_friend_request(
     Returns:
         FriendshipResponse: Детали созданной записи о запросе на дружбу.
     """
-    return await FriendshipService.send_friend_request(db,user.id,request_data.accepter_id)
+    return await friend_service.send_friend_request(user.id,request_data.accepter_id)
 
 
 @friendship.put(
@@ -91,8 +88,8 @@ async def send_friend_request(
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def accept_friend_request(
+    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
     friendship_id: Annotated[uuid.UUID,Path(..., description="ID запроса на дружбу для принятия.")],
-    db: db_dependencies,
     user: user_dependencies
 ) -> FriendshipResponse:
     """
@@ -106,7 +103,7 @@ async def accept_friend_request(
     Returns:
         FriendshipResponse: Детали обновленной записи о дружбе.
     """
-    return await FriendshipService.accept_friend_request(db,friendship_id,user.id)
+    return await friend_service.accept_friend_request(friendship_id,user.id)
 
 
 @friendship.put(
@@ -116,8 +113,8 @@ async def accept_friend_request(
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def decline_friend_request(
+    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
     friendship_id: Annotated[uuid.UUID,Path(..., description="ID запроса на дружбу для отклонения.")],
-    db: db_dependencies,
     user: user_dependencies
 ) -> FriendshipResponse:
     """
@@ -131,7 +128,7 @@ async def decline_friend_request(
     Returns:
         FriendshipResponse: Детали обновленной записи о дружбе (статус DECLINED).
     """
-    return await FriendshipService.decline_friend_request(db,friendship_id,user.id)
+    return await friend_service.decline_friend_request(friendship_id,user.id)
 
 
 @friendship.delete(
@@ -140,8 +137,8 @@ async def decline_friend_request(
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def delete_friendship(
+    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
     friendship_id: Annotated[uuid.UUID, Path(..., description="ID записи о дружбе для удаления.")],
-    db: db_dependencies,
     current_user: user_dependencies,
 ) -> dict[str, str]:
     """
@@ -155,8 +152,7 @@ async def delete_friendship(
     Returns:
         dict[str, str]: Сообщение об успешном удалении.
     """
-    # Вызываем метод сервиса для удаления дружбы
-    return await FriendshipService.delete_friendship(db,friendship_id,current_user.id)
+    return await friend_service.delete_friendship(friendship_id,current_user.id)
 
 
 
@@ -168,9 +164,9 @@ async def delete_friendship(
 )
 @cache(key_generator=lambda user, **kwargs: f"user_me_friend:{user.id}", expiration=300)
 async def get_my_friend(
-    db: db_dependencies,
+    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
     user: user_dependencies,
-    redis_client: Redis = Depends(get_redis_client) 
+    redis_client: Annotated[Redis,Depends(get_redis_client)] 
 ) -> list[FriendshipResponse]:
     """
     Получает список всех принятых друзей текущего аутентифицированного пользователя.
@@ -182,7 +178,7 @@ async def get_my_friend(
     Returns:
         List[FriendshipResponse]: Список объектов FriendshipResponse со статусом ACCEPTED.
     """
-    return FriendshipService.get_my_fridns(db,user.id)
+    return friend_service.get_my_fridns(user.id)
 
 
 @friendship.get(
@@ -193,9 +189,9 @@ async def get_my_friend(
 )
 @cache(key_generator=lambda user, **kwargs: f"user_me_request:{user.id}", expiration=300)
 async def get_my_sent_requests(
-    db: db_dependencies,
+    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
     current_user: user_dependencies,
-    redis_client: Redis = Depends(get_redis_client) 
+    redis_client: Annotated[Redis,Depends(get_redis_client)]
 ) -> list[FriendshipResponse]:
     """
     Получает список запросов на дружбу, отправленных текущим аутентифицированным пользователем,
@@ -208,7 +204,7 @@ async def get_my_sent_requests(
     Returns:
         List[FriendshipResponse]: Список объектов FriendshipResponse со статусом PENDING.
     """
-    return await FriendshipService.get_my_sent_requests(db,current_user.id)
+    return await friend_service.get_my_sent_requests(current_user.id)
 
 
 @friendship.get(
@@ -219,9 +215,9 @@ async def get_my_sent_requests(
 )
 @cache(key_generator=lambda user, **kwargs: f"user_me_received:{user.id}", expiration=300)
 async def get_my_received_requests(
-    db: db_dependencies,
+    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
     current_user: user_dependencies,
-    redis_client: Redis = Depends(get_redis_client) 
+    redis_client: Annotated[Redis,Depends(get_redis_client)]
 ) -> list[FriendshipResponse]:
     """
     Получает список запросов на дружбу, полученных текущим аутентифицированным пользователем,
@@ -234,4 +230,4 @@ async def get_my_received_requests(
     Returns:
         List[FriendshipResponse]: Список объектов FriendshipResponse со статусом PENDING.
     """
-    return await FriendshipService.get_my_received_requests(db,current_user.id)
+    return await friend_service.get_my_received_requests(current_user.id)

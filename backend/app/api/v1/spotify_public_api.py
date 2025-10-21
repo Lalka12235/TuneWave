@@ -1,7 +1,8 @@
-from fastapi import APIRouter,Query
-from typing import Annotated,Any
-from app.services.spotify_public_service import SpotifyPublicService
+from typing import Annotated, Any
 
+from fastapi import APIRouter, Query
+
+from app.services.spotify_public_service import SpotifyPublicService
 
 spotify_public = APIRouter(
     tags=['Spotify public'],

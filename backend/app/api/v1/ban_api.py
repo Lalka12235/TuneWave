@@ -1,23 +1,20 @@
-from fastapi import APIRouter,Depends,status
-from app.schemas.ban_schemas import BanResponse
-from app.services.ban_service import BanService
-from app.repositories.ban_repo import BanRepository
 from typing import Annotated
+
+from fastapi import APIRouter, Depends, status
+from fastapi_limiter.depends import RateLimiter
+
 from app.auth.auth import get_current_user
 from app.models.user import User
-from app.config.session import get_db
-from sqlalchemy.orm import Session
-from fastapi_limiter.depends import RateLimiter
+from app.schemas.ban_schemas import BanResponse
+from app.services.ban_service import BanService
+from app.services.dep import get_ban_service
 
 ban = APIRouter(
     tags=['Ban'],
     prefix='/ban'
 )
 
-db_dependencies = Annotated[Session,Depends(get_db)]
 user_dependencies = Annotated[User,Depends(get_current_user)]
-
-ban_service = BanService(BanRepository(db_dependencies))
 
 
 @ban.get(
@@ -27,7 +24,7 @@ ban_service = BanService(BanRepository(db_dependencies))
     dependencies=[Depends(RateLimiter(times=15, seconds=60))],
 )
 async def get_bans_by_admin(
-    db: db_dependencies,
+    ban_service: Annotated[BanService,Depends(get_ban_service)],
     user: user_dependencies,
     
 ) -> list[BanResponse]:
@@ -41,7 +38,7 @@ async def get_bans_by_admin(
     Returns:
         list[BanResponse]: Список объектов BanResponse, представляющих выданные баны.
     """
-    return BanService.get_bans_by_admin(db,user.id)
+    return ban_service.get_bans_by_admin(user.id)
 
 
 @ban.get(
@@ -51,7 +48,7 @@ async def get_bans_by_admin(
     dependencies=[Depends(RateLimiter(times=15, seconds=60))],
 )
 async def get_bans_on_user(
-    db: db_dependencies,
+    ban_service: Annotated[BanService,Depends(get_ban_service)],
     user: user_dependencies,
 ) -> list[BanResponse]:
     """
@@ -64,4 +61,4 @@ async def get_bans_on_user(
     Returns:
         list[BanResponse]: Список объектов BanResponse, представляющих полученные баны.
     """
-    return BanService.get_bans_on_user(db,user.id)
+    return ban_service.get_bans_on_user(user.id)

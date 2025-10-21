@@ -1,18 +1,20 @@
-from urllib.parse import urlencode
-from fastapi import APIRouter,Depends, Query,HTTPException,status
-from sqlalchemy.orm import Session
-from fastapi.responses import RedirectResponse
-from typing import Annotated
-from app.schemas.user_schemas import GoogleOAuthData, SpotifyOAuthData
-from app.schemas.config_schemas import FrontendConfig
-from app.services.user_service import UserService
-from app.config.session import get_db
-import httpx
-from app.config.settings import settings
-import jwt
 import base64
 import time
+from typing import Annotated
+from urllib.parse import urlencode
+
+import httpx
+import jwt
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import RedirectResponse
 from fastapi_limiter.depends import RateLimiter
+
+
+from app.config.settings import settings
+from app.schemas.config_schemas import FrontendConfig
+from app.schemas.user_schemas import GoogleOAuthData, SpotifyOAuthData
+from app.services.user_service import UserService
+from app.services.dep import get_user_service
 
 auth = APIRouter(
     tags=['auth'],
@@ -50,8 +52,8 @@ async def google_login():
 
 @auth.get('/google/callback')
 async def google_callback(
+    user_service: Annotated[UserService,Depends(get_user_service)],
     code: Annotated[str,Query(..., description="Код авторизации от Google")],
-    db: Annotated[Session, Depends(get_db)],
     state: str | None = Query(None, description="Параметр состояния для защиты от CSRF"),
 ) -> RedirectResponse: 
     """
@@ -133,7 +135,7 @@ async def google_callback(
         google_token_expires_at=google_token_expires_at
     )
 
-    user_response, app_token = await UserService.authenticate_user_with_google(db,google_oauth_data)
+    user_response, app_token = await user_service.authenticate_user_with_google(google_oauth_data)
 
     redirect_url = "http://127.0.0.1:5500/frontend/auth.html"
     response = RedirectResponse(url=redirect_url)
@@ -153,10 +155,10 @@ async def google_callback(
 
 @auth.get('/spotify/callback')
 async def spotify_callback(
+    user_service: Annotated[UserService,Depends(get_user_service)],
     code: Annotated[str, Query(..., description="Код авторизации от Spotify")],
-    db: Annotated[Session, Depends(get_db)],
     state: str | None = Query(None,description="Параметр состояния для защиты от CSRF"),
-) -> RedirectResponse: # ИСПРАВЛЕНО: Возвращает RedirectResponse
+) -> RedirectResponse:
     """
     Обрабатывает колбэк от Spotify OAuth после успешной авторизации пользователя.
     Обменивает код авторизации на токены Spotify, получает данные пользователя
@@ -258,7 +260,7 @@ async def spotify_callback(
         spotify_scope=spotify_scope
     )
 
-    user_response, app_token = await UserService.authenticate_user_with_spotify(db, spotify_oauth_data)
+    user_response, app_token = await user_service.authenticate_user_with_spotify(spotify_oauth_data)
 
     redirect_url = "http://127.0.0.1:5500/frontend/auth.html"
     response = RedirectResponse(url=redirect_url)
