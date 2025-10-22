@@ -4,14 +4,11 @@ from app.models import User
 
 def test_get_user_by_email(get_user_data, get_user_repo):
     """Проверяет получение пользователя по email."""
-    # Arrange
     created_user: User = get_user_repo.create_user(get_user_data)
     email = get_user_data["email"]
 
-    # Act
     fetched_user: User = get_user_repo.get_user_by_email(email)
 
-    # Assert
     assert fetched_user is not None
     assert fetched_user.email == email
 

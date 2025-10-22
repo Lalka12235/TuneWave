@@ -5,7 +5,6 @@ from datetime import datetime
 from fastapi import HTTPException, status
 
 from app.logger.log_config import logger
-from app.models.friendship import Friendship
 from app.schemas.enum import NotificationType
 from app.repositories.friendship_repo import FriendshipRepository
 from app.repositories.user_repo import UserRepository
@@ -14,6 +13,7 @@ from app.schemas.friendship_schemas import FriendshipResponse
 from app.repositories.notification_repo import NotificationRepository
 from app.ws.connection_manager import manager
 
+from app.services.mapper import map_friendship_to_response
 
 class FriendshipService:
 
@@ -22,15 +22,7 @@ class FriendshipService:
         self.notify_repo = notify_repo
         self.user_repo = user_repo
 
-    @staticmethod
-    def _map_friendship_to_response(friendship: Friendship) -> FriendshipResponse:
-        """
-        Вспомогательный метод для маппинга объекта Friendship SQLAlchemy в Pydantic FriendshipResponse.
-        """
-        return FriendshipResponse.model_validate(friendship)
-    
 
-    
     def get_my_fridns(self,user_id: uuid.UUID) -> list[FriendshipResponse]:
         """
         Получает список всех принятых друзей для указанного пользователя.
@@ -46,7 +38,7 @@ class FriendshipService:
         if not friendships:
             return []
         
-        return [self._map_friendship_to_response(friendship) for friendship in friendships]
+        return [map_friendship_to_response(friendship) for friendship in friendships]
     
     
     
@@ -66,7 +58,7 @@ class FriendshipService:
         if not requests:
             return []
         
-        return [self._map_friendship_to_response(request) for request in requests]
+        return [map_friendship_to_response(request) for request in requests]
     
 
     
@@ -86,7 +78,7 @@ class FriendshipService:
         if not requests:
             return []
         
-        return [self._map_friendship_to_response(request) for request in requests]
+        return [map_friendship_to_response(request) for request in requests]
     
 
     
@@ -157,7 +149,7 @@ class FriendshipService:
                 "detail": f"Вы получили новый запрос на дружбу от {req_user.username}."
             }
             await manager.send_personal_message(json.dumps(notification_data), str(accepter_id))
-            return self._map_friendship_to_response(friendship)
+            return map_friendship_to_response(friendship)
         except HTTPException as http_exc:
             logger.error(
                 f'FriendshipService: Ошибка HTTP при отправке заявки на дружбу от {requester_id} к {accepter_id}. Причина: {http_exc.detail}',

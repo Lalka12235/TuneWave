@@ -1,7 +1,11 @@
 from app.schemas.ban_schemas import BanResponse
 from app.schemas.room_schemas import RoomMemberResponse, TrackInQueueResponse, RoomResponse
 from app.schemas.user_schemas import UserResponse
-from app.models import Ban,Track,User,Member_room_association, Room
+from app.models import Ban,Track,User,Member_room_association, Room,Friendship,Notification,FavoriteTrack,Message
+from app.schemas.notification_schemas import NotificationResponse
+from app.schemas.friendship_schemas import FriendshipResponse
+from app.schemas.favorite_track_schemas import FavoriteTrackResponse
+from app.schemas.message_schemas import MessageResponse
 
 
 
@@ -65,3 +69,45 @@ def map_room_to_response(room: Room) -> RoomResponse:
             queue=queue_response
         )
         return room_data
+
+
+def map_notification_to_response(notification: Notification) -> NotificationResponse:
+        """
+        Вспомогательный метод для маппинга объекта Notification SQLAlchemy в Pydantic NotificationResponse.
+        """
+        return NotificationResponse.model_validate(notification)
+
+
+def map_friendship_to_response(friendship: Friendship) -> FriendshipResponse:
+        """
+        Вспомогательный метод для маппинга объекта Friendship SQLAlchemy в Pydantic FriendshipResponse.
+        """
+        return FriendshipResponse.model_validate(friendship)
+
+
+def map_favorite_track_to_response(favorite_track_model: FavoriteTrack) -> FavoriteTrackResponse:
+        """
+        Вспомогательный метод для преобразования объекта FavoriteTrack SQLAlchemy
+        в Pydantic FavoriteTrackResponse.
+        
+        Args:
+            favorite_track_model (FavoriteTrack): ORM-объект FavoriteTrack,
+                                                 включающий связанный объект Track.
+                                                 
+        Returns:
+            FavoriteTrackResponse: Pydantic-модель FavoriteTrackResponse.
+        """
+        return FavoriteTrackResponse.model_validate(favorite_track_model)
+
+
+def map_message_to_response(message: Message) -> MessageResponse:
+        """
+        Преобразует объект модели Message в Pydantic-схему MessageResponse.
+
+        Args:
+            message (Message): Объект сообщения из базы данных.
+
+        Returns:
+            MessageResponse: Pydantic-схема, готовая к отправке клиенту.
+        """
+        return MessageResponse.model_validate(message)

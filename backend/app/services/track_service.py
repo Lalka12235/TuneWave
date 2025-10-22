@@ -1,27 +1,20 @@
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
 from app.logger.log_config import logger
-from app.models.track import Track
 from app.repositories.track_repo import TrackRepository
 from app.schemas.track_schemas import TrackCreate, TrackResponse
 from app.services.spotify_public_service import SpotifyPublicService
+
+from app.services.mapper import map_track_to_response
+
 
 
 class TrackService:
 
     def __init__(self,track_repo: TrackRepository):
         self.track_repo = track_repo
-
-
-    @staticmethod
-    def _map_track_to_response(self,track: Track) -> TrackResponse:
-        """Преобразует объект модели Track в Pydantic-схему TrackResponse."""
-        return TrackResponse.model_validate(track)
-    
-
     
     def get_track_by_id(self,track_id: uuid.UUID) -> TrackResponse:
         """Получает трек по его UUID из базы данных."""
@@ -75,14 +68,14 @@ class TrackService:
         local_track = self.track_repo.get_track_by_spotify_id( spotify_data.spotify_id)
         if local_track:
             logger.debug(f"Сервис треков: Трек '{spotify_data.spotify_id}' найден в локальном кеше.")
-            return TrackService._map_track_to_response(local_track)
+            return map_track_to_response(local_track)
 
         logger.info(f"Сервис треков: Трек '{spotify_data.spotify_id}' не найден в кеше, запрашиваем у Spotify API.")
         SpotifyPublicService()
         try:
             new_local_track_response = TrackService.create_track( spotify_data)
             logger.info(f"Сервис треков: Трек '{spotify_data.spotify_id}' успешно получен от Spotify и кеширован в БД.")
-            return TrackService._map_track_to_response(new_local_track_response)
+            return map_track_to_response(new_local_track_response)
         except HTTPException as e:
             raise e
         except Exception as e:

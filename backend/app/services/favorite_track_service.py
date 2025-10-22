@@ -4,7 +4,6 @@ from typing import Any
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.favorite_track import FavoriteTrack
 from app.models.track import Track
 from app.models.user import User
 from app.repositories.favorite_track_repo import FavoriteTrackRepository
@@ -14,6 +13,8 @@ from app.schemas.track_schemas import TrackCreate
 from app.services.spotify_public_service import SpotifyPublicService
 from backend.app.services.spotify_service import SpotifyService
 
+from app.services.mapper import map_favorite_track_to_response
+
 
 class FavoriteTrackService:
 
@@ -21,22 +22,7 @@ class FavoriteTrackService:
         self.ft_repo = ft_repo
         self.track_repo = track_repo
 
-    @staticmethod
-    def _map_favorite_track_to_response(favorite_track_model: FavoriteTrack) -> FavoriteTrackResponse:
-        """
-        Вспомогательный метод для преобразования объекта FavoriteTrack SQLAlchemy
-        в Pydantic FavoriteTrackResponse.
-        
-        Args:
-            favorite_track_model (FavoriteTrack): ORM-объект FavoriteTrack,
-                                                 включающий связанный объект Track.
-                                                 
-        Returns:
-            FavoriteTrackResponse: Pydantic-модель FavoriteTrackResponse.
-        """
-        return FavoriteTrackResponse.model_validate(favorite_track_model)
-    
-    
+
     async def _get_or_create_track(self, spotify_id: str,current_user: User | None = None) -> Track:
         """
         Ищет трек в нашей базе данных по Spotify ID. Если не находит,
@@ -105,7 +91,7 @@ class FavoriteTrackService:
         if not favorite_tracks:
             return []
         
-        return [self._map_favorite_track_to_response(ft) for ft in favorite_tracks]
+        return [map_favorite_track_to_response(ft) for ft in favorite_tracks]
     
     
     async def add_favorite_track(self, user_id: uuid.UUID, spotify_id: str) -> FavoriteTrackResponse:
@@ -135,7 +121,7 @@ class FavoriteTrackService:
             )
         try:
             new_favorite_track = self.ft_repo.add_favorite_track( user_id, track.id)
-            return self._map_favorite_track_to_response(new_favorite_track)
+            return map_favorite_track_to_response(new_favorite_track)
 
         except HTTPException:
             raise 

@@ -1,6 +1,5 @@
 import os
 import uuid
-from typing import Any
 
 from fastapi import HTTPException, UploadFile, status
 from infrastructure.celery.tasks import send_email_task
@@ -20,6 +19,7 @@ from app.schemas.user_schemas import (
     UserUpdate,
 )
 from app.auth.jwt import create_access_token, decode_access_token
+from app.services.mapper import map_user_to_response
 
 
 class UserService:
@@ -66,19 +66,6 @@ class UserService:
                     status_code=status.HTTP_409_CONFLICT,
                     detail=f"Пользователь с Spotify ID '{spotify_id}' уже существует."
                 )
-
-
-    @staticmethod
-    def _map_user_to_response(user: User) -> UserResponse:
-        """
-        Вспомогательный метод для преобразования объекта User SQLAlchemy в Pydantic UserResponse.
-        Это централизованное место для форматирования данных, возвращаемых клиенту.
-        """
-        # Pydantic's model_validate() автоматически преобразует SQLAlchemy ORM-объект
-        # в Pydantic-модель, благодаря Config.from_attributes = True в UserResponse.
-        return UserResponse.model_validate(user)
-
-
     
     async def get_user_by_id(self,user_id: uuid.UUID) -> UserResponse:
         """
@@ -102,7 +89,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return self._map_user_to_response(user)
+        return map_user_to_response(user)
     
     
     def get_user_by_email(self,email: str) -> UserResponse:
@@ -127,7 +114,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return self._map_user_to_response(user)
+        return map_user_to_response(user)
     
 
     
@@ -153,7 +140,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return self._map_user_to_response(user)
+        return map_user_to_response(user)
     
     
     
@@ -179,7 +166,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return self._map_user_to_response(user)
+        return map_user_to_response(user)
     
 
 
@@ -225,7 +212,7 @@ class UserService:
             )
         
 
-        return self._map_user_to_response(new_user)
+        return map_user_to_response(new_user)
     
     
     async def update_user_profile(self, user_id: uuid.UUID, update_data: UserUpdate) -> UserResponse:
@@ -263,7 +250,7 @@ class UserService:
                 detail="Ошибка при обновлении пользователя"
             )
 
-        return self._map_user_to_response(updated_user)
+        return map_user_to_response(updated_user)
     
 
     
@@ -387,7 +374,7 @@ class UserService:
             expires_delta=timedelta(minutes=settings.jwt.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
-        return self._map_user_to_response(user), Token(access_token=access_token,token_type='bearer')
+        return map_user_to_response(user), Token(access_token=access_token,token_type='bearer')
     
 
     
@@ -479,7 +466,7 @@ class UserService:
             expires_delta=timedelta(minutes=settings.jwt.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
-        return self._map_user_to_response(user), Token(access_token=access_token,token_type="bearer")
+        return map_user_to_response(user), Token(access_token=access_token,token_type="bearer")
     
 
     

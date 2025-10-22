@@ -4,12 +4,13 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.logger.log_config import logger
-from app.models.notification import Notification
 from app.repositories.notification_repo import NotificationRepository
 from app.repositories.room_repo import RoomRepository
 from app.repositories.user_repo import UserRepository
 from app.schemas.enum import NotificationType
 from app.schemas.notification_schemas import NotificationResponse
+
+from app.services.mapper import map_notification_to_response
 
 
 class NotificationService:
@@ -19,15 +20,6 @@ class NotificationService:
         self.user_repo = user_repo
         self.room_repo = room_repo
 
-    @staticmethod
-    def _map_notification_to_response(notification: Notification) -> NotificationResponse:
-        """
-        Вспомогательный метод для маппинга объекта Notification SQLAlchemy в Pydantic NotificationResponse.
-        """
-        return NotificationResponse.model_validate(notification)
-    
-
-    
     def _check_user_exists(self, user_id: uuid.UUID, detail_message: str):
         """Вспомогательный метод для проверки существования пользователя."""
         user = self.user_repo.get_user_by_id( user_id)
@@ -56,7 +48,7 @@ class NotificationService:
             return []
         
 
-        return [self._map_notification_to_response(notification) for notification in notifications]
+        return [map_notification_to_response(notification) for notification in notifications]
     
 
     
@@ -97,7 +89,7 @@ class NotificationService:
             new_notification = self.notify_repo.add_notification(
                  user_id, notification_type, message, sender_id, room_id,related_object_id
             )
-            return self._map_notification_to_response(new_notification)
+            return map_notification_to_response(new_notification)
         except HTTPException as e:
             raise e
         except Exception:
@@ -127,11 +119,11 @@ class NotificationService:
             )
         
         if notification.is_read:
-            return self._map_notification_to_response(notification)
+            return map_notification_to_response(notification)
         
         try:
             notification_update = self.notify_repo.mark_notification_as_read(notification_id)
-            return self._map_notification_to_response(notification_update)
+            return map_notification_to_response(notification_update)
         except HTTPException as e:
             logger.error(f'NotificationService: произошла ошибка при попытке прочтения уведомления {notification_id} от пользователя {notification.sender_id} к пользователю {notification.user_id}.{e}',exc_info=True)
             raise e

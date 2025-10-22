@@ -4,10 +4,10 @@ from datetime import datetime
 from fastapi import HTTPException, status
 
 from app.logger.log_config import logger
-from app.models.message import Message
 from app.repositories.chat_repo import ChatRepository
 from app.schemas.message_schemas import MessageCreate, MessageResponse
 from app.repositories.room_repo import RoomRepository
+from app.services.mapper import map_message_to_response
 
 
 class ChatService():
@@ -15,20 +15,6 @@ class ChatService():
     def __init__(self,chat_repo: ChatRepository,room_repo: RoomRepository):
         self.chat_repo = chat_repo
         self.room_repo = room_repo
-
-    @staticmethod
-    def _map_message_to_response(message: Message) -> MessageResponse:
-        """
-        Преобразует объект модели Message в Pydantic-схему MessageResponse.
-
-        Args:
-            message (Message): Объект сообщения из базы данных.
-
-        Returns:
-            MessageResponse: Pydantic-схема, готовая к отправке клиенту.
-        """
-        return MessageResponse.model_validate(message)
-
 
     
     def get_message_for_room(self,room_id: uuid.UUID,limit:int = 50,before_timestamp: datetime | None = None) -> list[MessageResponse]:
@@ -58,7 +44,7 @@ class ChatService():
 
         messages = self.chat_repo.get_message_for_room(room_id,limit)
 
-        return [self._map_message_to_response(message) for message in messages]
+        return [map_message_to_response(message) for message in messages]
     
 
     
@@ -112,5 +98,5 @@ class ChatService():
             
         
 
-        return self._map_message_to_response(new_message)
+        return map_message_to_response(new_message)
     
