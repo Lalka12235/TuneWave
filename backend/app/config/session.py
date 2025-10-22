@@ -20,7 +20,7 @@ class DBSessionManager:
             bind=self.engine
         )
 
-db_manager = DBSessionManager(settings.sync_db_url)
+db_manager = DBSessionManager(settings.database.sync_db_url)
 
 
 def get_db() -> Generator[Session, None, None]:
