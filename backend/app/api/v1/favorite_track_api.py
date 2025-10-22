@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
 from app.logger.log_config import logger
-from app.models.user import User
+from app.models import User
 from app.schemas.favorite_track_schemas import FavoriteTrackAdd, FavoriteTrackResponse
 from app.services.favorite_track_service import FavoriteTrackService
 from app.services.dep import get_favorite_track_service

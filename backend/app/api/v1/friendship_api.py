@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
 from app.logger.log_config import logger
-from app.models.user import User
+from app.models import User
 from app.schemas.friendship_schemas import FriendshipRequestCreate, FriendshipResponse
 from app.services.friendship_service import FriendshipService
 from app.services.dep import get_friendship_service

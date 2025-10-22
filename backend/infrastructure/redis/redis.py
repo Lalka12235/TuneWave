@@ -8,8 +8,8 @@ from app.logger.log_config import logger
 
 
 redis_pool = ConnectionPool(
-    host=settings.REDIS_HOST,
-    port=settings.REDIS_PORT,
+    host=settings.redis.REDIS_HOST,
+    port=settings.redis.REDIS_PORT,
     db=0, 
     decode_responses=True 
 )

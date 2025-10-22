@@ -5,7 +5,7 @@ from app.logger.log_config import logger
 # Создаем экземпляр Celery-приложения
 celery_app = Celery(
     'tunewave_tasks', # Имя твоего приложения Celery
-    broker=settings.RABBITMQ_BROKER_URL, # Указываем, где находится RabbitMQ
+    broker=settings.rabbit.RABBITMQ_BROKER_URL, # Указываем, где находится RabbitMQ
     backend='rpc://', 
     include=['infrastructure.celery.tasks'] # Указываем Celery, где искать твои задачи (файл app/tasks.py)
 )

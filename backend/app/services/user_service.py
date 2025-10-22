@@ -384,7 +384,7 @@ class UserService:
 
         access_token = create_access_token(
             payload={'sub': str(user.id)},
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            expires_delta=timedelta(minutes=settings.jwt.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
         return self._map_user_to_response(user), Token(access_token=access_token,token_type='bearer')
@@ -476,7 +476,7 @@ class UserService:
 
         access_token = create_access_token(
             payload={'sub': str(user.id)},
-            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            expires_delta=timedelta(minutes=settings.jwt.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
         return self._map_user_to_response(user), Token(access_token=access_token,token_type="bearer")
@@ -539,8 +539,8 @@ class UserService:
             )
         
         content = await avatar_file.read()
-        if len(content) > settings.MAX_AVATAR_SIZE_BYTES:
-            logger.warning(f"Размер загруженного файла аватара ({len(content)} байт) превышает лимит ({settings.MAX_AVATAR_SIZE_BYTES} байт).")
+        if len(content) > settings.avatar.MAX_AVATAR_SIZE_BYTES:
+            logger.warning(f"Размер загруженного файла аватара ({len(content)} байт) превышает лимит ({settings.avatar.MAX_AVATAR_SIZE_BYTES} байт).")
             raise HTTPException(
                 status_code=400,
                 detail='Ограничения размера файла 5мб'
@@ -548,7 +548,7 @@ class UserService:
         file_extension = avatar_file.filename.split('.')[-1] if '.' in avatar_file.filename else 'png'
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
         
-        file_path = settings.AVATARS_STORAGE_DIR / unique_filename
+        file_path = settings.avatar.AVATARS_STORAGE_DIR / unique_filename
 
         try:
             with open(f"{file_path}", 'wb') as f:

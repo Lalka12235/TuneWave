@@ -4,7 +4,7 @@ from backend.app.services.spotify_service import SpotifyService
 from fastapi import APIRouter, Depends, Query
 
 from app.auth.auth import get_current_user
-from app.models.user import User
+from app.models import User
 from app.services.spotify_public_service import SpotifyPublicService
 
 spotify = APIRouter(

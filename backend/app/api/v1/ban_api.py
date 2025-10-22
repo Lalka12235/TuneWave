@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi_limiter.depends import RateLimiter
 
 from app.auth.auth import get_current_user
-from app.models.user import User
+from app.models import User
 from app.schemas.ban_schemas import BanResponse
 from app.services.ban_service import BanService
 from app.services.dep import get_ban_service

@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
 from app.logger.log_config import logger
-from app.models.user import User
+from app.models import User
 from app.schemas.user_schemas import UserResponse, UserUpdate
 from app.services.dep import get_user_service
 from app.services.user_service import UserService

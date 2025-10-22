@@ -113,8 +113,8 @@ class SpotifyService:
         token_data = {
             'grant_type': 'refresh_token',
             'refresh_token': self.user.spotify_refresh_token,
-            'client_id': settings.SPOTIFY_CLIENT_ID,
-            'client_secret': settings.SPOTIFY_CLIENT_SECRET
+            'client_id': settings.spotify.SPOTIFY_CLIENT_ID,
+            'client_secret': settings.spotify.SPOTIFY_CLIENT_SECRET
         }
 
         headers = {

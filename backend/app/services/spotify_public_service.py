@@ -40,8 +40,8 @@ class SpotifyPublicService:
         token_url = f"{self.SPOTIFY_AUTH_URL}"
         token_data = {
             'grant_type': 'client_credentials',
-            'client_id': settings.SPOTIFY_CLIENT_ID,
-            'client_secret': settings.SPOTIFY_CLIENT_SECRET,
+            'client_id': settings.spotify.SPOTIFY_CLIENT_ID,
+            'client_secret': settings.spotify.SPOTIFY_CLIENT_SECRET,
         }
 
         try:
