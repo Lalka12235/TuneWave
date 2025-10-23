@@ -19,7 +19,6 @@ from app.schemas.user_schemas import (
     UserUpdate,
 )
 from app.auth.jwt import create_access_token, decode_access_token
-from app.services.mapper import map_user_to_response
 
 
 class UserService:
@@ -28,6 +27,11 @@ class UserService:
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         
+    def _map_user_to_response(self, user: User) -> UserResponse:
+        """
+        Вспомогательный метод для маппинга объекта User в UserResponse.
+        """
+        return UserResponse.model_validate(user)
         
     def _check_for_existing_user_and_raise_if_found(
         self,
@@ -89,7 +93,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return map_user_to_response(user)
+        return self._map_user_to_response(user)
     
     
     def get_user_by_email(self,email: str) -> UserResponse:
@@ -114,7 +118,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return map_user_to_response(user)
+        return self._map_user_to_response(user)
     
 
     
@@ -140,7 +144,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return map_user_to_response(user)
+        return self._map_user_to_response(user)
     
     
     
@@ -166,7 +170,7 @@ class UserService:
                 detail='User not found'
             )
         
-        return map_user_to_response(user)
+        return self._map_user_to_response(user)
     
 
 
@@ -212,7 +216,7 @@ class UserService:
             )
         
 
-        return map_user_to_response(new_user)
+        return self._map_user_to_response(new_user)
     
     
     async def update_user_profile(self, user_id: uuid.UUID, update_data: UserUpdate) -> UserResponse:
@@ -250,7 +254,7 @@ class UserService:
                 detail="Ошибка при обновлении пользователя"
             )
 
-        return map_user_to_response(updated_user)
+        return self._map_user_to_response(updated_user)
     
 
     
@@ -374,7 +378,7 @@ class UserService:
             expires_delta=timedelta(minutes=settings.jwt.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
-        return map_user_to_response(user), Token(access_token=access_token,token_type='bearer')
+        return self._map_user_to_response(user), Token(access_token=access_token,token_type='bearer')
     
 
     
@@ -466,7 +470,7 @@ class UserService:
             expires_delta=timedelta(minutes=settings.jwt.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
-        return map_user_to_response(user), Token(access_token=access_token,token_type="bearer")
+        return self._map_user_to_response(user), Token(access_token=access_token,token_type="bearer")
     
 
     

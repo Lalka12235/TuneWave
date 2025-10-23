@@ -21,7 +21,7 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
     username: Mapped[str] = mapped_column(unique=True,index=True,nullable=False)
     email: Mapped[str] = mapped_column(unique=True,nullable=False)
-    is_email_verified: Mapped[bool] = mapped_column(nullable=False)
+    is_email_verified: Mapped[bool] = mapped_column(nullable=False,default=False)
     avatar_url: Mapped[str] = mapped_column(nullable=True,default=None)
     bio: Mapped[str] = mapped_column(nullable=True,default="")
     #google
@@ -56,9 +56,8 @@ class User(Base):
     favorite_track: Mapped[list['FavoriteTrack']] = relationship(back_populates='user')
     room_track: Mapped[list['RoomTrackAssociationModel']] = relationship(
         back_populates='user',
-        primaryjoin="User.id == RoomTrackAssociationModel.added_by_user_id" # Предполагается, что RoomTrackAssociationModel имеет колонку user_id
+        primaryjoin="User.id == RoomTrackAssociationModel.added_by_user_id"
     )
-    #member_room: Mapped[list['Member_room_association']] = relationship(back_populates='user')
     message: Mapped[list['Message']] = relationship(back_populates='user')
     bans_issued: Mapped[list["Ban"]] = relationship(
         back_populates="banned_by_user",

@@ -104,8 +104,8 @@ class UserRepository:
         )
 
         self._db.add(new_user)
-        self._db.flush() # Используем flush, чтобы получить ID нового пользователя до коммита
-        self._db.refresh(new_user) # Обновляем объект, чтобы убедиться, что все поля (включая ID) актуальны
+        self._db.flush()
+        self._db.refresh(new_user)
         return new_user
     
     
@@ -122,34 +122,13 @@ class UserRepository:
         Returns:
             User: Обновленный объект User.
         """
-        # Итерируемся по данным для обновления и устанавливаем соответствующие атрибуты объекта User.
         for key, value in update_data.items():
             setattr(user, key, value)
         
-        self._db.add(user) # Добавляем (или повторно добавляем) объект в сессию для отслеживания изменений.
-        self._db.flush() # Выполняем операции в БД, но без коммита.
-        self._db.refresh(user) # Обновляем объект, чтобы убедиться, что все поля (включая updated_at) актуальны.
+        self._db.add(user)
+        self._db.flush()
+        self._db.refresh(user)
         return user
-
-
-    #
-    #def soft_delete_user(self, user_id: uuid.UUID) -> bool:
-    #    """
-    #    "Мягко" удаляет пользователя, устанавливая его флаг is_active в False.
-    #    Данные пользователя остаются в базе данных.
-    #    
-    #    Args:
-    #        db (Session): Сессия базы данных.
-    #        user_id (uuid.UUID): ID пользователя для "мягкого" удаления.
-    #        
-    #    Returns:
-    #        bool: True, если пользователь найден и помечен как неактивный, иначе False.
-    #    """
-    #    user.is_active = False # Устанавливаем флаг неактивности
-    #    db.add(user) # Добавляем объект в сессию для сохранения изменения
-    #    db.flush() # Применяем изменения в рамках текущей транзакции
-    #    return True
-
     
     def hard_delete_user(self, user_id: uuid.UUID) -> bool:
         """

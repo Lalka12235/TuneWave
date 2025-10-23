@@ -15,8 +15,6 @@ def map_ban_to_response(ban: Ban) -> BanResponse:
 def map_track_to_response(track: Track) -> TrackInQueueResponse:
     return TrackInQueueResponse.model_validate(track)
 
-def map_user_to_response(user: User) -> UserResponse:
-    return UserResponse.model_validate(user)
 
 def map_member_to_response(member: Member_room_association) -> RoomMemberResponse:
         """
