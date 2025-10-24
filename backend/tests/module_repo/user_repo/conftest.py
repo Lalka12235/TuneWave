@@ -41,7 +41,7 @@ def db_session() -> Generator[Session,None,None]:
         db.close()
 
 @pytest.fixture(scope="function")
-def get_user_repo(db_session: Session) -> UserRepository:
+def user_repo(db_session: Session) -> UserRepository:
     """
     Предоставляет экземпляр UserRepository, используя сессию, 
     предоставленную фикстурой db_session.
@@ -51,7 +51,7 @@ def get_user_repo(db_session: Session) -> UserRepository:
 
 
 @pytest.fixture(scope="function")
-def get_user_data() -> dict[str,str]:
+def user_data() -> dict[str,str]:
     return {
         'id': uuid.UUID('5f4a3141-7160-454d-a9c0-1442887d4a7c'),
         'username': 'aspirin',

@@ -2,12 +2,11 @@ import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from app.models import Base
-from app.repositories.track_repo import TrackRepository
+from app.repositories.chat_repo import ChatRepository
+from app.repositories.room_repo import RoomRepository
 from sqlalchemy.orm import Session
-from typing import Generator,Any
-import uuid
-import datetime
-from app.schemas.track_schemas import TrackCreate
+from typing import Generator
+from app.schemas.room_schemas import RoomCreate
 
 db_url = "sqlite:///:memory:"
 
@@ -42,24 +41,27 @@ def db_session() -> Generator[Session,None,None]:
         db.close()
 
 @pytest.fixture(scope="function")
-def track_repo(db_session: Session) -> TrackRepository:
+def chat_repo(db_session: Session) -> ChatRepository:
     """
     Предоставляет экземпляр UserRepository, используя сессию, 
     предоставленную фикстурой db_session.
     """
-    repo = TrackRepository(db_session)
+    repo = ChatRepository(db_session)
     return repo
 
 @pytest.fixture(scope="function")
-def track_data() -> TrackCreate:
-    return TrackCreate(
-        title='string',
-        duration_ms=0,
-        spotify_track_url='string',
-        spotify_uri='string',
-        spotify_id='string',
-        artist_names=['string'],
-        album_name='string',
-        album_cover_url='string',
-        is_playable=True,
-    )
+def room_repo(db_session: Session) -> RoomRepository:
+    """
+    Предоставляет экземпляр UserRepository, используя сессию, 
+    предоставленную фикстурой db_session.
+    """
+    repo = RoomRepository(db_session)
+    return repo
+
+@pytest.fixture(scope="function")
+def room_data() -> RoomCreate:
+    return {
+        'name':'aspirin',
+        'max_members': 2,
+        'is_private': False,
+    }

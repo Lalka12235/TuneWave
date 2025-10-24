@@ -94,6 +94,8 @@ class RoomRepository:
         """
         new_room = Room(**room_data)
         self._db.add(new_room)
+        self._db.flush()
+        self._db.refresh(new_room)
         return new_room
     
     
