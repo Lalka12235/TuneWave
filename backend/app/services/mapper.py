@@ -1,62 +1,38 @@
-from app.schemas.ban_schemas import BanResponse
-from app.schemas.room_schemas import RoomMemberResponse, TrackInQueueResponse, RoomResponse
+from app.models import Room, User, Track, Ban, Notification, Friendship, FavoriteTrack, Message,Member_room_association
+from app.schemas.room_schemas import RoomResponse, TrackInQueueResponse
 from app.schemas.user_schemas import UserResponse
-from app.models import Ban,Track,User,Member_room_association, Room,Friendship,Notification,FavoriteTrack,Message
+from app.schemas.ban_schemas import BanResponse
 from app.schemas.notification_schemas import NotificationResponse
 from app.schemas.friendship_schemas import FriendshipResponse
 from app.schemas.favorite_track_schemas import FavoriteTrackResponse
 from app.schemas.message_schemas import MessageResponse
+from app.schemas.room_member_schemas import RoomMemberResponse
 
-
-
-def map_ban_to_response(ban: Ban) -> BanResponse:
-    return BanResponse.model_validate(ban)
-
-def map_track_to_response(track: Track) -> TrackInQueueResponse:
-    return TrackInQueueResponse.model_validate(track)
-
-
-def map_member_to_response(member: Member_room_association) -> RoomMemberResponse:
-        """
-        Вспомогательный метод для маппинга Member_room_association (включая загруженный User)
-        в Pydantic RoomMemberResponse.
-        """
-        return RoomMemberResponse.model_validate(member)
-
-
-def map_room_to_response(room: Room) -> RoomResponse:
-        """
-        Преобразует объект модели Room в Pydantic-схему RoomResponse,
-        включая информацию об участниках и очереди треков.
-        """
-        owner_response = map_user_to_response(room.owner) if room.owner_id else None
-        
-        members_response = []
-        if room.member_room:
-            for member_association in room.member_room:
-                if member_association.user:
-                    members_response.append(map_user_to_response(member_association.user))
-
-        queue_response = []
-        if room.room_track:
-            sorted_associations = sorted(room.room_track, key=lambda x: x.order_in_queue)
-            for assoc in sorted_associations:
-                if assoc.track:
-                    queue_response.append(
-                        TrackInQueueResponse(
-                            track=map_track_to_response(assoc.track),
-                            order_in_queue=assoc.order_in_queue,
-                            id=assoc.id,
-                            added_at=assoc.added_at,
-                        )
-                    )
-
-        room_data = RoomResponse(
+class RoomMapper:
+    @staticmethod
+    def to_response(room: Room) -> RoomResponse:
+        owner_response = UserMapper.to_response(room.owner) if room.owner_id else None
+        members_response = [
+            UserMapper.to_response(assoc.user)
+            for assoc in room.member_room
+            if assoc.user
+        ]
+        queue_response = [
+            TrackInQueueResponse(
+                track=TrackMapper.to_response(assoc.track),
+                order_in_queue=assoc.order_in_queue,
+                id=assoc.id,
+                added_at=assoc.added_at
+            )
+            for assoc in sorted(room.room_track, key=lambda x: x.order_in_queue)
+            if assoc.track
+        ]
+        return RoomResponse(
             id=room.id,
             name=room.name,
             owner_id=room.owner_id,
             max_members=room.max_members,
-            current_members_count=room.max_members, 
+            current_members_count=room.max_members,
             is_private=room.is_private,
             created_at=room.created_at.isoformat() if room.created_at else None,
             current_track_id=room.current_track_id,
@@ -66,46 +42,44 @@ def map_room_to_response(room: Room) -> RoomResponse:
             members=members_response,
             queue=queue_response
         )
-        return room_data
 
+class UserMapper:
+    @staticmethod
+    def to_response(user: User) -> UserResponse:
+        return UserResponse.model_validate(user)
 
-def map_notification_to_response(notification: Notification) -> NotificationResponse:
-        """
-        Вспомогательный метод для маппинга объекта Notification SQLAlchemy в Pydantic NotificationResponse.
-        """
+class TrackMapper:
+    @staticmethod
+    def to_response(track: Track) -> TrackInQueueResponse:
+        return TrackInQueueResponse.model_validate(track)
+
+class BanMapper:
+    @staticmethod
+    def to_response(ban: Ban) -> BanResponse:
+        return BanResponse.model_validate(ban)
+
+class NotificationMapper:
+    @staticmethod
+    def to_response(notification: Notification) -> NotificationResponse:
         return NotificationResponse.model_validate(notification)
 
-
-def map_friendship_to_response(friendship: Friendship) -> FriendshipResponse:
-        """
-        Вспомогательный метод для маппинга объекта Friendship SQLAlchemy в Pydantic FriendshipResponse.
-        """
+class FriendshipMapper:
+    @staticmethod
+    def to_response(friendship: Friendship) -> FriendshipResponse:
         return FriendshipResponse.model_validate(friendship)
 
+class FavoriteTrackMapper:
+    @staticmethod
+    def to_response(favorite_track: FavoriteTrack) -> FavoriteTrackResponse:
+        return FavoriteTrackResponse.model_validate(favorite_track)
 
-def map_favorite_track_to_response(favorite_track_model: FavoriteTrack) -> FavoriteTrackResponse:
-        """
-        Вспомогательный метод для преобразования объекта FavoriteTrack SQLAlchemy
-        в Pydantic FavoriteTrackResponse.
-        
-        Args:
-            favorite_track_model (FavoriteTrack): ORM-объект FavoriteTrack,
-                                                 включающий связанный объект Track.
-                                                 
-        Returns:
-            FavoriteTrackResponse: Pydantic-модель FavoriteTrackResponse.
-        """
-        return FavoriteTrackResponse.model_validate(favorite_track_model)
-
-
-def map_message_to_response(message: Message) -> MessageResponse:
-        """
-        Преобразует объект модели Message в Pydantic-схему MessageResponse.
-
-        Args:
-            message (Message): Объект сообщения из базы данных.
-
-        Returns:
-            MessageResponse: Pydantic-схема, готовая к отправке клиенту.
-        """
+class MessageMapper:
+    @staticmethod
+    def to_response(message: Message) -> MessageResponse:
         return MessageResponse.model_validate(message)
+    
+
+class RoomMemberMapper:
+    @staticmethod
+    def to_response(member: Member_room_association) -> RoomMemberResponse:
+        return RoomMemberResponse.model_validate(member)
