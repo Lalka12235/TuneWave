@@ -1,4 +1,4 @@
-from backend.tests.module_user.user_repo.conftest import get_user_data, create_table, get_user_repo
+from backend.tests.module_repo.user_repo.conftest import get_user_data, create_table, get_user_repo
 from app.models import User
 
 
