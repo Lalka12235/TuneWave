@@ -34,7 +34,7 @@ class FavoriteTrackRepository:
     
 
     
-    def add_favorite_track(self,user_id: uuid.UUID,track_id: uuid.UUID) -> FavoriteTrack | None:
+    def add_favorite_track(self,user_id: uuid.UUID,track_id: uuid.UUID) -> FavoriteTrack:
         """
         Добавляет трек в список избранных треков пользователя.
 
@@ -52,6 +52,7 @@ class FavoriteTrackRepository:
             track_id=track_id
         )
         self._db.add(new_favorite_track)
+        self._db.flush()
         self._db.refresh(new_favorite_track)
         return new_favorite_track
     
