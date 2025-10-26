@@ -13,14 +13,15 @@ from app.schemas.track_schemas import TrackCreate
 from app.services.spotify_public_service import SpotifyPublicService
 from backend.app.services.spotify_service import SpotifyService
 
-from app.services.mapper import map_favorite_track_to_response
+from app.services.mappers.favorite_track_mapper import FavoriteTrackMapper
 
 
 class FavoriteTrackService:
 
-    def __init__(self,ft_repo: FavoriteTrackRepository,track_repo: TrackRepository):
+    def __init__(self,ft_repo: FavoriteTrackRepository,track_repo: TrackRepository,favorite_track_mapper: FavoriteTrackMapper):
         self.ft_repo = ft_repo
         self.track_repo = track_repo
+        self.favorite_track_mapper = favorite_track_mapper
 
 
     async def _get_or_create_track(self, spotify_id: str,current_user: User | None = None) -> Track:
@@ -91,7 +92,7 @@ class FavoriteTrackService:
         if not favorite_tracks:
             return []
         
-        return [map_favorite_track_to_response(ft) for ft in favorite_tracks]
+        return [self.favorite_track_mapper.to_response(ft) for ft in favorite_tracks]
     
     
     async def add_favorite_track(self, user_id: uuid.UUID, spotify_id: str) -> FavoriteTrackResponse:
@@ -121,7 +122,7 @@ class FavoriteTrackService:
             )
         try:
             new_favorite_track = self.ft_repo.add_favorite_track( user_id, track.id)
-            return map_favorite_track_to_response(new_favorite_track)
+            return self.favorite_track_mapper.to_response(new_favorite_track)
 
         except HTTPException:
             raise 

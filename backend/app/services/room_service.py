@@ -19,7 +19,7 @@ from app.schemas.room_schemas import (
 
 from app.auth.hash import make_hash_pass
 from app.ws.connection_manager import manager
-from app.services.mapper import RoomMapper
+from app.services.mappers.room_mapper import RoomMapper
 
 
 class RoomService:
@@ -28,9 +28,11 @@ class RoomService:
             self,
             room_repo: RoomRepository,
             member_room_repo: MemberRoomAssociationRepository,
+            room_mapper: RoomMapper,
         ):
         self.room_repo = room_repo
         self.member_room_repo = member_room_repo
+        self.room_mapper = room_mapper
 
     
     async def get_room_by_id(self,room_id: uuid.UUID) -> dict[str,Any]:
@@ -44,7 +46,7 @@ class RoomService:
                 detail='Room not found'
             )
         
-        return RoomMapper.to_response(room)
+        return self.room_mapper.to_response(room)
     
 
     
@@ -59,7 +61,7 @@ class RoomService:
                 detail='Room not found'
             )
         
-        return RoomMapper.to_response(room) 
+        return self.room_mapper.to_response(room) 
     
 
     
@@ -69,7 +71,7 @@ class RoomService:
         """
         rooms_list = self.room_repo.get_all_rooms()
         
-        return [RoomMapper.to_response(room) for room in rooms_list]
+        return [self.room_mapper.to_response(room) for room in rooms_list]
     
 
     
@@ -113,14 +115,14 @@ class RoomService:
                 role=Role.OWNER.value
             )
 
-            room_response = RoomMapper.to_response(new_room)
+            room_response = self.room_mapper.to_response(new_room)
             websocket_message = {
             "action": "room_created",
             "room_data": room_response.model_dump_json()
             }
             await manager.broadcast(manager.GLOBAL_ROOM_ID,websocket_message)
 
-            return RoomMapper.to_response(new_room)
+            return self.room_mapper.to_response(new_room)
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -169,7 +171,7 @@ class RoomService:
         try:
             updated_room_db = self.room_repo.update_room(room, data_to_update)
 
-            return RoomMapper.to_response(updated_room_db)
+            return self.room_mapper.to_response(updated_room_db)
         except Exception as e:
             
             raise HTTPException(
@@ -232,4 +234,4 @@ class RoomService:
             List[RoomResponse]: Список объектов RoomResponse, в которых состоит пользователь.
         """
         rooms = self.member_room_repo.get_rooms_by_user_id(user.id)
-        return [RoomMapper.to_response(room) for room in rooms]
+        return [self.room_mapper.to_response(room) for room in rooms]

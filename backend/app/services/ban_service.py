@@ -7,13 +7,15 @@ from app.logger.log_config import logger
 from app.models.user import User
 from app.repositories.ban_repo import BanRepository
 from app.schemas.ban_schemas import BanCreate, BanRemove, BanResponse
-from app.services.mapper import map_ban_to_response
+from app.services.mappers.ban_mapper import BanMapper
 
 
 class BanService:
 
-    def __init__(self,ban_repo: BanRepository):
+    def __init__(self,ban_repo: BanRepository,ban_mapper: BanMapper):
         self.ban_repo = ban_repo
+        self.ban_mapper = ban_mapper
+
  
     def get_bans_by_admin(self,user_id: uuid.UUID) -> list[BanResponse]:
         """
@@ -30,7 +32,7 @@ class BanService:
         if not bans:
             return []
         
-        return [map_ban_to_response(ban) for ban in bans]
+        return [self.ban_mapper.to_response(ban) for ban in bans]
 
     
     def get_bans_on_user(self,user_id: uuid.UUID) -> list[BanResponse]:
@@ -48,7 +50,7 @@ class BanService:
         if not bans:
             return []
         
-        return [map_ban_to_response(ban) for ban in bans]
+        return [self.ban_mapper.to_response(ban) for ban in bans]
     
 
     
@@ -95,7 +97,7 @@ class BanService:
                 by_ban_user_id=current_user.id
             )
 
-            return map_ban_to_response(new_ban_entry)
+            return self.ban_mapper.to_response(new_ban_entry)
         
         except HTTPException as e:
             raise e

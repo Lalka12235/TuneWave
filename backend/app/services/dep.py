@@ -27,83 +27,129 @@ from app.repositories.ban_repo import BanRepository
 from app.repositories.chat_repo import ChatRepository
 from app.repositories.favorite_track_repo import FavoriteTrackRepository
 from app.repositories.friendship_repo import FriendshipRepository
-from app.repositories.member_room_association_repo import MemberRoomAssociationRepository
+from app.repositories.member_room_association_repo import (
+    MemberRoomAssociationRepository,
+)
 from app.repositories.notification_repo import NotificationRepository
 from app.repositories.room_repo import RoomRepository
 from app.repositories.track_repo import TrackRepository
 from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
 from fastapi import Depends
 
+from app.services.mappers.mappers import (
+    get_user_mapper,
+    get_ban_mapper,
+    get_track_mapper,
+    get_room_mapper,
+    get_notification_mapper,
+    get_friendship_mapper,
+    get_favorite_track_mapper,
+    get_message_mapper,
+)
+from app.services.mappers.user_mapper import UserMapper
+from app.services.mappers.ban_mapper import BanMapper
+from app.services.mappers.message_mapper import MessageMapper
+from app.services.mappers.favorite_track_mapper import FavoriteTrackMapper
+from app.services.mappers.friendship_mapper import FriendshipMapper
+from app.services.mappers.notification_mapper import NotificationMapper
+from app.services.mappers.room_mapper import RoomMapper
+from app.services.mappers.track_mapper import TrackMapper
 
 def get_user_service(
     user_repo: Annotated[UserRepository, Depends(get_user_repo)],
     ban_repo: Annotated[BanRepository, Depends(get_ban_repo)],
+    user_mapper: Annotated[UserMapper, Depends(get_user_mapper)],
 ):
-    """Get the user service."""
-    return UserService(user_repo, ban_repo)
+    return UserService(user_repo, ban_repo, user_mapper)
 
 
 def get_ban_service(
     ban_repo: Annotated[BanRepository, Depends(get_ban_repo)],
+    ban_mapper: Annotated[BanMapper, Depends(get_ban_mapper)],
 ):
-    """Get the ban service."""
-    return BanService(ban_repo)
+    return BanService(ban_repo, ban_mapper)
 
-
-def get_favorite_track_service(
-        favorite_track_repo: Annotated[FavoriteTrackRepository,Depends(get_favorite_track_repo)],
-        track_repo: Annotated[TrackRepository,Depends(get_track_repo)],
-):
-    """Get the favorite track service."""
-    return FavoriteTrackService(favorite_track_repo,track_repo)
-
-
-def get_notify_service(
-        notify_repo: Annotated[NotificationRepository,Depends(get_notification_repo)],
-        user_repo: Annotated[UserRepository,Depends(get_user_repo)],
-        room_repo: Annotated[RoomRepository,Depends(get_room_repo)],
-):
-    """Get the notification service."""
-    return NotificationService(notify_repo,user_repo,room_repo)
-
-
-def get_track_service(
-        track_repo: Annotated[TrackRepository,Depends(get_track_repo)],
-):
-    """Get the track service."""
-    return TrackService(track_repo)
-
-
-def get_friendship_service(
-    friend_repo: Annotated[FriendshipRepository,Depends(get_friendship_repo)],
-    notify_repo: Annotated[NotificationRepository,Depends(get_notification_repo)],
-    user_repo: Annotated[UserRepository,Depends(get_user_repo)],
-):
-    """Get the friendship service."""
-    return FriendshipService(friend_repo,notify_repo,user_repo)
-
-def get_room_service(
-        user_repo: Annotated[UserRepository,Depends(get_user_repo)],
-        ban_repo: Annotated[BanRepository, Depends(get_ban_repo)],
-        notify_repo: Annotated[NotificationRepository,Depends(get_notification_repo)],
-        room_track_repo: Annotated[RoomTrackAssociationRepository,Depends(get_room_track_repo)],
-        room_repo: Annotated[RoomRepository,Depends(get_room_repo)],
-        member_room_repo: Annotated[MemberRoomAssociationRepository,Depends(get_member_room_repo)],
-        track_repo: Annotated[TrackRepository,Depends(get_track_repo)],
-    ):
-    """Get the room service."""
-    return RoomService(
-        user_repo,
-        ban_repo,
-        notify_repo,
-        room_track_repo,
-        room_repo,
-        member_room_repo,
-        track_repo,
-    )
 
 def get_chat_service(
     chat_repo: Annotated[ChatRepository, Depends(get_chat_repo)],
+    message_mapper: Annotated[MessageMapper, Depends(get_message_mapper)],
 ):
-    """Get the chat service."""
-    return ChatService(chat_repo)
+    return ChatService(chat_repo, message_mapper)
+
+
+def get_favorite_track_service(
+    favorite_track_repo: Annotated[
+        FavoriteTrackRepository, Depends(get_favorite_track_repo)
+    ],
+    track_repo: Annotated[TrackRepository, Depends(get_track_repo)],
+    favorite_track_mapper: Annotated[
+        FavoriteTrackMapper, Depends(get_favorite_track_mapper)
+    ],
+):
+    return FavoriteTrackService(favorite_track_repo, track_repo, favorite_track_mapper)
+
+
+def get_friendship_service(
+    friendship_repo: Annotated[FriendshipRepository, Depends(get_friendship_repo)],
+    notification_repo: Annotated[
+        NotificationRepository, Depends(get_notification_repo)
+    ],
+    user_repo: Annotated[UserRepository, Depends(get_user_repo)],
+    friendship_mapper: Annotated[FriendshipMapper, Depends(get_friendship_mapper)],
+):
+    return FriendshipService(
+        friendship_repo, notification_repo, user_repo, friendship_mapper
+    )
+
+
+def get_notification_service(
+    notification_repo: Annotated[
+        NotificationRepository, Depends(get_notification_repo)
+    ],
+    user_repo: Annotated[UserRepository, Depends(get_user_repo)],
+    room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
+    notification_mapper: Annotated[
+        NotificationMapper, Depends(get_notification_mapper)
+    ],
+):
+    return NotificationService(
+        notification_repo, user_repo, room_repo, notification_mapper
+    )
+
+
+def get_room_service(
+    room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
+    member_room_repo: Annotated[
+        MemberRoomAssociationRepository, Depends(get_member_room_repo)
+    ],
+    room_track_repo: Annotated[
+        RoomTrackAssociationRepository, Depends(get_room_track_repo)
+    ],
+    notification_repo: Annotated[
+        NotificationRepository, Depends(get_notification_repo)
+    ],
+    user_repo: Annotated[UserRepository, Depends(get_user_repo)],
+    track_repo: Annotated[TrackRepository, Depends(get_track_repo)],
+    ban_repo: Annotated[BanRepository, Depends(get_ban_repo)],
+    room_mapper: Annotated[RoomMapper, Depends(get_room_mapper)],
+):
+    return RoomService(
+        room_repo,
+        member_room_repo,
+        room_track_repo,
+        notification_repo,
+        user_repo,
+        track_repo,
+        ban_repo,
+        room_mapper,
+    )
+
+
+def get_track_service(
+    track_repo: Annotated[TrackRepository, Depends(get_track_repo)],
+    room_track_repo: Annotated[
+        RoomTrackAssociationRepository, Depends(get_room_track_repo)
+    ],
+    track_mapper: Annotated[TrackMapper, Depends(get_track_mapper)],
+):
+    return TrackService(track_repo, room_track_repo, track_mapper)

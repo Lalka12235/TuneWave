@@ -7,15 +7,16 @@ from app.repositories.track_repo import TrackRepository
 from app.schemas.track_schemas import TrackCreate, TrackResponse
 from app.services.spotify_public_service import SpotifyPublicService
 
-from app.services.mapper import map_track_to_response
+from app.services.mappers.track_mapper import TrackMapper
 
 
 
 class TrackService:
 
-    def __init__(self,track_repo: TrackRepository):
+    def __init__(self,track_repo: TrackRepository,track_mapper: TrackMapper):
         self.track_repo = track_repo
-    
+        self.track_mapper = track_mapper
+
     def get_track_by_id(self,track_id: uuid.UUID) -> TrackResponse:
         """Получает трек по его UUID из базы данных."""
         track = self.track_repo.get_track_by_id(track_id)
@@ -68,14 +69,14 @@ class TrackService:
         local_track = self.track_repo.get_track_by_spotify_id( spotify_data.spotify_id)
         if local_track:
             logger.debug(f"Сервис треков: Трек '{spotify_data.spotify_id}' найден в локальном кеше.")
-            return map_track_to_response(local_track)
+            return self.track_mapper.to_response(local_track)
 
         logger.info(f"Сервис треков: Трек '{spotify_data.spotify_id}' не найден в кеше, запрашиваем у Spotify API.")
         SpotifyPublicService()
         try:
             new_local_track_response = TrackService.create_track( spotify_data)
             logger.info(f"Сервис треков: Трек '{spotify_data.spotify_id}' успешно получен от Spotify и кеширован в БД.")
-            return map_track_to_response(new_local_track_response)
+            return self.track_mapper.to_response(new_local_track_response)
         except HTTPException as e:
             raise e
         except Exception as e:

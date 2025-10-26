@@ -7,14 +7,15 @@ from app.logger.log_config import logger
 from app.repositories.chat_repo import ChatRepository
 from app.schemas.message_schemas import MessageCreate, MessageResponse
 from app.repositories.room_repo import RoomRepository
-from app.services.mapper import map_message_to_response
+from app.services.mappers.message_mapper import MessageMapper
 
 
 class ChatService():
 
-    def __init__(self,chat_repo: ChatRepository,room_repo: RoomRepository):
+    def __init__(self,chat_repo: ChatRepository,room_repo: RoomRepository,message_mapper: MessageMapper):
         self.chat_repo = chat_repo
         self.room_repo = room_repo
+        self.message_mapper = message_mapper
 
     
     def get_message_for_room(self,room_id: uuid.UUID,limit:int = 50,before_timestamp: datetime | None = None) -> list[MessageResponse]:
@@ -44,7 +45,7 @@ class ChatService():
 
         messages = self.chat_repo.get_message_for_room(room_id,limit)
 
-        return [map_message_to_response(message) for message in messages]
+        return [self.message_mapper.to_response(message) for message in messages]
     
 
     
@@ -98,5 +99,5 @@ class ChatService():
             
         
 
-        return map_message_to_response(new_message)
+        return self.message_mapper.to_response(new_message)
     
