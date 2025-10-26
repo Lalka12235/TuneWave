@@ -30,12 +30,11 @@ class RoomRepository:
             Room | None: Объект комнаты, если найден, иначе None.
         """
         stmt = select(Room).options(
-            joinedload(Room.owner), # Загружаем владельца
-            joinedload(Room.member_room).joinedload(Member_room_association.user), # Загружаем участников и их пользователей
-            joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track) # Загружаем очередь и связанные треки
+            joinedload(Room.owner),
+            joinedload(Room.member_room).joinedload(Member_room_association.user),
+            joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         ).filter(Room.id == room_id)
         result = self._db.execute(stmt)
-        # КРИТИЧНО: .unique() для joinedload с коллекциями
         return result.unique().scalar_one_or_none()
     
     
@@ -149,7 +148,7 @@ class RoomRepository:
     
 
     
-    def get_owner_room(self,room_id: uuid.UUID) -> User | None:
+    def get_owner_room(self,room_id: uuid.UUID) -> Room | None:
         """_summary_
 
         Args:
