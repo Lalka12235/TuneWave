@@ -34,6 +34,8 @@ class MemberRoomAssociationRepository:
             role=role,
         )
         self._db.add(new_member_room)
+        self._db.flush()
+        self._db.refresh(new_member_room)
         return new_member_room
     
 
@@ -103,24 +105,17 @@ class MemberRoomAssociationRepository:
 
     
     def get_rooms_by_user_id(self, user_id: uuid.UUID) -> list[Room]:
-        """
-        Получает список объектов Room, в которых состоит данный пользователь.
-        /        Args:
-            db (Session): Сессия базы данных SQLAlchemy.
-            user_id (uuid.UUID): ID пользователя.
-            
-        Returns:
-            List[Room]: Список объектов Room, в которых состоит пользователь.
-        """
-        stmt = select(Room).join(Member_room_association).filter(
+        stmt = select(Room).join(
+            Member_room_association
+        ).where(
             Member_room_association.user_id == user_id
         ).options(
             joinedload(Room.owner),
-            joinedload(Room.member_room).joinedload(Member_room_association.user),
-            joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
+            joinedload(Room.member_room),
+            joinedload(Room.current_track)
         )
         result = self._db.execute(stmt)
-        return result.unique().scalars().all()
+        return result.scalars().unique().all()
     
 
     

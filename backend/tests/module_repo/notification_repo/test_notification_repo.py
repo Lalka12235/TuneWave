@@ -1,6 +1,7 @@
 import uuid
 from app.schemas.enum import NotificationType
 from app.repositories.notification_repo import NotificationRepository
+from tests.module_repo.notification_repo.conftest import notification_repo
 
 def test_get_notification_by_id(notification_repo: NotificationRepository, user_data1: dict):
     notification = notification_repo.add_notification(
