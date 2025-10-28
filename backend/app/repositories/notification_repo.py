@@ -104,7 +104,7 @@ class NotificationRepository:
     
 
     
-    def mark_notification_as_read(self,notification_id: uuid.UUID) -> Notification:
+    def mark_notification_as_read(self,notification_id: uuid.UUID) -> bool:
         """
         Отмечает конкретное уведомление как прочитанное.
 
@@ -119,7 +119,7 @@ class NotificationRepository:
             Notification.id == notification_id
         ).values(is_read=True)
         result = self._db.execute(stmt)
-        return result
+        return result.rowcount > 0
     
 
     
