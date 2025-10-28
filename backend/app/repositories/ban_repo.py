@@ -73,6 +73,7 @@ class BanRepository:
         )
         self._db.add(new_ban_user)
         self._db.flush()
+        self._db.refresh(new_ban_user)
         return new_ban_user
     
 
