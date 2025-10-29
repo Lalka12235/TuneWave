@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from backend.app.services.spotify_service import SpotifyService
+from app.services.spotify_service import SpotifyService
 from fastapi import APIRouter, Depends, Query
 
 from app.auth.auth import get_current_user

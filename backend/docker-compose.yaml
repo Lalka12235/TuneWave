@@ -14,7 +14,7 @@ services:
     networks:
       - tunewave_network
     volumes:
-      - postgre_vol:/var/lib/postgresql/data 
+      - postgre_vol:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 10s
@@ -116,18 +116,18 @@ services:
     depends_on:
     - redis
   
-  nginx:
-      restart: always
-      build:
-          context: .
-          dockerfile: ./infrastructure/nginx/Dockerfile
-      ports:
-        - 80:80
-      networks:
-      - tunewave_network
-      depends_on:
-        backend:
-          condition: service_healthy
+#  nginx:
+#      restart: always
+#      build:
+#          context: .
+#          dockerfile: ./infrastructure/nginx/Dockerfile
+#      ports:
+#        - 80:80
+#      networks:
+#      - tunewave_network
+#      depends_on:
+#        backend:
+#          condition: service_healthy
 
 
 networks:

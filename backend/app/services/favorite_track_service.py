@@ -11,7 +11,7 @@ from app.repositories.track_repo import TrackRepository
 from app.schemas.favorite_track_schemas import FavoriteTrackResponse
 from app.schemas.track_schemas import TrackCreate
 from app.services.spotify_public_service import SpotifyPublicService
-from backend.app.services.spotify_service import SpotifyService
+from app.services.spotify_service import SpotifyService
 
 from app.services.mappers.favorite_track_mapper import FavoriteTrackMapper
 

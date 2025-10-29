@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     Контекстный менеджер для управления жизненным циклом приложения.
     """
     scheduler_service.start()
-    r = redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+    r = redis.from_url(settings.redis.REDIS_URL, encoding="utf-8", decode_responses=True)
     await FastAPILimiter.init(r)
     
     yield
@@ -86,5 +86,5 @@ app.add_middleware(LogMiddleware)
 for route in V1_ROUTERS:
     app.include_router(route)
 
-os.makedirs(settings.AVATARS_STORAGE_DIR,exist_ok=True)
-app.mount("/avatars", StaticFiles(directory=settings.AVATARS_STORAGE_DIR), name="avatars")
+os.makedirs(settings.avatar.AVATARS_STORAGE_DIR,exist_ok=True)
+app.mount("/avatars", StaticFiles(directory=settings.avatar.AVATARS_STORAGE_DIR), name="avatars")

@@ -20,4 +20,5 @@ COPY . .
 
 ENTRYPOINT ["/app/prestart.sh"]
 #CMD ["/app/.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-CMD ["/app/.venv/bin/gunicorn", "app.main:app", "--workers", "2", "--bind", "0.0.0.0:8000", "--worker-class", "uvicorn.workers.UvicornWorker"]
+#CMD ["/app/.venv/bin/uvicorn", "app.main:app", "--workers", "2", "--bind", "0.0.0.0:8000", "--worker-class", "uvicorn.workers.UvicornWorker"]
+CMD ["/app/.venv/bin/uvicorn", "app.main:app", "--workers", "2", "--host", "0.0.0.0", "--port", "8000"]
