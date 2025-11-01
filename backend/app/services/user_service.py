@@ -1,17 +1,11 @@
 import uuid
 
-from infrastructure.celery.tasks import send_email_task
-from jwt import exceptions
-
 from app.config.settings import settings
 from app.logger.log_config import logger
 from app.models.user import User
 from app.repositories.ban_repo import BanRepository
 from app.repositories.user_repo import UserRepository
 from app.schemas.user_schemas import (
-    GoogleOAuthData,
-    SpotifyOAuthData,
-    Token,
     UserCreate,
     UserResponse,
     UserUpdate,
@@ -23,8 +17,6 @@ from app.exceptions.user_exception import (
     UserAlrediExist,
     UserNotFound,
     ServerError,
-    UserNotPermission,
-    UserNotAuthorized,
     AvatarFyleType,
     FileExceedsSize,
     

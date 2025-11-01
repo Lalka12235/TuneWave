@@ -1,5 +1,5 @@
 from app.auth.jwt import decode_access_token
-from fastapi import HTTPException,status,Depends
+from fastapi import Depends
 from typing import Annotated
 from app.repositories.user_repo import UserRepository
 from app.repositories.ban_repo import BanRepository
@@ -22,9 +22,14 @@ from infrastructure.celery.tasks import send_email_task
 
 from app.exceptions.user_exception import (
     ServerError,
-    UserNotPermission,
     UserNotAuthorized,
 ) 
+from app.exceptions.auth_exception import (
+    InvalidTokenError,
+    TokenDecodeError,
+    UserBannedError,
+    UserNotFoundError
+)
 from app.config.settings import settings
 oauth2_scheme = HTTPBearer(description="Введите ваш JWT-токен (Bearer <TOKEN>)")
 
@@ -54,7 +59,7 @@ class AuthService:
             logger.warning(
                 f"Попытка входа забаненного пользователя Google: ID '{user_id}'."
             )
-            raise UserNotPermission(
+            raise UserBannedError(
                 detail="Ваш аккаунт заблокирован. Свяжитесь с поддержкой для получения дополнительной информации.",
             )
         return global_ban
@@ -74,7 +79,7 @@ class AuthService:
         
 
         if user:
-            global_ban = self._check_global_bal_user(user.id)
+            self._check_global_bal_user(user.id)
             update_data = {
                 "google_access_token": google_data.google_access_token,
                 "google_token_expires_at": google_data.google_token_expires_at,
@@ -151,7 +156,7 @@ class AuthService:
             user = self.user_repo.get_user_by_spotify_id(spotify_data.spotify_id)
 
         if user:
-            global_ban = self._check_global_bal_user(user.id)
+            self._check_global_bal_user(user.id)
             update_data = {}
             if not user.spotify_id:
                 update_data["spotify_id"] = spotify_data.spotify_id
@@ -244,7 +249,7 @@ class AuthService:
                 return user
             except exceptions.DecodeError:
                 logger.warning("Невалидный JWT-токен: ошибка декодирования.")
-                raise UserNotAuthorized(detail="Невалидный токен")
+                raise TokenDecodeError()
 
 
 def get_current_user_id(credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]) -> uuid.UUID:
@@ -268,31 +273,20 @@ def get_current_user_id(credentials: Annotated[HTTPAuthorizationCredentials, Dep
 
         if user_id is None:
             logger.warning("JWT-токен не содержит идентификатор пользователя (поле 'sub').")
-            raise HTTPException(
-                status_code=401,
-                detail='Invalid user_id'
-            )
+            raise InvalidTokenError()
         
         try:
             user_id = uuid.UUID(user_id)
         except ValueError:
             logger.warning(f"Недействительный JWT-токен: 'sub' поле '{user_id}' не является валидным UUID.")
-            raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Недействительный токен: некорректный формат идентификатора пользователя."
-        )
-
+            raise InvalidTokenError(detail="Недействительный токен: некорректный формат идентификатора пользователя.")
         return user_id
 
-    except HTTPException as e:
-        logger.warning(f"Ошибка аутентификации JWT: {e.detail}")
-        raise e
+    except exceptions.DecodeError:
+        raise TokenDecodeError()
     except Exception as e:
-        logger.error(f'Не удалось проверить учетные данные JWT: {e}', exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось проверить учетные данные"
-        )
+        logger.error(f'Ошибка проверки JWT: {e}', exc_info=True)
+        raise TokenDecodeError("Ошибка проверки токена")
 
 
 def get_current_user(
@@ -316,8 +310,5 @@ def get_current_user(
 
     if not user:
         logger.warning(f"Пользователь с ID {user_id} не найден в базе данных или неактивен.")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Пользователь не найден или неактивен."
-        )
+        raise UserNotFoundError()
     return user
