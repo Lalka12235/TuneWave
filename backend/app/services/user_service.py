@@ -2,7 +2,7 @@ import uuid
 
 from app.config.settings import settings
 from app.logger.log_config import logger
-from app.models.user import User
+from app.models import User
 from app.repositories.ban_repo import BanRepository
 from app.repositories.user_repo import UserRepository
 from app.schemas.user_schemas import (
@@ -10,17 +10,15 @@ from app.schemas.user_schemas import (
     UserResponse,
     UserUpdate,
 )
-
 from app.services.mappers.user_mapper import UserMapper
 
 from app.exceptions.user_exception import (
     UserAlrediExist,
     UserNotFound,
-    ServerError,
     AvatarFyleType,
     FileExceedsSize,
-    
-)   
+) 
+from app.exceptions.exception import ServerError
 
 
 class UserService:

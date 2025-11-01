@@ -3,7 +3,6 @@ from typing import Any
 
 import httpx
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
 from app.config.settings import settings
 from app.logger.log_config import logger

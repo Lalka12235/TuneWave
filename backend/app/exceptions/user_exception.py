@@ -14,14 +14,6 @@ class UserNotFound(Exception):
         super().__init__(*args)
 
     
-class ServerError(Exception):
-    """
-    Неизвестная ошибка на сервер
-    """
-    def __init__(self, *args):
-        super().__init__(*args)
-
-
 class UserNotPermission(Exception):
     """
     У пользователя недостаточно прав

@@ -21,9 +21,9 @@ from jwt import exceptions
 from infrastructure.celery.tasks import send_email_task
 
 from app.exceptions.user_exception import (
-    ServerError,
     UserNotAuthorized,
 ) 
+from app.exceptions.exception import ServerError
 from app.exceptions.auth_exception import (
     InvalidTokenError,
     TokenDecodeError,
