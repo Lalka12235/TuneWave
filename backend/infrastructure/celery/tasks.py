@@ -11,8 +11,7 @@ from infrastructure.celery.email import send_email
 def send_email_task(
     self,
     recipient_email: str,
-    subject: str,
-    body: str,
+    username,
 ) -> bool:
     """
     Отправляет электронное письмо указанному получателю асинхронно через Celery.
@@ -32,6 +31,16 @@ def send_email_task(
         Exception: Для других непредвиденных ошибок.
     """
     try:
+        subject = "Добро пожаловать в TuneWave!"
+        body = f"""
+        Привет, {username}!
+
+        Спасибо за регистрацию в TuneWave. Мы рады видеть тебя в нашем музыкальном сообществе.
+        Начни создавать комнаты и делиться музыкой с друзьями!
+
+        С уважением,
+        Команда TuneWave
+        """
         try_send = send_email(recipient_email, subject, body)
         if try_send:
             logger.info(f"Celery Task: Письмо успешно отправлено получателю: {recipient_email}")
