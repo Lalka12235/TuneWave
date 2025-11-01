@@ -1,13 +1,13 @@
 import uuid
 from typing import Any
 
-from fastapi import HTTPException, status
-
 from app.logger.log_config import logger
 from app.models.user import User
 from app.repositories.ban_repo import BanRepository
 from app.schemas.ban_schemas import BanCreate, BanRemove, BanResponse
 from app.services.mappers.ban_mapper import BanMapper
+from app.exceptions.ban_exception import UserBannedInRoom,UserBannedGlobal,UserNotExistingBan
+from app.exceptions.exception import ServerError
 
 
 class BanService:
@@ -76,18 +76,12 @@ class BanService:
         if data_ban.room_id:
                 existing_local_ban = self.ban_repo.is_user_banned_local( data_ban.ban_user_id, data_ban.room_id)
                 if existing_local_ban:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Пользователь уже забанен в этой комнате."
-                    )
+                    raise UserBannedInRoom()
             
 
         existing_global_ban = self.ban_repo.is_user_banned_global( data_ban.ban_user_id)
         if existing_global_ban:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Пользователь уже забанен глобально."
-            )
+            raise UserBannedGlobal()
 
         try:
             new_ban_entry = self.ban_repo.add_ban(
@@ -98,12 +92,8 @@ class BanService:
             )
 
             return self.ban_mapper.to_response(new_ban_entry)
-        
-        except HTTPException as e:
-            raise e
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail="Не удалось добавить бан из-за внутренней ошибки сервера."
             )
         
@@ -132,10 +122,7 @@ class BanService:
         
         if not existing_ban_to_remove:
                 logger.warning(f"BanService: Попытка снять несуществующий бан для user_id={data_ban.ban_user_id}, room_id={data_ban.room_id}")
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Бан не найден или уже был снят."
-                )
+                raise UserNotExistingBan()
         try:
             if existing_ban_to_remove_local:
                 self.ban_repo.remove_ban_local(data_ban.room_id,data_ban.ban_user_id)
@@ -147,22 +134,13 @@ class BanService:
                 "status": "success",
                 "detail": "Бан успешно снят."
             }
-
-        except HTTPException as e:
-            logger.warning(
-                f"HTTPException при снятии бана. user_id: {data_ban.ban_user_id}, "
-                f"room_id: {data_ban.room_id if data_ban.room_id else 'глобальный'}. Ошибка: {e.detail}",
-                exc_info=True
-            )
-            raise e
         except Exception as e:
             logger.error(
                 f"Внутренняя ошибка сервера при снятии бана. user_id: {data_ban.ban_user_id}, "
                 f"room_id: {data_ban.room_id if data_ban.room_id else 'глобальный'}. Ошибка: {e}",
                 exc_info=True
             )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail=f"Не удалось снять бан из-за внутренней ошибки сервера: {e}" 
             )
 
