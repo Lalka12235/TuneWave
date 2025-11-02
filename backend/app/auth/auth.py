@@ -18,7 +18,7 @@ from app.schemas.user_schemas import (
     UserResponse
 )
 from jwt import exceptions
-from infrastructure.celery.tasks import send_email_task
+from infrastructure.celery.tasks import EmailService
 
 from app.exceptions.user_exception import (
     UserNotAuthorized,
@@ -36,10 +36,12 @@ oauth2_scheme = HTTPBearer(description="Введите ваш JWT-токен (Be
 
 class AuthService:
 
-    def __init__(self,user_repo: UserRepository,ban_repo: BanRepository,user_mapper: UserMapper):
+    def __init__(self,user_repo: UserRepository,ban_repo: BanRepository,user_mapper: UserMapper,email_service: EmailService):
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         self.user_mapper = user_mapper
+        self.email_service = email_service
+
 
     def _check_existing_user_by_email(self,email: str) -> User:
         """
@@ -122,7 +124,7 @@ class AuthService:
                 logger.info(
                     f"Новый пользователь '{user.id}' зарегистрирован через Google OAuth."
                 )
-                send_email_task.delay(google_data.email,google_data.username)
+                self.email_service.send_email_task.delay(google_data.email,google_data.username)
             except Exception as e:
                 logger.error(
                     f"Ошибка при создании пользователя через Google OAuth '{google_data.email}': {e}",
@@ -204,7 +206,7 @@ class AuthService:
                 logger.info(
                     f"Новый пользователь '{user.id}' зарегистрирован через Spotify OAuth."
                 )
-                send_email_task.delay(spotify_data.email, spotify_data.username)
+                self.email_service.send_email_task.delay(spotify_data.email,spotify_data.username)
             except Exception as e:
                 logger.error(
                     f"Ошибка при создании пользователя через Spotify OAuth '{spotify_data.email}': {e}",
@@ -252,63 +254,64 @@ class AuthService:
                 raise TokenDecodeError()
 
 
-def get_current_user_id(credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]) -> uuid.UUID:
-    """
-    Зависимость FastAPI, которая извлекает ID пользователя из JWT-токена.
-    
-    Args:
-        token (str): JWT-токен, извлеченный из заголовка Authorization.
-                     Предоставляется FastAPI благодаря OAuth2PasswordBearer.
-                     
-    Returns:
-        uuid.UUID: ID пользователя, извлеченный из токена.
+    def get_current_user_id(self,credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]) -> uuid.UUID:
+        """
+        Зависимость FastAPI, которая извлекает ID пользователя из JWT-токена.
         
-    Raises:
-        HTTPException: Если токен недействителен, истек или не содержит ID пользователя.
-    """
-    token = credentials.credentials
-    try: 
-        data = decode_access_token(token)
-        user_id = data.get('sub')
+        Args:
+            token (str): JWT-токен, извлеченный из заголовка Authorization.
+                        Предоставляется FastAPI благодаря OAuth2PasswordBearer.
+                        
+        Returns:
+            uuid.UUID: ID пользователя, извлеченный из токена.
+            
+        Raises:
+            HTTPException: Если токен недействителен, истек или не содержит ID пользователя.
+        """
+        token = credentials.credentials
+        try: 
+            data = decode_access_token(token)
+            user_id = data.get('sub')
 
-        if user_id is None:
-            logger.warning("JWT-токен не содержит идентификатор пользователя (поле 'sub').")
-            raise InvalidTokenError()
+            if user_id is None:
+                logger.warning("JWT-токен не содержит идентификатор пользователя (поле 'sub').")
+                raise InvalidTokenError()
+            
+            try:
+                user_id = uuid.UUID(user_id)
+            except ValueError:
+                logger.warning(f"Недействительный JWT-токен: 'sub' поле '{user_id}' не является валидным UUID.")
+                raise InvalidTokenError(detail="Недействительный токен: некорректный формат идентификатора пользователя.")
+            return user_id
+
+        except exceptions.DecodeError:
+            raise TokenDecodeError()
+        except Exception as e:
+            logger.error(f'Ошибка проверки JWT: {e}', exc_info=True)
+            raise TokenDecodeError("Ошибка проверки токена")
+
+
+    def get_current_user(
+            self,
+            db: Annotated[Session,Depends(get_db)],
+            user_id:Annotated[uuid.UUID,Depends(get_current_user_id)]
+    ) -> User:
+        """
+        Зависимость FastAPI, которая возвращает объект User для текущего аутентифицированного пользователя.
         
-        try:
-            user_id = uuid.UUID(user_id)
-        except ValueError:
-            logger.warning(f"Недействительный JWT-токен: 'sub' поле '{user_id}' не является валидным UUID.")
-            raise InvalidTokenError(detail="Недействительный токен: некорректный формат идентификатора пользователя.")
-        return user_id
+        Args:
+            db (Session): Сессия базы данных (предоставляется get_db).
+            user_id (uuid.UUID): ID пользователя (предоставляется get_current_user_id).
+            
+        Returns:
+            User: Объект User из базы данных.
+            
+        Raises:
+            HTTPException: Если пользователь не найден в БД или неактивен (401 Unauthorized).
+        """
+        user = self.user_repo.get_user_by_id(db, user_id)
 
-    except exceptions.DecodeError:
-        raise TokenDecodeError()
-    except Exception as e:
-        logger.error(f'Ошибка проверки JWT: {e}', exc_info=True)
-        raise TokenDecodeError("Ошибка проверки токена")
-
-
-def get_current_user(
-        db: Annotated[Session,Depends(get_db)],
-        user_id:Annotated[uuid.UUID,Depends(get_current_user_id)]
-) -> User:
-    """
-    Зависимость FastAPI, которая возвращает объект User для текущего аутентифицированного пользователя.
-    
-    Args:
-        db (Session): Сессия базы данных (предоставляется get_db).
-        user_id (uuid.UUID): ID пользователя (предоставляется get_current_user_id).
-        
-    Returns:
-        User: Объект User из базы данных.
-        
-    Raises:
-        HTTPException: Если пользователь не найден в БД или неактивен (401 Unauthorized).
-    """
-    user = UserRepository.get_user_by_id(db, user_id)
-
-    if not user:
-        logger.warning(f"Пользователь с ID {user_id} не найден в базе данных или неактивен.")
-        raise UserNotFoundError()
-    return user
+        if not user:
+            logger.warning(f"Пользователь с ID {user_id} не найден в базе данных или неактивен.")
+            raise UserNotFoundError()
+        return user
