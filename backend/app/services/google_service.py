@@ -1,13 +1,12 @@
 import time
 
 import httpx
-from fastapi import HTTPException, status, Depends
-from typing import Annotated
-
 from app.config.settings import settings
-from app.models.user import User
-from app.services.dep import get_user_service
+from app.models import User
 from app.services.user_service import UserService
+
+from app.exceptions.exception import ServerError
+from app.exceptions.user_exception import UserNotAuthorized
 
 
 
@@ -15,7 +14,7 @@ class GoogleService:
 
     GOOGLE_API_BASE_URl = 'https://oauth2.googleapis.com'
 
-    def __init__(self,user: User,user_service: Annotated[UserService,Depends(get_user_service)]):
+    def __init__(self,user: User,user_service: UserService):
         self.user = user
         self.user_service = user_service
 
@@ -33,8 +32,7 @@ class GoogleService:
             HTTPException: Если refresh_token отсутствует или недействителен.
         """
         if not self.user.google_refresh_token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+            raise UserNotAuthorized(
                 detail="Отсутствует refresh token Google. Требуется повторная авторизация."
             )
             
@@ -52,23 +50,20 @@ class GoogleService:
                 response.raise_for_status()
                 new_tokens: dict = response.json()
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == status.HTTP_400_BAD_REQUEST:
-                UserService.update_user_profile(self.db, self.user, {
+            if e.response.status_code == 400:
+                UserService.update_user_profile(self.user, {
                     'google_access_token': None,
                     'google_refresh_token': None,
                     'google_token_expires_at': None
                 })
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
+                raise ServerError(
                     detail="Токен обновления Google недействителен. Пожалуйста, переавторизуйтесь в Google."
                 )
-            raise HTTPException(
-                status_code=e.response.status_code,
+            raise ServerError(
                 detail=f"Ошибка при обновлении токена Google: {e.response.text}"
             )
         except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail=f"Неизвестная ошибка при обновлении токена Google: {e}"
             )
         
