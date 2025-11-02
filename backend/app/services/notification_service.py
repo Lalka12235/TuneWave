@@ -1,7 +1,5 @@
 import uuid
 
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
 from app.logger.log_config import logger
 from app.repositories.notification_repo import NotificationRepository
@@ -11,6 +9,11 @@ from app.schemas.enum import NotificationType
 from app.schemas.notification_schemas import NotificationResponse
 
 from app.services.mappers.notification_mapper import NotificationMapper
+
+from app.exceptions.exception import ServerError
+from app.exceptions.user_exception import UserNotFound
+from app.exceptions.room_exception import RoomNotFound
+from app.exceptions.notification_exception import NotificationNotFound,NotificationNotPermission
 
 
 class NotificationService:
@@ -22,20 +25,20 @@ class NotificationService:
         self.notify_mapper = notify_mapper
 
 
-    def _check_user_exists(self, user_id: uuid.UUID, detail_message: str):
+    def _check_user_exists(self, user_id: uuid.UUID):
         """Вспомогательный метод для проверки существования пользователя."""
         user = self.user_repo.get_user_by_id( user_id)
         if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail_message)
+            raise UserNotFound()
         return user
 
 
     
-    def _check_room_exists(self, room_id: uuid.UUID, detail_message: str):
+    def _check_room_exists(self, room_id: uuid.UUID):
         """Вспомогательный метод для проверки существования комнаты."""
         room = self.room_repo.get_room_by_id( room_id)
         if not room:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail_message)
+            raise RoomNotFound()
         return room
         
 
@@ -92,11 +95,8 @@ class NotificationService:
                  user_id, notification_type, message, sender_id, room_id,related_object_id
             )
             return self.notify_mapper.to_response(new_notification)
-        except HTTPException as e:
-            raise e
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail="Не удалось создать уведомление из-за внутренней ошибки сервера."
             )
         
@@ -109,14 +109,10 @@ class NotificationService:
         """
         notification = self.notify_repo.get_notification_by_id(notification_id)
         if not notification:
-            raise HTTPException(
-                status_code=404,
-                detail='Уведомление не найдено'
-            )
+            raise NotificationNotFound()
         
         if notification.user_id != current_user_id:
-            raise HTTPException(
-                status_code=403,
+            raise NotificationNotPermission(
                 detail="У вас нет прав для отметки этого уведомления как прочитанного."
             )
         
@@ -126,12 +122,8 @@ class NotificationService:
         try:
             notification_update = self.notify_repo.mark_notification_as_read(notification_id)
             return self.notify_mapper.to_response(notification_update)
-        except HTTPException as e:
-            logger.error(f'NotificationService: произошла ошибка при попытке прочтения уведомления {notification_id} от пользователя {notification.sender_id} к пользователю {notification.user_id}.{e}',exc_info=True)
-            raise e
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail="Не удалось отметить уведомление как прочитанное из-за внутренней ошибки сервера."
             )
         
@@ -143,14 +135,10 @@ class NotificationService:
         """
         notification = self.notify_repo.get_notification_by_id(notification_id)
         if not notification:
-            raise HTTPException(
-                status_code=404,
-                detail='Уведомление не найдено'
-            )
+            raise NotificationNotFound()
         
         if notification.user_id != current_user_id:
-            raise HTTPException(
-                status_code=403,
+            raise NotificationNotPermission(
                 detail="У вас нет прав для удаление этого уведомления."
             )
         
@@ -160,10 +148,7 @@ class NotificationService:
                 "status": "success",
                 "detail": "Уведомление успешно удалено."
             }
-        except HTTPException as e:
-            raise e
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail="Не удалось удалить уведомление из-за внутренней ошибки сервера."
             )
