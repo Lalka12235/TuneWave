@@ -1,11 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
-
-from app.models.track import Track
-from app.models.user import User
+from app.models import Track,User
 from app.repositories.favorite_track_repo import FavoriteTrackRepository
 from app.repositories.track_repo import TrackRepository
 from app.schemas.favorite_track_schemas import FavoriteTrackResponse
@@ -14,6 +10,9 @@ from app.services.spotify_public_service import SpotifyPublicService
 from app.services.spotify_service import SpotifyService
 
 from app.services.mappers.favorite_track_mapper import FavoriteTrackMapper
+
+from app.exceptions.exception import ServerError
+from app.exceptions.favorite_track_exception import TrackNotFound,TrackInFavorite
 
 
 class FavoriteTrackService:
@@ -54,8 +53,7 @@ class FavoriteTrackService:
             return track 
                   
         if not spotify_detail:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise TrackNotFound(
                 detail=f"Трек с Spotify ID '{spotify_id}' не найден на Spotify."
             )
         try:
@@ -63,12 +61,8 @@ class FavoriteTrackService:
 
             new_track = self.track_repo.create_track( track_create_data)
             return new_track
-
-        except HTTPException as e: 
-            raise e
         except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail=f"Ошибка сервера при обработке трека из Spotify: {e}"
             )
 
@@ -116,19 +110,12 @@ class FavoriteTrackService:
         
         is_favorite = self.ft_repo.is_favorite_track( user_id, track.id)
         if is_favorite:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail='Этот трек уже добавлен в ваш список любимых.'
-            )
+            raise TrackInFavorite()
         try:
             new_favorite_track = self.ft_repo.add_favorite_track( user_id, track.id)
             return self.favorite_track_mapper.to_response(new_favorite_track)
-
-        except HTTPException:
-            raise 
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail="Не удалось добавить любимый трек из-за внутренней ошибки сервера."
             )
     
@@ -151,15 +138,13 @@ class FavoriteTrackService:
         
         track = self.track_repo.get_track_by_spotify_id( spotify_id)
         if not track:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise TrackNotFound(
                 detail="Трек не найден в нашей базе данных."
             )
 
         is_favorite = self.ft_repo.is_favorite_track( user_id, track.id)
         if not is_favorite:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+            raise TrackNotFound(
                 detail="Этот трек не найден в вашем списке любимых."
             )
         try:
@@ -172,15 +157,10 @@ class FavoriteTrackService:
                     'detail': f'Трек {spotify_id} успешно удален из избранного.',
                 }
             else:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                raise ServerError(
                     detail="Не удалось удалить любимый трек."
                 )
-
-        except HTTPException as e:
-            raise e
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail="Не удалось удалить любимый трек из-за внутренней ошибки сервера."
             )
