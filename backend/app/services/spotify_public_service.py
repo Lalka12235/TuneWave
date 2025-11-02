@@ -1,8 +1,6 @@
 import time
-from typing import Any
 
 import httpx
-from fastapi import HTTPException, status
 
 from app.config.settings import settings
 from app.schemas.spotify_schemas import (
@@ -11,6 +9,8 @@ from app.schemas.spotify_schemas import (
     SpotifyTrackDetails,
 )
 
+from app.exceptions.exception import ServerError
+from app.exceptions.spotify_exception import SpotifyAuthorizeError,SpotifyAPIError
 
 class SpotifyPublicService:
     """
@@ -50,13 +50,12 @@ class SpotifyPublicService:
                 response.raise_for_status()
                 spotify_token: dict = response.json()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(
+            raise SpotifyAuthorizeError(
                 status_code=e.response.status_code,
                 detail=f"Ошибка авторизации Spotify (Client Credentials Flow): {e.response.text}"
             )
         except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail=f"Неизвестная ошибка при получении токена Spotify: {e}"
             )
 
@@ -67,7 +66,7 @@ class SpotifyPublicService:
         return self._token_expires_at
     
         
-    async def _make_spotify_request(self,method: str,endpoint: str, **kwargs) -> dict[str,Any]:
+    async def _make_spotify_request(self,method: str,endpoint: str, **kwargs) -> dict[str,str]:
         """
         Вспомогательный метод для выполнения запросов к Spotify API.
         """
@@ -84,23 +83,21 @@ class SpotifyPublicService:
                 spotify_response = response.json()
                 return spotify_response
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == status.HTTP_401_UNAUTHORIZED:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
+            if e.response.status_code == 401:
+                raise SpotifyAuthorizeError(
                     detail=f"Неавторизованный запрос к Spotify API. Возможно, требуется переавторизация: {e.response.text}"
                 )
-            raise HTTPException(
+            raise SpotifyAPIError(
                 status_code=e.response.status_code,
                 detail=f"Ошибка Spotify API ({endpoint}): {e.response.text}"
             )
         except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail=f"Неизвестная ошибка при запросе к Spotify API ({endpoint}): {e}"
             )
         
         
-    async def search_public_track(self,query: str, limit: int = 10) -> dict[str,Any]:
+    async def search_public_track(self,query: str, limit: int = 10) -> dict[str,str]:
         """
         Ищет треки на Spotify (публичный поиск).
         """
@@ -111,7 +108,7 @@ class SpotifyPublicService:
             params={'q':query,'type':'track','limit':str(limit)}
         )
     
-    async def search_track_by_spotify_id(self,spotify_id: str) -> dict[str, Any]:
+    async def search_track_by_spotify_id(self,spotify_id: str) -> dict[str, str]:
         """
         Получает детальную информацию о треке по его Spotify ID (публичный доступ).
         """

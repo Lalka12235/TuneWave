@@ -2,7 +2,6 @@ from time import time
 from typing import Any
 
 import httpx
-from fastapi import HTTPException, status
 
 from app.config.settings import settings
 from app.logger.log_config import logger
@@ -12,6 +11,9 @@ from app.schemas.spotify_schemas import (
     SpotifyPlaylistTracksPaging,
     SpotifyTrackDetails,
 )
+
+from app.exceptions.exception import ServerError
+from app.exceptions.spotify_exception import SpotifyAPIError,SpotifyAuthorizeError,CommandError
 
 
 class SpotifyService:
@@ -80,8 +82,7 @@ class SpotifyService:
         """
         if not self.user.spotify_access_token or not self.user.spotify_refresh_token:
             logger.error(f'SpotifyService: Отсутствуют токены Spotify у пользователя {self.user.id}.')
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+            raise SpotifyAuthorizeError(
                 detail="Пользователь не авторизован в Spotify или токены отсутствуют."
             )
 
@@ -126,24 +127,22 @@ class SpotifyService:
                 response.raise_for_status()
                 new_tokens: dict = response.json()
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == status.HTTP_400_BAD_REQUEST:
+            if e.response.status_code == 400:
                 self.user.spotify_access_token = None
                 self.user.spotify_refresh_token = None
                 self.user.spotify_token_expires_at = None
                 logger.error(f"SpotifyService: Ошибка 400 при обновлении токена Spotify для пользователя {self.user.id}. Refresh-токен недействителен. Ответ: {e.response.text}", exc_info=True)
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
+                raise SpotifyAuthorizeError(
                     detail="Токен обновления Spotify недействителен. Пожалуйста, переавторизуйтесь в Spotify."
                 )
             logger.error(f"SpotifyService: Ошибка HTTP при обновлении токена Spotify для пользователя {self.user.id}: Статус {e.response.status_code} - Ответ: {e.response.text}", exc_info=True)
-            raise HTTPException(
+            raise SpotifyAPIError(
                 status_code=e.response.status_code,
                 detail="Ошибка при обновлении токена Spotify"
             )
         except Exception as e:
             logger.error(f"SpotifyService: Неизвестная ошибка при обновлении токена Spotify для пользователя {self.user.id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise SpotifyAPIError(
                 detail="Неизвестная ошибка при обновлении токена Spotify"
             )
         
@@ -157,7 +156,7 @@ class SpotifyService:
         }
     
 
-    async def _make_spotify_request(self,method: str,endpoint: str, **kwargs) -> dict[str,Any]:
+    async def _make_spotify_request(self,method: str,endpoint: str, **kwargs) -> dict[str,str]:
         """
         Вспомогательный метод для выполнения запросов к Spotify API.
         """
@@ -174,7 +173,7 @@ class SpotifyService:
                 return spotify_response
         except httpx.HTTPStatusError as e:
             logger.error(f"SpotifyService: Ошибка HTTP при запросе '{method} {endpoint}' для пользователя {self.user.id}: Статус {e.response.status_code} - Ответ: {e.response.text}", exc_info=True)
-            if e.response.status_code == status.HTTP_401_UNAUTHORIZED:
+            if e.response.status_code == 401:
                 logger.warning(f"SpotifyService: Получен 401 Unauthorized для пользователя {self.user.id} на эндпоинте {endpoint}. Пытаемся обновить токен и повторить запрос.")
                 try:
                     await self._refresh_access_token()
@@ -185,23 +184,18 @@ class SpotifyService:
                         spotify_response = response.json()
                         logger.info(f"SpotifyService: Запрос '{method} {endpoint}' успешно выполнен после обновления токена для пользователя {self.user.id}.")
                         return spotify_response
-                except HTTPException as refresh_exc:
-                    logger.error(f"SpotifyService: Не удалось повторить запрос после обновления токена для пользователя {self.user.id}: {refresh_exc.detail}", exc_info=True)
-                    raise refresh_exc
                 except Exception as retry_exc:
                     logger.error(f"SpotifyService: Неизвестная ошибка при повторной попытке запроса к Spotify API после обновления токена для пользователя {self.user.id}: {retry_exc}", exc_info=True)
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    raise ServerError(
                         detail="Не удалось выполнить запрос к Spotify API после обновления токена."
                     )
-            raise HTTPException(
+            raise SpotifyAPIError(
                 status_code=e.response.status_code,
                 detail=f"Ошибка Spotify API ({endpoint}): {e.response.text}"
             )
         except Exception as e:
             logger.error(f"SpotifyService: Неизвестная ошибка при запросе к Spotify API ({endpoint}) для пользователя {self.user.id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise SpotifyAPIError(
                 detail=f"Неизвестная ошибка при запросе к Spotify API ({endpoint}): {e}"
             )
         
@@ -219,7 +213,7 @@ class SpotifyService:
             tracks_list = [
                 SpotifyTrackDetails.model_validate(item) # item - это уже объект трека
                 for item in response_data['tracks']['items'] 
-                if item # Убеждаемся, что элемент не None
+                if item
             ]
             logger.info(f"SpotifyService: Найдены треки для запроса '{query}'. Количество: {len(tracks_list)}.")
             return tracks_list
@@ -247,22 +241,20 @@ class SpotifyService:
         else:
             logger.info(f"SpotifyService: Запрос на возобновление воспроизведения на устройстве '{device_id}' для пользователя {self.user.id}.")
         
-        # Устанавливаем позицию воспроизведения, если она больше 0
         if position_ms > 0:
             body['position_ms'] = position_ms
 
         try:
-            # Отправляем запрос
             await self._make_spotify_request(
                 'PUT',
                 play_url_endpoint,
                 params={'device_id': device_id},
-                json=body # Используем json=body для httpx для отправки JSON-тела
+                json=body
             )
             logger.info(f"SpotifyService: Команда 'play' успешно отправлена для пользователя {self.user.id} на устройство '{device_id}'.")
         except Exception as e:
             logger.error(f"SpotifyService: Ошибка при отправке команды 'play' для пользователя {self.user.id}: {e}", exc_info=True)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось отправить команду воспроизведения Spotify.")
+            raise CommandError(detail="Не удалось отправить команду воспроизведения Spotify.")
 
 
     async def pause(self, device_id: str):
@@ -279,7 +271,7 @@ class SpotifyService:
             logger.info(f"SpotifyService: Команда 'pause' успешно отправлена для пользователя {self.user.id}.")
         except Exception as e:
             logger.error(f"SpotifyService: Ошибка при отправке команды 'pause' для пользователя {self.user.id}: {e}", exc_info=True)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось отправить команду паузы Spotify.")
+            raise CommandError(etail="Не удалось отправить команду паузы Spotify.")
 
 
     async def skip_next(self, device_id: str):
@@ -289,14 +281,14 @@ class SpotifyService:
         try:
             logger.info(f"SpotifyService: Отправляем команду 'skip next' на устройство '{device_id}' для пользователя {self.user.id}.")
             await self._make_spotify_request(
-                'POST', # Для next/previous используется POST, не PUT
+                'POST',
                 '/me/player/next',
                 params={'device_id': device_id}
             )
             logger.info(f"SpotifyService: Команда 'skip next' успешно отправлена для пользователя {self.user.id}.")
         except Exception as e:
             logger.error(f"SpotifyService: Ошибка при отправке команды 'skip next' для пользователя {self.user.id}: {e}", exc_info=True)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось отправить команду 'следующий трек' Spotify.")
+            raise CommandError(detail="Не удалось отправить команду 'следующий трек' Spotify.")
 
     async def skip_previous(self, device_id: str):
         """
@@ -305,14 +297,14 @@ class SpotifyService:
         try:
             logger.info(f"SpotifyService: Отправляем команду 'skip previous' на устройство '{device_id}' для пользователя {self.user.id}.")
             await self._make_spotify_request(
-                'POST', # Для next/previous используется POST, не PUT
+                'POST',
                 '/me/player/previous',
                 params={'device_id': device_id}
             )
             logger.info(f"SpotifyService: Команда 'skip previous' успешно отправлена для пользователя {self.user.id}.")
         except Exception as e:
             logger.error(f"SpotifyService: Ошибка при отправке команды 'skip previous' для пользователя {self.user.id}: {e}", exc_info=True)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Не удалось отправить команду 'предыдущий трек' Spotify.")
+            raise CommandError(detail="Не удалось отправить команду 'предыдущий трек' Spotify.")
 
 
     async def get_playback_state(self) -> dict[str, Any] | None:
@@ -347,16 +339,15 @@ class SpotifyService:
                 "duration_ms": duration_ms,
                 "current_track": current_track_details 
             }
-        except HTTPException as e:
-            if e.status_code == status.HTTP_204_NO_CONTENT: 
+        except Exception as e:
+            if e.status_code == 204: 
                 logger.info(f"SpotifyService: Для пользователя {self.user.id} нет активного плеера Spotify (204 No Content).")
                 return None
             logger.error(f"SpotifyService: Ошибка HTTP при получении состояния плеера для пользователя {self.user.id}: {e.detail}", exc_info=True)
             raise e 
         except Exception as e:
             logger.error(f"SpotifyService: Непредвиденная ошибка при получении состояния плеера Spotify для пользователя {self.user.id}: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail="Не удалось получить состояние плеера Spotify из-за внутренней ошибки сервера."
             )
         
