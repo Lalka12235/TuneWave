@@ -339,11 +339,7 @@ class SpotifyService:
                 "duration_ms": duration_ms,
                 "current_track": current_track_details 
             }
-        except Exception as e:
-            if e.status_code == 204: 
-                logger.info(f"SpotifyService: Для пользователя {self.user.id} нет активного плеера Spotify (204 No Content).")
-                return None
-            logger.error(f"SpotifyService: Ошибка HTTP при получении состояния плеера для пользователя {self.user.id}: {e.detail}", exc_info=True)
+        except SpotifyAPIError as e:
             raise e 
         except Exception as e:
             logger.error(f"SpotifyService: Непредвиденная ошибка при получении состояния плеера Spotify для пользователя {self.user.id}: {e}", exc_info=True)

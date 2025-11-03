@@ -2,7 +2,7 @@ import json
 import uuid
 from typing import Any
 
-from fastapi import HTTPException, status
+#from fastapi import HTTPException, status
 
 from app.logger.log_config import logger
 from app.models.room import Room
@@ -22,12 +22,16 @@ from app.schemas.room_member_schemas import RoomMemberResponse
 from app.schemas.room_schemas import RoomResponse
 
 
-from app.services.mapper import RoomMapper,UserMapper,BanMapper,RoomMemberMapper
+from app.services.mappers.mappers import RoomMapper,UserMapper,BanMapper,RoomMemberMapper
 from app.repositories.notification_repo import NotificationRepository
 
 from app.auth.hash import verify_pass
 from app.ws.connection_manager import manager
 from app.schemas.user_schemas import UserResponse
+
+from app.exceptions.exception import ServerError
+from app.exceptions.room_exception import RoomNotFound
+from app.exceptions.ban_exception import UserBannedGlobal
 
 
 
@@ -39,12 +43,20 @@ class RoomMemberService:
         member_room_repo: MemberRoomAssociationRepository,
         ban_repo: BanRepository,
         notify_repo: NotificationRepository,
+        room_mapper: RoomMapper,
+        user_mapper: UserMapper,
+        ban_mapper: BanMapper,
+        room_member_mapper: RoomMemberMapper
     ):
         self.room_repo = room_repo
         self.user_repo = user_repo
         self.member_room_repo = member_room_repo
         self.ban_repo = ban_repo
         self.notify_repo = notify_repo
+        self.room_mapper = room_mapper
+        self.user_mapper = user_mapper
+        self.ban_mapper = ban_mapper
+        self.room_member_mapper = room_member_mapper
 
     
     def verify_room_password(room: Room, password: str) -> bool:
@@ -75,16 +87,10 @@ class RoomMemberService:
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Комната не найдена."
-            )
+            raise RoomNotFound()
         global_ban = self.ban_repo.is_user_banned_global(user.id)
         if global_ban:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, 
-                detail="Вы забанены на платформе."
-            )
+            raise UserBannedGlobal()
 
         local_ban = self.ban_repo.is_user_banned_local(user.id, room_id)
         if local_ban:
@@ -134,7 +140,7 @@ class RoomMemberService:
             await manager.send_personal_message(json.dumps(websocket_message_for_user),user.id)
             await manager.broadcast(room_id,json.dumps(websocket_message_for_room))
 
-            return RoomMapper.to_response(room)
+            return self.room_mapper.to_response(room)
         except Exception as e:
             
             raise HTTPException(
@@ -195,7 +201,6 @@ class RoomMemberService:
                     'room_id': str(room_id)
                 }
         except Exception as e:
-            
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Не удалось покинуть комнату.{e}"
@@ -227,7 +232,7 @@ class RoomMemberService:
         if not members:
             return []
         
-        return [UserMapper.to_response(member.user) for member in members]
+        return [self.user_mapper.to_response(member.user) for member in members]
     
 
     async def update_member_role(
@@ -339,7 +344,7 @@ class RoomMemberService:
             await manager.send_personal_message(json.dumps(role_message_for_user))
             await manager.broadcast(room_id,json.dumps(role_message_for_room))
 
-            return RoomMemberMapper.to_response(final_association_for_response)
+            return self.room_member_mapper.to_response(final_association_for_response)
 
         except HTTPException as e:
             raise e
@@ -550,7 +555,7 @@ class RoomMemberService:
             await manager.broadcast(room_id, json.dumps(ban_notification_for_room))
             
             
-            return BanMapper.to_response(new_ban_entry)
+            return self.ban_mapper.to_response(new_ban_entry)
 
         except HTTPException as e:
             raise e

@@ -1,13 +1,15 @@
 import uuid
 from datetime import datetime
 
-from fastapi import HTTPException, status
 
 from app.logger.log_config import logger
 from app.repositories.chat_repo import ChatRepository
 from app.schemas.message_schemas import MessageCreate, MessageResponse
 from app.repositories.room_repo import RoomRepository
 from app.services.mappers.message_mapper import MessageMapper
+
+from app.exceptions.exception import ServerError
+from app.exceptions.room_exception import RoomNotFound,UserNotInRoom
 
 
 class ChatService():
@@ -35,10 +37,7 @@ class ChatService():
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
-            raise HTTPException(
-                status_code=404,
-                detail='Комната не найдена'
-            )
+            raise RoomNotFound()
         
         if before_timestamp:
             messages = self.chat_repo.get_message_for_room(room_id,limit,before_timestamp)
@@ -67,37 +66,21 @@ class ChatService():
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
-            raise HTTPException(
-                status_code=404,
-                detail='Комната не найдена'
-            )
-        
-        room = self.room_repo.get_room_by_id(room_id)
-        if not room:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Комната не найдена."
-            )
+            raise RoomNotFound()
         
         members = room.member_room
         if not members:
             return []
 
         if user_id not in [member.id for member in members]:
-            raise HTTPException(
-                status_code=403,
-                detail='Вы не находитесь в комнате'
-            )
+            raise UserNotInRoom()
         try:
             new_message = self.chat_repo.create_message(room_id,user_id,message.text)
         except Exception as e:
             logger.error(f'ChatService: произошла ошибка при отправке сообщения от пользователя {user_id} в комнату {room_id}.{e}',exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail=f"Ошибка при создании сообщения: {e}"
             )
             
-        
-
         return self.message_mapper.to_response(new_message)
     

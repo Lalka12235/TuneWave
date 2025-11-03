@@ -1,5 +1,4 @@
 import uuid
-from typing import Any
 
 from app.models import Track,User
 from app.repositories.favorite_track_repo import FavoriteTrackRepository
@@ -120,7 +119,7 @@ class FavoriteTrackService:
             )
     
     
-    def remove_favorite_track(self, user_id: uuid.UUID, spotify_id: str) -> dict[str, Any]:
+    def remove_favorite_track(self, user_id: uuid.UUID, spotify_id: str) -> dict[str, str]:
         """
         Удаляет трек из списка любимых треков пользователя.
 

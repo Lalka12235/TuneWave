@@ -1,5 +1,4 @@
 import uuid
-from typing import Any
 
 from app.logger.log_config import logger
 from app.models.user import User
@@ -98,7 +97,7 @@ class BanService:
             )
         
     
-    def remove_ban(self, data_ban: BanRemove) -> dict[str, Any]:
+    def remove_ban(self, data_ban: BanRemove) -> dict[str, str]:
         """
         Удаляет запись о бане пользователя.
 

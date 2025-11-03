@@ -17,16 +17,11 @@ class SpotifyPublicService:
     Сервис для взаимодействия с публичным Spotify API (без авторизации пользователя),
     используя Client Credentials Flow.
     """
-        
-
-
     SPOTIFY_API_BASE_URL = 'https://api.spotify.com/v1'
     SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/api/token'
     
     _access_token = None
     _token_expires_at = 0
-
-    
 
 
     async def _get_access_token_client(self) -> str:
@@ -63,7 +58,7 @@ class SpotifyPublicService:
         self._access_token = spotify_token.get('access_token')
         self._token_expires_at = int(time.time() + spotify_token.get('expires_in'))
 
-        return self._token_expires_at
+        return self._access_token
     
         
     async def _make_spotify_request(self,method: str,endpoint: str, **kwargs) -> dict[str,str]:

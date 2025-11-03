@@ -10,6 +10,7 @@ from backend.app.services.spotify_service import SpotifyService
 
 class SchedulerService:
     def __init__(self):
+        # todo Impelemnting D(Solid)
         self.scheduler = AsyncIOScheduler()
         self.room_service = RoomService()
 
