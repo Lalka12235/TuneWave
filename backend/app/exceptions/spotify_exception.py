@@ -11,3 +11,7 @@ class SpotifyAuthorizeError(SpotifyAPIError):
 class CommandError(SpotifyAPIError):
     def __init__(self, detail: str):
         super().__init__(detail)
+
+class SpotifyDeviceNotFoundError(SpotifyAPIError):
+    def __init__(self, detail: str):
+        super().__init__(detail)
