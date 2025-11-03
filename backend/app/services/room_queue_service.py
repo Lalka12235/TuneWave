@@ -1,17 +1,10 @@
 import json
 import uuid
-from typing import Any
 
-from fastapi import HTTPException, status
+#from fastapi import HTTPException, status
 
-from app.exceptions.exception import (
-    RoomNotFoundException,
-    TrackAlreadyInQueueException,
-    TrackNotFoundException,
-    UnauthorizedRoomActionException,
-)
 from app.logger.log_config import logger
-from app.models.user import User
+from app.models import User,RoomTrackAssociationModel
 
 from app.repositories.room_repo import RoomRepository
 from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
@@ -19,12 +12,15 @@ from app.repositories.room_track_association_repo import RoomTrackAssociationRep
 from app.schemas.enum import Role
 from app.schemas.room_schemas import TrackInQueueResponse
 
-from app.services.mapper import TrackMapper
+from app.services.mappers.mappers import TrackMapper
 from app.repositories.track_repo import TrackRepository
 
 from app.ws.connection_manager import manager
-from app.models.room_track_association import RoomTrackAssociationModel
 from app.repositories.member_room_association_repo import MemberRoomAssociationRepository
+
+from app.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError,RoomPermissionDeniedError,TrackAlreadyInQueueError
+from app.exceptions.track_exception import TrackNotFound
+from app.exceptions.exception import ServerError
 
 class RoomQueueService:
     def __init__(
@@ -46,7 +42,7 @@ class RoomQueueService:
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
-            raise RoomNotFoundException()
+            raise RoomNotFoundError()
         
         queue_response = []
         if not room.room_track:
@@ -76,41 +72,33 @@ class RoomQueueService:
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
-            raise HTTPException(
-                status_code=404,
-                detail='Комната не найдена'
-            )
+            raise RoomNotFoundError()
         
         user_assoc = self.member_room_repo.get_association_by_ids(current_user.id,room_id)
 
         if not user_assoc:
-            raise HTTPException(
-                status_code=404,
-                detail=''
-            )
+            raise UserNotInRoomError()
 
         is_owner = (room.owner_id == current_user.id)
         is_moderator = (user_assoc and user_assoc.role == Role.MODERATOR.value)
 
         if not is_owner and not is_moderator:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="У вас недостаточно прав.")
+            raise RoomPermissionDeniedError(detail="У вас недостаточно прав.")
         
         track = self.track_repo.get_track_by_spotify_id(track_spotify_id)
         if not track:
-            raise TrackNotFoundException()
+            raise TrackNotFound()
         
         dublicate_in_queue = self.room_track_repo.get_association_by_room_and_track(room_id,track.id)
         if dublicate_in_queue:
-            raise TrackAlreadyInQueueException()
+            raise TrackAlreadyInQueueError()
         
         order_in_queue = self.room_track_repo.get_last_order_in_queue(room_id)
 
         try:
             add_track = self.room_track_repo.add_track_to_queue(room_id,track.id,order_in_queue,current_user.id)
         except Exception as e:
-            
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail=f"Не удалось добавить трек в очередь{e}."
             )
         try:
@@ -141,27 +129,24 @@ class RoomQueueService:
         room_id: uuid.UUID,
         association_id: uuid.UUID,
         current_user_id: uuid.UUID,
-) -> dict[str,Any]:
+) -> dict[str,str]:
         """
         Удаляет конкретный трек из очереди комнаты по ID ассоциации.
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
-            raise RoomNotFoundException()
+            raise RoomNotFoundError()
         
         user_assoc = self.member_room_repo.get_association_by_ids(current_user_id,room_id)
 
         if not user_assoc:
-            raise HTTPException(
-                status_code=404,
-                detail=''
-            )
+            raise UserNotInRoomError()
 
         is_owner = (room.owner_id == current_user_id)
         is_moderator = (user_assoc and user_assoc.role == Role.MODERATOR.value)
 
         if not is_owner and not is_moderator:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="У вас недостаточно прав.")
+            raise RoomPermissionDeniedError(detail="У вас недостаточно прав.")
 
         
         self.db_association = self.room_track_repo.get_association_by_id(association_id)
@@ -176,9 +161,7 @@ class RoomQueueService:
                 self._reorder_queue(room_id)
                 
         except Exception as e:
-            
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            raise ServerError(
                 detail=f"Не удалось удалить трек из очередь{e}."
             )
         try:
@@ -234,10 +217,10 @@ class RoomQueueService:
         """Перемещает трек в очереди."""
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
-            raise RoomNotFoundException()
+            raise RoomNotFoundError()
         
         if room.owner_id != current_user.id:
-            raise  UnauthorizedRoomActionException()
+            raise  RoomPermissionDeniedError()
         
         queue = self.room_track_repo.get_queue_for_room(room_id)
         if not queue:
@@ -264,8 +247,7 @@ class RoomQueueService:
             for index, assoc in enumerate(queue):
                 assoc.order_in_queue = index
         except Exception as e:
-            raise HTTPException(
-                status_code=500,
+            raise ServerError(
                 detail=f'Не удалось перепорядочить очередь.{e}'
             )
 
