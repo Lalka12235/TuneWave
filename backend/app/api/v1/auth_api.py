@@ -13,8 +13,9 @@ from fastapi_limiter.depends import RateLimiter
 from app.config.settings import settings
 from app.schemas.config_schemas import FrontendConfig
 from app.schemas.user_schemas import GoogleOAuthData, SpotifyOAuthData
-from app.services.user_service import UserService
-from app.services.dep import get_user_service
+from app.auth.dep import get_auth_service
+from app.auth.auth import AuthService
+
 
 auth = APIRouter(
     tags=['auth'],
@@ -28,22 +29,22 @@ def get_frontend_config(
     Возвращает публичные конфигурационные данные, необходимые фронтенду.
     """
     return FrontendConfig(
-        google_client_id=settings.GOOGLE_CLIENT_ID,
-        google_redirect_uri=settings.GOOGLE_REDIRECT_URI,
-        google_scopes=settings.GOOGLE_SCOPES,
-        spotify_client_id=settings.SPOTIFY_CLIENT_ID,
-        spotify_redirect_uri=settings.SPOTIFY_REDIRECT_URI,
-        spotify_scopes=settings.SPOTIFY_SCOPES,
+        google_client_id=settings.google.GOOGLE_CLIENT_ID,
+        google_redirect_uri=settings.google.GOOGLE_REDIRECT_URI,
+        google_scopes=settings.google.GOOGLE_SCOPES,
+        spotify_client_id=settings.spotify.SPOTIFY_CLIENT_ID,
+        spotify_redirect_uri=settings.spotify.SPOTIFY_REDIRECT_URI,
+        spotify_scopes=settings.spotify.SPOTIFY_SCOPES,
     )
 
 
 @auth.get('/google/login')
 async def google_login():
     params = {
-        "client_id": settings.GOOGLE_CLIENT_ID,
-        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "client_id": settings.google.GOOGLE_CLIENT_ID,
+        "redirect_uri": settings.google.GOOGLE_REDIRECT_URI,
         "response_type": "code",
-        "scope": settings.GOOGLE_SCOPES,
+        "scope": settings.google.GOOGLE_SCOPES,
         "access_type": "offline", 
         "prompt": "consent"
     }
@@ -52,8 +53,8 @@ async def google_login():
 
 @auth.get('/google/callback')
 async def google_callback(
-    user_service: Annotated[UserService,Depends(get_user_service)],
     code: Annotated[str,Query(..., description="Код авторизации от Google")],
+    auth_service: Annotated[AuthService,Depends(get_auth_service)],
     state: str | None = Query(None, description="Параметр состояния для защиты от CSRF"),
 ) -> RedirectResponse: 
     """
@@ -63,9 +64,9 @@ async def google_callback(
     token_url = "https://oauth2.googleapis.com/token"
     token_data = {
         'code': code,
-        'client_id': settings.GOOGLE_CLIENT_ID,
-        'client_secret': settings.GOOGLE_CLIENT_SECRET,
-        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        'client_id': settings.google.GOOGLE_CLIENT_ID,
+        'client_secret': settings.google.GOOGLE_CLIENT_SECRET,
+        "redirect_uri": settings.google.GOOGLE_REDIRECT_URI,
         "grant_type": "authorization_code",
     }
 
@@ -135,7 +136,7 @@ async def google_callback(
         google_token_expires_at=google_token_expires_at
     )
 
-    user_response, app_token = await user_service.authenticate_user_with_google(google_oauth_data)
+    user_response, app_token = await auth_service.authenticate_user_with_google(google_oauth_data)
 
     redirect_url = "http://127.0.0.1:5500/frontend/auth.html"
     response = RedirectResponse(url=redirect_url)
@@ -155,8 +156,8 @@ async def google_callback(
 
 @auth.get('/spotify/callback')
 async def spotify_callback(
-    user_service: Annotated[UserService,Depends(get_user_service)],
     code: Annotated[str, Query(..., description="Код авторизации от Spotify")],
+    auth_service: Annotated[AuthService,Depends(get_auth_service)],
     state: str | None = Query(None,description="Параметр состояния для защиты от CSRF"),
 ) -> RedirectResponse:
     """
@@ -169,7 +170,7 @@ async def spotify_callback(
     
     # Spotify требует Basic-аутентификацию для этого запроса
     # Кодируем client_id:client_secret в Base64
-    auth_str = f"{settings.SPOTIFY_CLIENT_ID}:{settings.SPOTIFY_CLIENT_SECRET}"
+    auth_str = f"{settings.spotify.SPOTIFY_CLIENT_ID}:{settings.spotify.SPOTIFY_CLIENT_SECRET}"
     encoded_auth_str = base64.b64encode(auth_str.encode()).decode()
 
     token_headers = {
@@ -180,7 +181,7 @@ async def spotify_callback(
     token_data = {
         'grant_type': "authorization_code",
         'code': code,
-        'redirect_uri': settings.SPOTIFY_REDIRECT_URI,
+        'redirect_uri': settings.spotify.SPOTIFY_REDIRECT_URI,
     }
 
     try:
@@ -260,7 +261,7 @@ async def spotify_callback(
         spotify_scope=spotify_scope
     )
 
-    user_response, app_token = await user_service.authenticate_user_with_spotify(spotify_oauth_data)
+    user_response, app_token = await auth_service.authenticate_user_with_spotify(spotify_oauth_data)
 
     redirect_url = "http://127.0.0.1:5500/frontend/auth.html"
     response = RedirectResponse(url=redirect_url)

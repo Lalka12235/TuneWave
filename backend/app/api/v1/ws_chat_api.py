@@ -17,8 +17,8 @@ from app.auth.auth import get_current_user
 from app.models import User
 from app.schemas.message_schemas import MessageCreate
 from app.services.chat_service import ChatService
-from app.services.dep import get_chat_service, get_user_service
-from app.services.user_service import UserService
+from app.services.dep import get_chat_service
+from app.auth.auth import get_user_by_token
 from app.ws.connection_manager import manager
 
 chat_ws = APIRouter(tags=["Chat WS"], prefix="/ws/chat")
@@ -33,9 +33,8 @@ async def get_websocket_user(
             ...,
         ),
     ],
-    user_service: Annotated[UserService,Depends(get_user_service)]
 ):
-    user = user_service.get_user_by_token(token)
+    user = get_user_by_token(token)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -71,7 +71,7 @@ async def get_me(
     Returns:
         UserResponse: Pydantic-модель с данными профиля пользователя.
     """
-    return user_service._map_user_to_response(user)
+    return user_service.user_mapper.to_response(user)
 
 
 @user.put('/{user_id}',response_model=UserResponse)
