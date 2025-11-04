@@ -28,9 +28,11 @@ from app.exceptions.auth_exception import (
     InvalidTokenError,
     TokenDecodeError,
     UserBannedError,
-    UserNotFoundError
 )
+from app.exceptions.user_exception import UserNotFound
 from app.config.settings import settings
+
+
 oauth2_scheme = HTTPBearer(description="Введите ваш JWT-токен (Bearer <TOKEN>)")
 
 
@@ -227,91 +229,84 @@ class AuthService:
             access_token=access_token, token_type="bearer"
         )
 
-    def get_user_by_token(self, token: str) -> User:
-            """_summary_
-
-            Args:
-                db (Session): _description_
-                token (str): _description_
-
-            Returns:
-                User: _description_
-            """
-            try:
-                payload = decode_access_token(token)
-                user_id = payload.get("sub")
-                if not user_id:
-                    logger.warning(
-                        "Ошибка декодирования токена: отсутствует 'sub' (ID пользователя)."
-                    )
-                    raise UserNotAuthorized(
-                        detail="Невалидный токен: отсутствует ID пользователя",
-                    )
-                user = self.user_repo.get_user_by_id(user_id)
-                return user
-            except exceptions.DecodeError:
-                logger.warning("Невалидный JWT-токен: ошибка декодирования.")
-                raise TokenDecodeError()
-
-
-    def get_current_user_id(self,credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]) -> uuid.UUID:
-        """
-        Зависимость FastAPI, которая извлекает ID пользователя из JWT-токена.
-        
+def get_user_by_token(token: str) -> User:
+        """_summary_
         Args:
-            token (str): JWT-токен, извлеченный из заголовка Authorization.
-                        Предоставляется FastAPI благодаря OAuth2PasswordBearer.
-                        
+            db (Session): _description_
+            token (str): _description_
         Returns:
-            uuid.UUID: ID пользователя, извлеченный из токена.
-            
-        Raises:
-            HTTPException: Если токен недействителен, истек или не содержит ID пользователя.
+            User: _description_
         """
-        token = credentials.credentials
-        try: 
-            data = decode_access_token(token)
-            user_id = data.get('sub')
-
-            if user_id is None:
-                logger.warning("JWT-токен не содержит идентификатор пользователя (поле 'sub').")
-                raise InvalidTokenError()
-            
-            try:
-                user_id = uuid.UUID(user_id)
-            except ValueError:
-                logger.warning(f"Недействительный JWT-токен: 'sub' поле '{user_id}' не является валидным UUID.")
-                raise InvalidTokenError(detail="Недействительный токен: некорректный формат идентификатора пользователя.")
-            return user_id
-
+        try:
+            payload = decode_access_token(token)
+            user_id = payload.get("sub")
+            if not user_id:
+                logger.warning(
+                    "Ошибка декодирования токена: отсутствует 'sub' (ID пользователя)."
+                )
+                raise UserNotAuthorized(
+                    detail="Невалидный токен: отсутствует ID пользователя",
+                )
+            user = UserRepository.get_user_by_id(user_id)
+            return user
         except exceptions.DecodeError:
+            logger.warning("Невалидный JWT-токен: ошибка декодирования.")
             raise TokenDecodeError()
-        except Exception as e:
-            logger.error(f'Ошибка проверки JWT: {e}', exc_info=True)
-            raise TokenDecodeError("Ошибка проверки токена")
-
-
-    def get_current_user(
-            self,
-            db: Annotated[Session,Depends(get_db)],
-            user_id:Annotated[uuid.UUID,Depends(get_current_user_id)]
-    ) -> User:
-        """
-        Зависимость FastAPI, которая возвращает объект User для текущего аутентифицированного пользователя.
         
-        Args:
-            db (Session): Сессия базы данных (предоставляется get_db).
-            user_id (uuid.UUID): ID пользователя (предоставляется get_current_user_id).
-            
-        Returns:
-            User: Объект User из базы данных.
-            
-        Raises:
-            HTTPException: Если пользователь не найден в БД или неактивен (401 Unauthorized).
-        """
-        user = self.user_repo.get_user_by_id(db, user_id)
-
-        if not user:
-            logger.warning(f"Пользователь с ID {user_id} не найден в базе данных или неактивен.")
-            raise UserNotFoundError()
-        return user
+    
+def get_current_user_id(credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]) -> uuid.UUID:
+    """
+    Зависимость FastAPI, которая извлекает ID пользователя из JWT-токена.
+    
+    Args:
+        token (str): JWT-токен, извлеченный из заголовка Authorization.
+                    Предоставляется FastAPI благодаря OAuth2PasswordBearer.
+                    
+    Returns:
+        uuid.UUID: ID пользователя, извлеченный из токена.
+        
+    Raises:
+        HTTPException: Если токен недействителен, истек или не содержит ID пользователя.
+    """
+    token = credentials.credentials
+    try: 
+        data = decode_access_token(token)
+        user_id = data.get('sub')
+        if user_id is None:
+            logger.warning("JWT-токен не содержит идентификатор пользователя (поле 'sub').")
+            raise InvalidTokenError()
+        
+        try:
+            user_id = uuid.UUID(user_id)
+        except ValueError:
+            logger.warning(f"Недействительный JWT-токен: 'sub' поле '{user_id}' не является валидным UUID.")
+            raise InvalidTokenError(detail="Недействительный токен: некорректный формат идентификатора пользователя.")
+        return user_id
+    except exceptions.DecodeError:
+        raise TokenDecodeError()
+    except Exception as e:
+        logger.error(f'Ошибка проверки JWT: {e}', exc_info=True)
+        raise TokenDecodeError("Ошибка проверки токена")
+    
+    
+def get_current_user(
+        user_id:Annotated[uuid.UUID,Depends(get_current_user_id)]
+) -> User:
+    """
+    Зависимость FastAPI, которая возвращает объект User для текущего аутентифицированного пользователя.
+    
+    Args:
+        db (Session): Сессия базы данных (предоставляется get_db).
+        user_id (uuid.UUID): ID пользователя (предоставляется get_current_user_id).
+        
+    Returns:
+        User: Объект User из базы данных.
+        
+    Raises:
+        HTTPException: Если пользователь не найден в БД или неактивен (401 Unauthorized).
+    """
+    user = UserRepository.get_user_by_id(user_id)
+    if not user:
+        logger.warning(f"Пользователь с ID {user_id} не найден в базе данных или неактивен.")
+        raise UserNotFound()
+    return user
