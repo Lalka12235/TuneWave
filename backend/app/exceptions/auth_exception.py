@@ -31,10 +31,3 @@ class OAuth2Error(Exception):
         super().__init__(
             detail=detail
         )
-
-class UserNotFoundError(Exception):
-    """Ошибка отсутствия пользователя."""
-    def __init__(self, detail: str = "Пользователь не найден"):
-        super().__init__(
-            detail=detail
-        )

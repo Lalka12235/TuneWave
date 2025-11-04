@@ -11,6 +11,7 @@ import redis.asyncio as redis
 from app.config.settings import settings
 import os
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+from app.error_handler import register_errors_handlers
 
 configure_logging()
 
@@ -82,6 +83,7 @@ app.add_middleware(
 )
 
 app.add_middleware(LogMiddleware)
+register_errors_handlers(app)
 
 for route in V1_ROUTERS:
     app.include_router(route)
