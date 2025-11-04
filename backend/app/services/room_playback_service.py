@@ -31,7 +31,7 @@ from app.exceptions.room_exception import (
 from app.exceptions.spotify_exception import SpotifyAuthorizeError,SpotifyDeviceNotFoundError
 
 
-class RoomService:
+class RoomPlaybackService:
 
     def __init__(
         self,

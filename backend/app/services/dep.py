@@ -19,6 +19,10 @@ from app.services.friendship_service import FriendshipService
 from app.services.notification_service import NotificationService
 from app.services.room_service import RoomService
 from app.services.track_service import TrackService
+from app.services.room_member_service import RoomMemberService
+from app.services.room_playback_service import RoomPlaybackService
+from app.services.room_queue_service import RoomQueueService
+
 
 from typing import Annotated
 
@@ -45,6 +49,7 @@ from app.services.mappers.mappers import (
     get_friendship_mapper,
     get_favorite_track_mapper,
     get_message_mapper,
+    get_room_member_mapper,
 )
 from app.services.mappers.user_mapper import UserMapper
 from app.services.mappers.ban_mapper import BanMapper
@@ -54,6 +59,8 @@ from app.services.mappers.friendship_mapper import FriendshipMapper
 from app.services.mappers.notification_mapper import NotificationMapper
 from app.services.mappers.room_mapper import RoomMapper
 from app.services.mappers.track_mapper import TrackMapper
+from app.services.mappers.mappers import RoomMemberMapper
+
 
 def get_user_service(
     user_repo: Annotated[UserRepository, Depends(get_user_repo)],
@@ -75,7 +82,7 @@ def get_chat_service(
     room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
     message_mapper: Annotated[MessageMapper, Depends(get_message_mapper)],
 ):
-    return ChatService(chat_repo,room_repo, message_mapper)
+    return ChatService(chat_repo, room_repo, message_mapper)
 
 
 def get_favorite_track_service(
@@ -136,4 +143,58 @@ def get_track_service(
     track_repo: Annotated[TrackRepository, Depends(get_track_repo)],
     track_mapper: Annotated[TrackMapper, Depends(get_track_mapper)],
 ):
-    return TrackService(track_repo,track_mapper)
+    return TrackService(track_repo, track_mapper)
+
+
+def get_room_member_service(
+    room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
+    user_repo: Annotated[UserRepository, Depends(get_user_repo)],
+    member_room_repo: Annotated[
+        MemberRoomAssociationRepository, Depends(get_member_room_repo)
+    ],
+    notification_repo: Annotated[
+        NotificationRepository, Depends(get_notification_repo)
+    ],
+    ban_repo: Annotated[BanRepository, Depends(get_ban_repo)],
+    room_mapper: Annotated[RoomMapper, Depends(get_room_mapper)],
+    user_mapper: Annotated[UserMapper, Depends(get_user_mapper)],
+    ban_mapper: Annotated[BanMapper, Depends(get_ban_mapper)],
+    room_member_mapper: Annotated[RoomMemberMapper, Depends(get_room_member_mapper)],
+) -> RoomMemberService:
+    return RoomMemberService(
+        room_repo,
+        user_repo,
+        member_room_repo,
+        notification_repo,
+        ban_repo,
+        room_mapper,
+        user_mapper,
+        ban_mapper,
+        room_member_mapper,
+    )
+
+
+def get_room_playback_service(
+        user_repo: Annotated[UserRepository, Depends(get_user_repo)],
+        room_track_repo: Annotated[RoomTrackAssociationRepository,Depends(get_room_track_repo)],
+        room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
+        member_room_repo: Annotated[
+        MemberRoomAssociationRepository, Depends(get_member_room_repo)
+    ],
+) -> RoomPlaybackService:
+    return RoomPlaybackService(
+        user_repo,room_track_repo,room_repo,member_room_repo
+    )
+
+
+def get_room_queue_service(
+        room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
+        room_track_repo: Annotated[RoomTrackAssociationRepository,Depends(get_room_track_repo)],
+        track_repo: Annotated[TrackRepository, Depends(get_track_repo)],
+        member_room_repo: Annotated[
+        MemberRoomAssociationRepository, Depends(get_member_room_repo)
+    ],
+) -> RoomQueueService:
+    return RoomQueueService(
+        room_repo,room_track_repo,track_repo,member_room_repo
+    )
