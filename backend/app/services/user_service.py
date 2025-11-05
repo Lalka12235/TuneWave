@@ -2,9 +2,9 @@ import uuid
 
 from app.config.settings import settings
 from app.logger.log_config import logger
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.repositories.ban_repo import BanRepository
-from app.repositories.user_repo import UserRepository
+from app.repositories.abc.abc_user_repo import AbstractUserRepository
 from app.schemas.user_schemas import (
     UserCreate,
     UserResponse,
@@ -25,7 +25,7 @@ class UserService:
 
     def __init__(
         self,
-        user_repo: UserRepository,
+        user_repo: AbstractUserRepository,
         ban_repo: BanRepository,
         user_mapper: UserMapper,
     ):
@@ -281,7 +281,7 @@ class UserService:
         }
 
     async def load_avatar(
-        self, user: User, content: bytes, content_type: str, filename: str
+        self, user: UserEntity, content: bytes, content_type: str, filename: str
     ) -> UserResponse:
         """
         Загружает файл аватарки, сохраняет его и обновляет URL в профиле пользователя.

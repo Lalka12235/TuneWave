@@ -2,15 +2,41 @@ from sqlalchemy import select,delete
 from app.models.user import User
 from sqlalchemy.orm import Session
 import uuid
-from typing import Any
+from app.repositories.abc.abc_user_repo import AbstractUserRepository
+from app.schemas.entity import UserEntity
 
-class UserRepository:
+
+class UserRepository(AbstractUserRepository):
+    """
+    Реализация User Репозитория 
+    """
 
     def __init__(self,db : Session):
         self._db = db
+    
+    def from_model_to_entity(self,model: User | None) -> UserEntity | None:
+        return UserEntity(
+            id=model.id,
+            username=model.username,
+            email=model.email,
+            is_email_verified=model.is_email_verified,
+            avatar_url=model.avatar_url,
+            bio=model.bio,
+            google_id=model.google_id,
+            google_image_url=model.google_image_url,
+            google_access_token=model.google_access_token,
+            google_refresh_token=model.google_refresh_token,
+            google_token_expires_at=model.google_token_expires_at,
+            spotify_id=model.spotify_id,
+            spotify_profile_url=model.spotify_profile_url,
+            spotify_image_url=model.spotify_image_url,
+            spotify_access_token=model.spotify_access_token,
+            spotify_refresh_token=model.spotify_refresh_token,
+            spotify_token_expires_at=model.spotify_token_expires_at
+        )
 
     
-    def get_user_by_id(self, user_id: uuid.UUID) -> User | None:
+    def get_user_by_id(self, user_id: uuid.UUID) -> UserEntity | None:
         """
         Получает пользователя по его уникальному ID.
         
@@ -25,10 +51,11 @@ class UserRepository:
             User.id == user_id
         )
         result = self._db.execute(stmt)
-        return result.scalar_one_or_none()
+        result = result.scalar_one_or_none()
+        return self.from_model_to_entity(result)
 
     
-    def get_user_by_email(self, email: str) -> User | None:
+    def get_user_by_email(self, email: str) -> UserEntity | None:
         """
         Получает пользователя по его email.
         
@@ -41,10 +68,11 @@ class UserRepository:
         """
         stmt = select(User).where(User.email == email)
         result = self._db.execute(stmt)
-        return result.scalar_one_or_none()
+        result =  result.scalar_one_or_none()
+        return self.from_model_to_entity(result)
 
     
-    def get_user_by_google_id(self, google_id: str) -> User | None:
+    def get_user_by_google_id(self, google_id: str) -> UserEntity | None:
         """
         Получает пользователя по его Google ID.
         
@@ -57,10 +85,11 @@ class UserRepository:
         """
         stmt = select(User).where(User.google_id == google_id)
         result = self._db.execute(stmt)
-        return result.scalar_one_or_none()
+        result =  result.scalar_one_or_none()
+        return self.from_model_to_entity(result)
 
     
-    def get_user_by_spotify_id(self, spotify_id: str) -> User | None:
+    def get_user_by_spotify_id(self, spotify_id: str) -> UserEntity | None:
         """
         Получает пользователя по его Spotify ID.
         
@@ -73,10 +102,10 @@ class UserRepository:
         """
         stmt = select(User).where(User.spotify_id == spotify_id)
         result = self._db.execute(stmt)
-        return result.scalar_one_or_none()
+        result =  result.scalar_one_or_none()
+        return self.from_model_to_entity(result)
     
-    
-    def create_user(self, user_data: dict[str, Any]) -> User:
+    def create_user(self, user_data: dict[str, str]) -> UserEntity:
         """
         Создает нового пользователя в базе данных.
         
@@ -106,10 +135,10 @@ class UserRepository:
         self._db.add(new_user)
         self._db.flush()
         self._db.refresh(new_user)
-        return new_user
+        return self.from_model_to_entity(new_user)
     
     
-    def update_user(self, user: User, update_data: dict[str, Any]) -> User:
+    def update_user(self, user: UserEntity, update_data: dict[str, str]) -> UserEntity:
         """
         Обновляет существующего пользователя в базе данных.
         
@@ -128,7 +157,7 @@ class UserRepository:
         self._db.add(user)
         self._db.flush()
         self._db.refresh(user)
-        return user
+        return self.from_model_to_entity(user)
     
     def hard_delete_user(self, user_id: uuid.UUID) -> bool:
         """
