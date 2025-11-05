@@ -2,18 +2,31 @@ from sqlalchemy import select,delete
 from sqlalchemy.orm import Session
 from app.models.ban import Ban
 import uuid
+from app.schemas.entity import BanEntity
+from app.repositories.abc.abc_ban_repo import ABCBanRepository
 
 
-class BanRepository:
+class BanRepository(ABCBanRepository):
     """
     Репозиторий для выполнения операций CRUD над моделью Ban.
     Отвечает за управление записями о банах пользователей.
     """
     def __init__(self, db: Session):
         self._db: Session = db
-
     
-    def get_bans_by_admin(self,user_id: uuid.UUID) -> list[Ban]:
+
+    def from_modedl_to_entity(self,model: Ban | None) -> BanEntity | None:
+        return BanEntity(
+            id=model.id,
+            ban_user_id=model.ban_user_id,
+            room_id=model.room_id,
+            reason=model.reason,
+            ban_date=model.ban_date,
+            by_ban_user_id=model.by_ban_user_id,
+        )
+    
+    
+    def get_bans_by_admin(self,user_id: uuid.UUID) -> list[BanEntity]:
         """
         Получает список банов, выданных указанным пользователем (кто забанил).
 
@@ -28,11 +41,11 @@ class BanRepository:
             Ban.by_ban_user_id== user_id,
         )
         result = self._db.execute(stmt)
-        return result.scalars().all()
-    
+        result = result.scalars().all()
+        return self.from_modedl_to_entity(result)
 
     
-    def get_bans_on_user(self,user_id: uuid.UUID) -> list[Ban]:
+    def get_bans_on_user(self,user_id: uuid.UUID) -> list[BanEntity]:
         """
         Получает список банов, полученных указанным пользователем (кого забанили).
 
@@ -47,11 +60,11 @@ class BanRepository:
             Ban.ban_user_id == user_id,
         )
         result = self._db.execute(stmt)
-        return result.scalars().all()
+        result = result.scalars().all()
+        return self.from_modedl_to_entity(result)
     
 
-    
-    def add_ban(self,room_id: uuid.UUID,ban_user_id: uuid.UUID,reason: str,by_ban_user_id: uuid.UUID) -> Ban | None:
+    def add_ban(self,room_id: uuid.UUID,ban_user_id: uuid.UUID,reason: str,by_ban_user_id: uuid.UUID) -> BanEntity | None:
         """
         Добавляет новую запись о бане в базу данных.
 
@@ -74,7 +87,7 @@ class BanRepository:
         self._db.add(new_ban_user)
         self._db.flush()
         self._db.refresh(new_ban_user)
-        return new_ban_user
+        return self.from_modedl_to_entity(new_ban_user)
     
 
     
@@ -119,7 +132,7 @@ class BanRepository:
 
 
     
-    def is_user_banned_global(self, user_id: uuid.UUID) -> Ban | None:
+    def is_user_banned_global(self, user_id: uuid.UUID) -> BanEntity | None:
         """
         Проверяет, забанен ли пользователь ГЛОБАЛЬНО (то есть, во всех комнатах).
 
@@ -135,11 +148,12 @@ class BanRepository:
                 Ban.room_id.is_(None)
         )
         result = self._db.execute(stmt)
-        return result.scalar_one_or_none()
+        result = result.scalar_one_or_none()
+        return self.from_modedl_to_entity(result)
     
     
     
-    def is_user_banned_local(self, user_id: uuid.UUID,room_id: uuid.UUID) -> Ban | None:
+    def is_user_banned_local(self, user_id: uuid.UUID,room_id: uuid.UUID) -> BanEntity | None:
         """
         Проверяет, забанен ли пользователь в КОНКРЕТНОЙ комнате.
 
@@ -156,4 +170,5 @@ class BanRepository:
                 Ban.room_id == room_id
         )
         result = self._db.execute(stmt)
-        return result.scalar_one_or_none()
+        result = result.scalar_one_or_none()
+        return self.from_modedl_to_entity(result)

@@ -2,7 +2,7 @@ import uuid
 
 from app.logger.log_config import logger
 from app.models.user import User
-from app.repositories.ban_repo import BanRepository
+from app.repositories.abc.abc_ban_repo import ABCBanRepository
 from app.schemas.ban_schemas import BanCreate, BanRemove, BanResponse
 from app.services.mappers.ban_mapper import BanMapper
 from app.exceptions.ban_exception import UserBannedInRoom,UserBannedGlobal,UserNotExistingBan
@@ -11,7 +11,7 @@ from app.exceptions.exception import ServerError
 
 class BanService:
 
-    def __init__(self,ban_repo: BanRepository,ban_mapper: BanMapper):
+    def __init__(self,ban_repo: ABCBanRepository,ban_mapper: BanMapper):
         self.ban_repo = ban_repo
         self.ban_mapper = ban_mapper
 

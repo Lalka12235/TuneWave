@@ -11,6 +11,9 @@ if TYPE_CHECKING:
 
 
 class Ban(Base):
+    """
+    Модель базы данных
+    """
     __tablename__ = 'bans'
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, nullable=False, default=uuid.uuid4, unique=True)
