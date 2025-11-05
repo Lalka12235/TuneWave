@@ -2,7 +2,7 @@ from abc import ABC,abstractmethod
 import uuid
 from app.schemas.entity import UserEntity
 
-class AbstractUserRepository(ABC):
+class ABCUserRepository(ABC):
     """
     Абстракция для реализации User Репозитория
     """

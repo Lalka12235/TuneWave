@@ -1,12 +1,12 @@
 import uuid
 
 from app.logger.log_config import logger
-from app.models.user import User
 from app.repositories.abc.abc_ban_repo import ABCBanRepository
 from app.schemas.ban_schemas import BanCreate, BanRemove, BanResponse
 from app.services.mappers.ban_mapper import BanMapper
 from app.exceptions.ban_exception import UserBannedInRoom,UserBannedGlobal,UserNotExistingBan
 from app.exceptions.exception import ServerError
+from app.schemas.entity import UserEntity
 
 
 class BanService:
@@ -53,7 +53,7 @@ class BanService:
     
 
     
-    def add_ban(self,data_ban: BanCreate,current_user: User) -> BanResponse:
+    def add_ban(self,data_ban: BanCreate,current_user: UserEntity) -> BanResponse:
         """
         Добавляет новый бан для пользователя в комнате или глобально.
         Проверяет, не забанен ли пользователь уже.

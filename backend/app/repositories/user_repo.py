@@ -2,11 +2,11 @@ from sqlalchemy import select,delete
 from app.models.user import User
 from sqlalchemy.orm import Session
 import uuid
-from app.repositories.abc.abc_user_repo import AbstractUserRepository
+from app.repositories.abc.abc_user_repo import ABCUserRepository
 from app.schemas.entity import UserEntity
 
 
-class UserRepository(AbstractUserRepository):
+class UserRepository(ABCUserRepository):
     """
     Реализация User Репозитория 
     """
@@ -138,7 +138,7 @@ class UserRepository(AbstractUserRepository):
         return self.from_model_to_entity(new_user)
     
     
-    def update_user(self, user: UserEntity, update_data: dict[str, str]) -> UserEntity:
+    def update_user(self, user_entity: UserEntity, update_data: dict[str, str]) -> UserEntity:
         """
         Обновляет существующего пользователя в базе данных.
         
@@ -151,6 +151,7 @@ class UserRepository(AbstractUserRepository):
         Returns:
             User: Обновленный объект User.
         """
+        user = self._db.execute(select(User).where(User.id == user_entity.id))
         for key, value in update_data.items():
             setattr(user, key, value)
         

@@ -4,7 +4,7 @@ from app.config.settings import settings
 from app.logger.log_config import logger
 from app.schemas.entity import UserEntity
 from app.repositories.ban_repo import BanRepository
-from app.repositories.abc.abc_user_repo import AbstractUserRepository
+from app.repositories.abc.abc_user_repo import ABCUserRepository
 from app.schemas.user_schemas import (
     UserCreate,
     UserResponse,
@@ -25,7 +25,7 @@ class UserService:
 
     def __init__(
         self,
-        user_repo: AbstractUserRepository,
+        user_repo: ABCUserRepository,
         ban_repo: BanRepository,
         user_mapper: UserMapper,
     ):
