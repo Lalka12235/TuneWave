@@ -15,4 +15,4 @@ WORKDIR /app
 
 COPY . .
 
-CMD ["/app/infrastructure/celery/.venv/bin/celery", "-A", "infrastructure.celery.celery.celery_app", "worker", "--loglevel=info"]
+CMD ["celery", "-A", "infrastructure.celery.celery.celery_app", "worker", "--loglevel=info"]

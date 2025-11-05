@@ -11,5 +11,8 @@ from app.api.v1.track_api import track
 from app.api.v1.user_api import user
 from app.api.v1.ws_api import ws
 from app.api.v1.ws_chat_api import chat_ws
+from app.api.v1.room_member_api import room_member
+from app.api.v1.room_playback_api import room_playback
+from app.api.v1.room_queue_api import room_queue
 
-V1_ROUTERS = [auth,user,room,spotify,spotify_public,track,chat_ws,chat,ft,friendship,ban,notification,ws]
+V1_ROUTERS = [auth,user,room,spotify,spotify_public,track,chat_ws,chat,ft,friendship,ban,notification,ws,room_member,room_playback,room_queue]
