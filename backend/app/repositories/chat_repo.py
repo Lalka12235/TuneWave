@@ -3,15 +3,26 @@ from sqlalchemy.orm import Session,joinedload
 from app.models.message import Message
 from datetime import datetime
 import uuid
+from app.repositories.abc.abc_chat_repo import ABCChatRepository
+from app.schemas.entity import MessageEntity
 
 
-class ChatRepository:
+class ChatRepository(ABCChatRepository):
 
     def __init__(self, db: Session):
         self._db: Session = db
 
     
-    def get_message_for_room(self,room_id: uuid.UUID,limit: int = 50,before_timestamp: datetime | None = None) -> list[Message]:
+    def from_model_to_entity(self,model: Message | None) -> MessageEntity | None:
+        return MessageEntity(
+            id=model.id,
+            text=model.text,
+            user_id=model.user_id,
+            room_id=model.room_id,
+            created_at=model.created_at,
+        )
+
+    def get_message_for_room(self,room_id: uuid.UUID,limit: int = 50,before_timestamp: datetime | None = None) -> list[MessageEntity]:
         """Возвращает все сообщения в комнате
 
         Args:
@@ -33,12 +44,12 @@ class ChatRepository:
             stmt = stmt.where(Message.created_at < before_timestamp)
 
         result = self._db.execute(stmt)
-        return result.scalars().all()
-
+        result = result.scalars().all()
+        return self.from_model_to_entity(result)
     
 
     
-    def create_message(self,room_id: uuid.UUID,user_id: uuid.UUID,text: str) -> Message:
+    def create_message(self,room_id: uuid.UUID,user_id: uuid.UUID,text: str) -> MessageEntity:
         """Создает сообщение в базе данных
 
         Args:
@@ -57,4 +68,4 @@ class ChatRepository:
         )
         self._db.add(new_message)
         self._db.flush()
-        return new_message
+        return self.from_model_to_entity(new_message)

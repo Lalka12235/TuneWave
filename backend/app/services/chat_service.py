@@ -1,20 +1,19 @@
 import uuid
 from datetime import datetime
 
-
 from app.logger.log_config import logger
-from app.repositories.chat_repo import ChatRepository
+from app.repositories.abc.abc_chat_repo import ABCChatRepository
 from app.schemas.message_schemas import MessageCreate, MessageResponse
 from app.repositories.room_repo import RoomRepository
 from app.services.mappers.message_mapper import MessageMapper
 
 from app.exceptions.exception import ServerError
-from app.exceptions.room_exception import RoomNotFound,UserNotInRoom
+from app.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError
 
 
 class ChatService():
 
-    def __init__(self,chat_repo: ChatRepository,room_repo: RoomRepository,message_mapper: MessageMapper):
+    def __init__(self,chat_repo: ABCChatRepository,room_repo: RoomRepository,message_mapper: MessageMapper):
         self.chat_repo = chat_repo
         self.room_repo = room_repo
         self.message_mapper = message_mapper
@@ -37,7 +36,7 @@ class ChatService():
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
-            raise RoomNotFound()
+            raise RoomNotFoundError()
         
         if before_timestamp:
             messages = self.chat_repo.get_message_for_room(room_id,limit,before_timestamp)
@@ -66,14 +65,14 @@ class ChatService():
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
-            raise RoomNotFound()
+            raise RoomNotFoundError()
         
         members = room.member_room
         if not members:
             return []
 
         if user_id not in [member.id for member in members]:
-            raise UserNotInRoom()
+            raise UserNotInRoomError()
         try:
             new_message = self.chat_repo.create_message(room_id,user_id,message.text)
         except Exception as e:
