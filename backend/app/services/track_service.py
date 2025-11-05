@@ -1,7 +1,7 @@
 import uuid
 
 from app.logger.log_config import logger
-from app.repositories.track_repo import TrackRepository
+from app.repositories.abc.abc_track_repo import ABCTrackRepository
 from app.schemas.track_schemas import TrackCreate, TrackResponse
 
 from app.services.mappers.track_mapper import TrackMapper
@@ -11,7 +11,7 @@ from app.exceptions.exception import ServerError
 
 class TrackService:
 
-    def __init__(self, track_repo: TrackRepository, track_mapper: TrackMapper):
+    def __init__(self, track_repo: ABCTrackRepository, track_mapper: TrackMapper):
         self.track_repo = track_repo
         self.track_mapper = track_mapper
 
