@@ -1,11 +1,11 @@
 import uuid
 
 from app.logger.log_config import logger
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.repositories.member_room_association_repo import (
     MemberRoomAssociationRepository,
 )
-from app.repositories.room_repo import RoomRepository
+from app.repositories.abc.room_repo import ABCRoomRepository
 
 from app.schemas.enum import Role
 from app.schemas.room_schemas import (
@@ -32,7 +32,7 @@ class RoomService:
 
     def __init__(
         self,
-        room_repo: RoomRepository,
+        room_repo: ABCRoomRepository,
         member_room_repo: MemberRoomAssociationRepository,
         room_mapper: RoomMapper,
     ):
@@ -68,7 +68,7 @@ class RoomService:
 
         return [self.room_mapper.to_response(room) for room in rooms_list]
 
-    async def create_room(self, room_data: RoomCreate, owner: User) -> RoomResponse:
+    async def create_room(self, room_data: RoomCreate, owner: UserEntity) -> RoomResponse:
         """
         Создает новую комнату.
         Включает проверку уникальности имени и хэширование пароля.
@@ -113,7 +113,7 @@ class RoomService:
             )
 
     def update_room(
-        self, room_id: uuid.UUID, update_data: RoomUpdate, current_user: User
+        self, room_id: uuid.UUID, update_data: RoomUpdate, current_user: UserEntity
     ) -> RoomResponse:
         """
         Обновляет существующую комнату.
@@ -161,7 +161,7 @@ class RoomService:
                 detail=f"Ошибка при обновлении комнаты: {e}",
             )
 
-    def delete_room(self, room_id: uuid.UUID, owner: User) -> dict[str, str]:
+    def delete_room(self, room_id: uuid.UUID, owner: UserEntity) -> dict[str, str]:
         """_summary_
 
         Args:
@@ -196,7 +196,7 @@ class RoomService:
                 detail=f"Не удалось удалить комнату. {e}",
             )
 
-    async def get_user_rooms(self, user: User) -> list[RoomResponse]:
+    async def get_user_rooms(self, user: UserEntity) -> list[RoomResponse]:
         """
         Получает список всех комнат, в которых состоит данный пользователь.
 
