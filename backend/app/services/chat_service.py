@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from app.logger.log_config import logger
-from app.repositories.abc.abc_chat_repo import ABCChatRepository
+from app.repositories.abc.chat_repo import ABCChatRepository
 from app.schemas.message_schemas import MessageCreate, MessageResponse
 from app.repositories.room_repo import RoomRepository
 from app.services.mappers.message_mapper import MessageMapper

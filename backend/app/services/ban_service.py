@@ -1,7 +1,7 @@
 import uuid
 
 from app.logger.log_config import logger
-from app.repositories.abc.abc_ban_repo import ABCBanRepository
+from app.repositories.abc.ban_repo import ABCBanRepository
 from app.schemas.ban_schemas import BanCreate, BanRemove, BanResponse
 from app.services.mappers.ban_mapper import BanMapper
 from app.exceptions.ban_exception import UserBannedInRoom,UserBannedGlobal,UserNotExistingBan

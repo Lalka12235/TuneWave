@@ -2,7 +2,7 @@ from sqlalchemy import select,delete
 from sqlalchemy.orm import Session
 from app.models.track import Track
 import uuid
-from app.repositories.abc.abc_track_repo import ABCTrackRepository
+from app.repositories.abc.track_repo import ABCTrackRepository
 from app.schemas.entity import TrackEntity
 
 

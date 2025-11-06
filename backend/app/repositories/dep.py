@@ -9,22 +9,27 @@ from app.repositories.room_repo import RoomRepository
 from app.repositories.track_repo import TrackRepository
 from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
 
+from app.repositories.abc.ban_repo import ABCBanRepository
+from app.repositories.abc.chat_repo import ABCChatRepository
+from app.repositories.abc.track_repo import ABCTrackRepository
+from app.repositories.abc.user_repo import ABCUserRepository
+
 from app.config.session import get_db
 from fastapi import Depends
 from typing import Annotated
 from sqlalchemy.orm import Session
 
 
-def get_user_repo(db: Annotated[Session, Depends(get_db)]):
+def get_user_repo(db: Annotated[Session, Depends(get_db)]) -> ABCUserRepository:
     """Get the user repository."""
     return UserRepository(db)
 
 
-def get_ban_repo(db: Annotated[Session, Depends(get_db)]):
+def get_ban_repo(db: Annotated[Session, Depends(get_db)]) -> ABCBanRepository:
     """Get the ban repository."""
     return BanRepository(db)
 
-def get_chat_repo(db: Annotated[Session, Depends(get_db)]):
+def get_chat_repo(db: Annotated[Session, Depends(get_db)]) -> ABCChatRepository:
     """Get the chat repository."""
     return ChatRepository(db)
 
@@ -48,7 +53,7 @@ def get_room_repo(db: Annotated[Session, Depends(get_db)]):
     """Get the room repository."""
     return RoomRepository(db)
 
-def get_track_repo(db: Annotated[Session, Depends(get_db)]):
+def get_track_repo(db: Annotated[Session, Depends(get_db)]) -> ABCTrackRepository:
     """Get the track repository."""
     return TrackRepository(db)
 

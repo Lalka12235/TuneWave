@@ -3,8 +3,8 @@ import uuid
 from app.config.settings import settings
 from app.logger.log_config import logger
 from app.schemas.entity import UserEntity
-from app.repositories.ban_repo import BanRepository
-from app.repositories.abc.abc_user_repo import ABCUserRepository
+from app.repositories.abc.ban_repo import ABCBanRepository
+from app.repositories.abc.user_repo import ABCUserRepository
 from app.schemas.user_schemas import (
     UserCreate,
     UserResponse,
@@ -26,7 +26,7 @@ class UserService:
     def __init__(
         self,
         user_repo: ABCUserRepository,
-        ban_repo: BanRepository,
+        ban_repo: ABCBanRepository,
         user_mapper: UserMapper,
     ):
         self.user_repo = user_repo
@@ -42,7 +42,7 @@ class UserService:
     ):
         """
         Вспомогательный метод для проверки существования пользователя по различным идентификаторам.
-        Если пользователь найден (и его ID не совпадает с exclude_user_id), выбрасывает HTTPException (409 Conflict).
+        Если пользователь найден (и его ID не совпадает с exclude_user_id), выбрасывает (409 Conflict).
         """
         if email:
             user = self.user_repo.get_user_by_email(email)

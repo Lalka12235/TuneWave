@@ -161,7 +161,7 @@ class FriendshipService:
                 json.dumps(notification_data), str(accepter_id)
             )
             return self.friendship_mapper.to_response(friendship)
-        except Exception as e:
+        except Exception:
             logger.error(
                 f"FriendshipService: Непредвиденная ошибка при отправке заявки на дружбу от {requester_id} к {accepter_id}.",
                 exc_info=True,
@@ -242,7 +242,7 @@ class FriendshipService:
             )
 
             return {"status": "success", "message": "Дружба принята"}
-        except Exception as e:
+        except Exception:
             logger.error(
                 "RoomService: Неизвестная ошибка при приглашении пользователя "
                 "в комнату .",
@@ -305,7 +305,7 @@ class FriendshipService:
                 json.dumps(notification_data_requester), str(friendship.requester_id)
             )
             return {"status": "success", "message": "Friend request accepted"}
-        except Exception as e:
+        except Exception:
             logger.error(
                 f"FriendshipService: Непредвиденная ошибка при отклонении запроса на дружбу {friendship_id} пользователем {current_accepter_id}.",
                 exc_info=True,
@@ -382,7 +382,7 @@ class FriendshipService:
                 json.dumps(notification_data), target_user_id_for_notification
             )
             return {"action": "delete friendship", "status": "success"}
-        except Exception as e:
+        except Exception:
             logger.error(
                 f"FriendshipService: Непредвиденная ошибка при отклонении запроса на дружбу {friendship_id} пользователем .",
                 exc_info=True,

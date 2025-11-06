@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.ban import Ban
 import uuid
 from app.schemas.entity import BanEntity
-from app.repositories.abc.abc_ban_repo import ABCBanRepository
+from app.repositories.abc.ban_repo import ABCBanRepository
 
 
 class BanRepository(ABCBanRepository):

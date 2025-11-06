@@ -1,7 +1,7 @@
 import uuid
 
 from app.logger.log_config import logger
-from app.repositories.abc.abc_track_repo import ABCTrackRepository
+from app.repositories.abc.track_repo import ABCTrackRepository
 from app.schemas.track_schemas import TrackCreate, TrackResponse
 
 from app.services.mappers.track_mapper import TrackMapper

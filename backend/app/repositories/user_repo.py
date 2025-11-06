@@ -2,7 +2,7 @@ from sqlalchemy import select,delete
 from app.models.user import User
 from sqlalchemy.orm import Session
 import uuid
-from app.repositories.abc.abc_user_repo import ABCUserRepository
+from app.repositories.abc.user_repo import ABCUserRepository
 from app.schemas.entity import UserEntity
 
 
