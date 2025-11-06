@@ -2,9 +2,9 @@ import uuid
 
 
 from app.logger.log_config import logger
-from app.repositories.notification_repo import NotificationRepository
-from app.repositories.room_repo import RoomRepository
-from app.repositories.user_repo import UserRepository
+from app.repositories.abc.notification_repo import ABCNotificationRepository
+from app.repositories.abc.room_repo import ABCRoomRepository
+from app.repositories.abc.user_repo import ABCUserRepository
 from app.schemas.enum import NotificationType
 from app.schemas.notification_schemas import NotificationResponse
 
@@ -12,13 +12,13 @@ from app.services.mappers.notification_mapper import NotificationMapper
 
 from app.exceptions.exception import ServerError
 from app.exceptions.user_exception import UserNotFound
-from app.exceptions.room_exception import RoomNotFound
+from app.exceptions.room_exception import RoomNotFoundError
 from app.exceptions.notification_exception import NotificationNotFound,NotificationNotPermission
 
 
 class NotificationService:
 
-    def __init__(self,notify_repo: NotificationRepository,user_repo: UserRepository,room_repo: RoomRepository,notify_mapper: NotificationMapper):
+    def __init__(self,notify_repo: ABCNotificationRepository,user_repo: ABCUserRepository,room_repo: ABCRoomRepository,notify_mapper: NotificationMapper):
         self.notify_repo = notify_repo
         self.user_repo = user_repo
         self.room_repo = room_repo
@@ -38,7 +38,7 @@ class NotificationService:
         """Вспомогательный метод для проверки существования комнаты."""
         room = self.room_repo.get_room_by_id( room_id)
         if not room:
-            raise RoomNotFound()
+            raise RoomNotFoundError()
         return room
         
 

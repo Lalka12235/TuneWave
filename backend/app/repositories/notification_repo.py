@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session,joinedload
 from app.models.notification import Notification
 import uuid
 from app.schemas.enum import NotificationType
+from app.schemas.entity import NotificationEntity
+from app.repositories.abc.notification_repo import ABCNotificationRepository
 
 
-class NotificationRepository:
+class NotificationRepository(ABCNotificationRepository):
     """
     Репозиторий для выполнения операций CRUD над моделью Notification.
     Отвечает за управление записями уведомлений.
@@ -15,8 +17,21 @@ class NotificationRepository:
         self._db = db
 
 
+    def from_model_to_entity(self,model: Notification) -> NotificationEntity:
+        return NotificationEntity(
+            id=model.id,
+            user_id=model.user_id,
+            sender_id=model.sender_id,
+            room_id=model.room_id,
+            notification_type=model.notification_type,
+            message=model.message,
+            is_read=model.is_read,
+            related_object_id=model.related_object_id,
+            created_at=model.created_at
+        )
+
     
-    def get_notification_by_id(self,notification_id: uuid.UUID) -> Notification | None:
+    def get_notification_by_id(self,notification_id: uuid.UUID) -> NotificationEntity | None:
         """
         Получает запись об уведомлении по её ID.
         Загружает отношения user, sender и room для удобства.
@@ -33,12 +48,12 @@ class NotificationRepository:
                 joinedload(Notification.sender),
                 joinedload(Notification.room)
         ).where(Notification.id == notification_id)
-        result = self._db.execute(stmt)
-        return result.scalar_one_or_none()
+        result = self._db.execute(stmt).scalar_one_or_none()
+        return self.from_model_to_entity(result)
     
 
     
-    def get_user_notification(self,user_id: uuid.UUID,limit: int = 10, offset: int = 0) -> list[Notification]:
+    def get_user_notification(self,user_id: uuid.UUID,limit: int = 10, offset: int = 0) -> list[NotificationEntity]:
         """
         Получает список уведомлений для указанного пользователя.
         Может быть отфильтрован по статусу прочитанности.
@@ -61,8 +76,8 @@ class NotificationRepository:
             ).order_by(Notification.created_at.desc()
             ).limit(limit
             ).offset(offset)
-        result = self._db.execute(stmt)
-        return result.scalars().all()
+        result = self._db.execute(stmt).scalars().all()
+        return self.from_model_to_entity(result)
     
 
     
@@ -74,7 +89,7 @@ class NotificationRepository:
         sender_id: uuid.UUID | None = None,
         room_id: uuid.UUID | None = None,
         related_object_id: uuid.UUID | None = None,
-    ) -> Notification:
+    ) -> NotificationEntity:
         """
         Создает новую запись об уведомлении.
 
@@ -100,7 +115,8 @@ class NotificationRepository:
         )
         self._db.add(new_notification)
         self._db.flush()
-        return new_notification
+        self._db.refresh(new_notification)
+        return self.from_model_to_entity(new_notification)
     
 
     
