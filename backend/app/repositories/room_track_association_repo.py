@@ -2,13 +2,26 @@ from sqlalchemy import select,delete,func
 from sqlalchemy.orm import Session,joinedload
 from app.models.room_track_association import RoomTrackAssociationModel
 import uuid
+from app.schemas.entity import RoomTrackAssociationEntity
+from app.repositories.abc.room_track_association_repo import ABCRoomTrackAssociationRepository
 
 
 
-class RoomTrackAssociationRepository:
+class RoomTrackAssociationRepository(ABCRoomTrackAssociationRepository):
 
     def __init__(self, db: Session):
         self._db = db
+
+    
+    def from_model_to_entity(self,model: RoomTrackAssociationModel) -> RoomTrackAssociationEntity:
+        return RoomTrackAssociationEntity(
+            id=model.id,
+            room_id=model.room_id,
+            track_id=model.track_id,
+            order_in_queue=model.order_in_queue,
+            added_at=model.added_at,
+            added_by_user_id=model.added_by_user_id
+        )
 
     
     def add_track_to_queue(
@@ -17,7 +30,7 @@ class RoomTrackAssociationRepository:
         track_id: uuid.UUID,
         order_in_queue: int,
         user_id: uuid.UUID,
-) -> RoomTrackAssociationModel:
+) -> RoomTrackAssociationEntity:
         """Добавляет новый трек в очередь конкретной комнаты."""
         new_room_track = RoomTrackAssociationModel(
             room_id=room_id,
@@ -27,11 +40,12 @@ class RoomTrackAssociationRepository:
         )
         self._db.add(new_room_track)
         self._db.flush()
-        return new_room_track
+        self._db.refresh(new_room_track)
+        return self.from_model_to_entity(new_room_track)
     
 
     
-    def get_queue_for_room(self,room_id: uuid.UUID) -> list[RoomTrackAssociationModel]:
+    def get_queue_for_room(self,room_id: uuid.UUID) -> list[RoomTrackAssociationEntity]:
         """Получает все треки, находящиеся в очереди данной комнаты, отсортированные по порядку."""
         stmt = select(RoomTrackAssociationModel).where(
             RoomTrackAssociationModel.room_id == room_id,
@@ -39,7 +53,8 @@ class RoomTrackAssociationRepository:
                 joinedload(RoomTrackAssociationModel.track),
                 joinedload(RoomTrackAssociationModel.user)
             )
-        return self._db.execute(stmt).scalars().all()
+        result = self._db.execute(stmt).scalars().all()
+        return self.from_model_to_entity(result)
     
 
     
@@ -64,7 +79,7 @@ class RoomTrackAssociationRepository:
     
 
     
-    def get_association_by_id(self, association_id: uuid.UUID) -> RoomTrackAssociationModel | None:
+    def get_association_by_id(self, association_id: uuid.UUID) -> RoomTrackAssociationEntity | None:
         """Получает ассоциацию трека с комнатой по её ID."""
         stmt = select(RoomTrackAssociationModel).where(
             RoomTrackAssociationModel.id == association_id
@@ -72,7 +87,8 @@ class RoomTrackAssociationRepository:
                 joinedload(RoomTrackAssociationModel.track),
                 joinedload(RoomTrackAssociationModel.user)
             )
-        return self._db.execute(stmt).scalars().first()
+        result = self._db.execute(stmt).scalars().first()
+        return self.from_model_to_entity(result)
 
 
     
@@ -86,7 +102,7 @@ class RoomTrackAssociationRepository:
     
 
     
-    def get_association_by_room_and_track(self, room_id: uuid.UUID,track_id: uuid.UUID) -> RoomTrackAssociationModel | None:
+    def get_association_by_room_and_track(self, room_id: uuid.UUID,track_id: uuid.UUID) -> RoomTrackAssociationEntity | None:
         """Получает ассоциацию трека с комнатой по её ID."""
         stmt = select(RoomTrackAssociationModel).where(
             RoomTrackAssociationModel.room_id == room_id,
@@ -95,11 +111,12 @@ class RoomTrackAssociationRepository:
                 joinedload(RoomTrackAssociationModel.track),
                 joinedload(RoomTrackAssociationModel.user)
             )
-        return self._db.execute(stmt).scalars().first()
+        result = self._db.execute(stmt).scalars().first()
+        return self.from_model_to_entity(result)
     
 
     
-    def get_first_track_in_queue(self,room_id: uuid.UUID) -> RoomTrackAssociationModel | None:
+    def get_first_track_in_queue(self,room_id: uuid.UUID) -> RoomTrackAssociationEntity | None:
         """_summary_
 
         Args:
@@ -115,4 +132,5 @@ class RoomTrackAssociationRepository:
                 joinedload(RoomTrackAssociationModel.track),
                 joinedload(RoomTrackAssociationModel.user)
             ).limit(1)
-        return self._db.execute(stmt).scalars().first()
+        result = self._db.execute(stmt).scalars().first()
+        return self.from_model_to_entity(result)
