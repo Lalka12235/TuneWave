@@ -1,8 +1,8 @@
 import uuid
 
-from app.models import Track,User
-from app.repositories.favorite_track_repo import FavoriteTrackRepository
-from app.repositories.track_repo import TrackRepository
+from app.schemas.entity import UserEntity,TrackEntity
+from app.repositories.abc.favorite_track_repo import ABCFavoriteTrackRepository
+from app.repositories.abc.track_repo import ABCTrackRepository
 from app.schemas.favorite_track_schemas import FavoriteTrackResponse
 from app.schemas.track_schemas import TrackCreate
 from app.services.spotify_public_service import SpotifyPublicService
@@ -15,14 +15,17 @@ from app.exceptions.favorite_track_exception import TrackNotFound,TrackInFavorit
 
 
 class FavoriteTrackService:
+    """
+    Реализует бизнес логику для работы с любимыми треками
+    """
 
-    def __init__(self,ft_repo: FavoriteTrackRepository,track_repo: TrackRepository,favorite_track_mapper: FavoriteTrackMapper):
+    def __init__(self,ft_repo: ABCFavoriteTrackRepository,track_repo: ABCTrackRepository,favorite_track_mapper: FavoriteTrackMapper):
         self.ft_repo = ft_repo
         self.track_repo = track_repo
         self.favorite_track_mapper = favorite_track_mapper
 
 
-    async def _get_or_create_track(self, spotify_id: str,current_user: User | None = None) -> Track:
+    async def _get_or_create_track(self, spotify_id: str,current_user: UserEntity | None = None) -> TrackEntity:
         """
         Ищет трек в нашей базе данных по Spotify ID. Если не находит,
         получает информацию о треке из Spotify API и сохраняет его в нашей БД.

@@ -1,16 +1,26 @@
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session,joinedload
-from app.models.favorite_track import FavoriteTrack
+from app.models import FavoriteTrack
 import uuid
+from app.schemas.entity import FavoriteTrackEntity
+from app.repositories.abc.favorite_track_repo import ABCFavoriteTrackRepository
 
 
-class FavoriteTrackRepository:
+class FavoriteTrackRepository(ABCFavoriteTrackRepository):
 
     def __init__(self, db: Session):
         self._db = db
 
     
-    def get_favorite_tracks(self, user_id: uuid.UUID) -> list[FavoriteTrack]:
+    def from_model_to_entity(self,model: FavoriteTrack) -> FavoriteTrackEntity:
+        return FavoriteTrackEntity(
+            user_id=model.user_id,
+            track_id=model.track_id,
+            added_at=model.added_at
+        )
+
+    
+    def get_favorite_tracks(self, user_id: uuid.UUID) -> list[FavoriteTrackEntity]:
         """
         Получает все записи любимых треков для указанного пользователя,
         включая связанные объекты треков.
@@ -29,12 +39,12 @@ class FavoriteTrackRepository:
         ).options(
             joinedload(FavoriteTrack.track)
         )
-        result = self._db.execute(stmt)
-        return result.scalars().all()
+        result = self._db.execute(stmt).scalars().all()
+        return self.from_model_to_entity(result)
     
 
     
-    def add_favorite_track(self,user_id: uuid.UUID,track_id: uuid.UUID) -> FavoriteTrack:
+    def add_favorite_track(self,user_id: uuid.UUID,track_id: uuid.UUID) -> FavoriteTrackEntity:
         """
         Добавляет трек в список избранных треков пользователя.
 
@@ -54,7 +64,7 @@ class FavoriteTrackRepository:
         self._db.add(new_favorite_track)
         self._db.flush()
         self._db.refresh(new_favorite_track)
-        return new_favorite_track
+        return self.from_model_to_entity(new_favorite_track)
     
 
     
