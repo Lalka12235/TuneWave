@@ -1,5 +1,5 @@
 from sqlalchemy import select,delete
-from app.models.user import User
+from app.models import User
 from sqlalchemy.orm import Session
 import uuid
 from app.repositories.abc.user_repo import ABCUserRepository

@@ -6,7 +6,7 @@ from typing import Any
 
 class ABCRoomRepository(ABC):
     """
-    Абстракция для Room Репозитория
+    Абстрактный репозиторий для работы с комнатами.
     """
 
     @abstractmethod

@@ -5,6 +5,9 @@ from datetime import datetime
 
 
 class ABCChatRepository(ABC):
+    """
+    Абстрактный репозиторий для работы с чатом комнаты.
+    """
 
     @abstractmethod
     def get_message_for_room(self,room_id: uuid.UUID,limit: int = 50,before_timestamp: datetime | None = None) -> list[MessageEntity]:

@@ -4,6 +4,9 @@ from app.schemas.entity import BanEntity
 
 
 class ABCBanRepository(ABC):
+    """
+    Абстрактный репозиторий для работы с банами пользователей.
+    """
     
     @abstractmethod
     def get_bans_by_admin(self,user_id: uuid.UUID) -> list[BanEntity]:

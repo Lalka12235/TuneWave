@@ -4,6 +4,9 @@ from app.schemas.entity import RoomTrackAssociationEntity
 
 
 class ABCRoomTrackAssociationRepository(ABC):
+    """
+    Абстрактный репозиторий для работы с треками комнаты.
+    """
 
     @abstractmethod
     def add_track_to_queue(

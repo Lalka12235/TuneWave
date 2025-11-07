@@ -1,14 +1,13 @@
-from app.models.room import Room
+from app.models import Room,Member_room_association,RoomTrackAssociationModel
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session,joinedload
 import uuid
 from typing import Any
-from app.models.member_room_association import Member_room_association
-from app.models.room_track_association import RoomTrackAssociationModel
 from app.schemas.entity import RoomEntity
+from app.repositories.abc.room_repo import ABCRoomRepository
 
 
-class RoomRepository:
+class RoomRepository(ABCRoomRepository):
     """
     Репозиторий для выполнения операций CRUD (Create, Read, Update, Delete)
     над моделью Room в базе данных.
@@ -16,6 +15,24 @@ class RoomRepository:
 
     def __init__(self, db: Session):
         self._db = db
+
+    
+    def from_model_to_entity(self,model: Room) -> RoomEntity:
+        return RoomEntity(
+            id=model.id,
+            name=model.name,
+            max_members=model.max_members,
+            owner_id=model.owner_id,
+            is_private=model.is_private,
+            password_hash=model.password_hash,
+            current_track_id=model.current_track_id,
+            current_track_position_ms=model.current_track_position_ms,
+            is_playing=model.is_playing,
+            created_at=model.created_at,
+            playback_host_id=model.playback_host_id,
+            active_spotify_device_id=model.active_spotify_device_id,
+            current_playing_track_association_id=model.current_playing_track_association_id
+        )
 
     
     def get_room_by_id(self, room_id: uuid.UUID) -> RoomEntity | None:
@@ -34,8 +51,8 @@ class RoomRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         ).filter(Room.id == room_id)
-        result = self._db.execute(stmt)
-        return result.unique().scalar_one_or_none()
+        result = self._db.execute(stmt).unique().scalar_one_or_none()
+        return self.from_model_to_entity(result)
     
     
     def get_room_by_name(self, name: str) -> RoomEntity | None:
@@ -54,8 +71,8 @@ class RoomRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         ).filter(Room.name == name)
-        result = self._db.execute(stmt)
-        return result.unique().scalar_one_or_none()
+        result = self._db.execute(stmt).unique().scalar_one_or_none()
+        return self.from_model_to_entity(result)
 
     
     def get_all_rooms(self) -> list[RoomEntity]:
@@ -73,8 +90,8 @@ class RoomRepository:
             joinedload(Room.member_room).joinedload(Member_room_association.user),
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         )
-        result = self._db.execute(stmt)
-        return result.unique().scalars().all()
+        result = self._db.execute(stmt).unique().scalars().all()
+        return self.from_model_to_entity(result)
     
 
 
@@ -95,7 +112,7 @@ class RoomRepository:
         self._db.add(new_room)
         self._db.flush()
         self._db.refresh(new_room)
-        return new_room
+        return self.from_model_to_entity(new_room)
     
     
     def update_room(self,room: RoomEntity, update_data: dict[str,Any]) -> RoomEntity:
@@ -112,7 +129,7 @@ class RoomRepository:
         """
         for key,value in update_data.items():
             setattr(room,key,value)
-        return room
+        return self.from_model_to_entity(room)
 
 
     
@@ -143,8 +160,8 @@ class RoomRepository:
         ).options(
             joinedload(Room.room_track),
         )
-        result = self._db.execute(stmt)
-        return result.scalars().all()
+        result = self._db.execute(stmt).scalars().all()
+        return self.from_model_to_entity(result)
     
 
     
@@ -163,5 +180,5 @@ class RoomRepository:
         ).options(
             joinedload(Room.owner),
         )
-        result = self._db.execute(stmt)
-        return result.scalar_one_or_none()
+        result = self._db.execute(stmt).scalar_one_or_none()
+        return self.from_model_to_entity(result)

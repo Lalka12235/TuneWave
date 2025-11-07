@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete,update
 from sqlalchemy.orm import Session,joinedload
-from app.models.notification import Notification
+from app.models import Notification
 import uuid
 from app.schemas.enum import NotificationType
 from app.schemas.entity import NotificationEntity

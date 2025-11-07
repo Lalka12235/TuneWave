@@ -7,7 +7,7 @@ from app.schemas.enum import NotificationType
 
 class ABCNotificationRepository(ABC):
     """
-    Абстракция для Notification Репозитория
+    Абстрактный репозиторий для работы с уведомлениями.
     """
 
     @abstractmethod

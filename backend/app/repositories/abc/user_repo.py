@@ -4,7 +4,7 @@ from app.schemas.entity import UserEntity
 
 class ABCUserRepository(ABC):
     """
-    Абстракция для реализации User Репозитория
+    Абстрактный репозиторий для работы с пользователем.
     """
     
     @abstractmethod

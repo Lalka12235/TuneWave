@@ -5,7 +5,7 @@ from app.schemas.entity import MemberRoomEntity,RoomEntity
 
 class ABCMemberRoomAssociationRepository(ABC):
     """
-    Абстракция для Member Room Репозитория
+    Абстрактный репозиторий для работы с участниками комнаты.
     """
     
     @abstractmethod

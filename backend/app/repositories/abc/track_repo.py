@@ -4,6 +4,9 @@ from app.schemas.entity import TrackEntity
 
 
 class ABCTrackRepository(ABC):
+    """
+    Абстрактный репозиторий для работы с треками.
+    """
 
     @abstractmethod
     def get_track_by_id(self,track_id: uuid.UUID) -> TrackEntity | None:
