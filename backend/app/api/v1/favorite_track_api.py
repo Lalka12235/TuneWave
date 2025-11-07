@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
 from app.logger.log_config import logger
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.schemas.favorite_track_schemas import FavoriteTrackAdd, FavoriteTrackResponse
 from app.services.favorite_track_service import FavoriteTrackService
 from app.services.dep import get_favorite_track_service
@@ -19,7 +19,7 @@ ft = APIRouter(
     prefix='/favorites'
 )
 
-user_dependencies = Annotated[User,Depends(get_current_user)]
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 
 
 def cache(key_generator: Callable, expiration: int = 300):

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Path, Query
 from fastapi_limiter.depends import RateLimiter
 
 from app.auth.auth import get_current_user
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.schemas.message_schemas import MessageCreate, MessageResponse
 from app.services.chat_service import ChatService
 from app.services.dep import get_chat_service
@@ -16,7 +16,7 @@ chat = APIRouter(
     prefix='/chat'
 )
 
-user_dependencies = Annotated[User,Depends(get_current_user)]
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 
 
 @chat.get('/{room_id}',response_model=list[MessageResponse],dependencies=[Depends(RateLimiter(times=10, seconds=60))])

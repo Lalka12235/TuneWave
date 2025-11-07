@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
 from app.logger.log_config import logger
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.schemas.ban_schemas import BanCreate, BanResponse
 from app.schemas.room_member_schemas import JoinRoomRequest,RoomMemberResponse,RoomMemberRoleUpdate
 from app.schemas.room_schemas import (
@@ -22,7 +22,7 @@ from app.services.dep import get_room_member_service
 
 room_member = APIRouter(tags=["Room"], prefix="/rooms")
 
-user_dependencies = Annotated[User, Depends(get_current_user)]
+user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
 
 def cache(key_generator: Callable, expiration: int = 300):
     def decorator(func):

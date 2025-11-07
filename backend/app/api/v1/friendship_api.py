@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
 from app.logger.log_config import logger
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.schemas.friendship_schemas import FriendshipRequestCreate, FriendshipResponse
 from app.services.friendship_service import FriendshipService
 from app.services.dep import get_friendship_service
@@ -19,7 +19,7 @@ friendship = APIRouter(
     prefix='/friendships'
 )
 
-user_dependencies = Annotated[User,Depends(get_current_user)]
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 
 
 def cache(key_generator: Callable, expiration: int = 300):

@@ -4,13 +4,13 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Body, Depends,status
 
 from app.auth.auth import get_current_user
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.services.room_playback_service import RoomPlaybackService
 from app.services.dep import get_room_playback_service
 
 room_playback = APIRouter(tags=["Room"], prefix="/rooms")
 
-user_dependencies = Annotated[User, Depends(get_current_user)]
+user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
 
 
 @room_playback.put(

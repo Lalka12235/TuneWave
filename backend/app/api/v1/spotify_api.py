@@ -4,7 +4,7 @@ from app.services.spotify_service import SpotifyService
 from fastapi import APIRouter, Depends, Query
 
 from app.auth.auth import get_current_user
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.services.spotify_public_service import SpotifyPublicService
 
 spotify = APIRouter(
@@ -12,7 +12,7 @@ spotify = APIRouter(
     prefix='/spotify'
 )
 
-user_dependencies = Annotated[User, Depends(get_current_user)]
+user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
 
 
 @spotify.get('/search/tracks',response_model=dict[str,Any])

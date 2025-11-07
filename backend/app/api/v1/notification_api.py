@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Path, Query, status
 from fastapi_limiter.depends import RateLimiter
 
 from app.auth.auth import get_current_user
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.schemas.notification_schemas import NotificationResponse
 from app.services.notification_service import NotificationService
 from app.services.dep import get_notification_service
@@ -15,7 +15,7 @@ notification = APIRouter(
     prefix='/notifications'
 )
 
-user_dependencies = Annotated[User,Depends(get_current_user)]
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 
 
 @notification.get(

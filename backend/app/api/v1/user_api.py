@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
 from app.logger.log_config import logger
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.schemas.user_schemas import UserResponse, UserUpdate
 from app.services.dep import get_user_service
 from app.services.user_service import UserService
@@ -19,7 +19,7 @@ user = APIRouter(
     prefix='/users'
 )
 
-user_dependencies = Annotated[User,Depends(get_current_user)]
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 
 def cache(key_generator: Callable, expiration: int = 300):
     def decorator(func):

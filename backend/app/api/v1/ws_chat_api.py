@@ -13,8 +13,7 @@ from fastapi import (
     status,
 )
 
-from app.auth.auth import get_current_user
-from app.models import User
+from app.schemas.entity import UserEntity
 from app.schemas.message_schemas import MessageCreate
 from app.services.chat_service import ChatService
 from app.services.dep import get_chat_service
@@ -22,8 +21,6 @@ from app.auth.auth import get_user_by_token
 from app.ws.connection_manager import manager
 
 chat_ws = APIRouter(tags=["Chat WS"], prefix="/ws/chat")
-
-user_dependencies = Annotated[User, Depends(get_current_user)]
 
 
 async def get_websocket_user(
@@ -47,7 +44,7 @@ async def get_websocket_user(
 async def send_message(
     websocket: WebSocket,
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],
-    user: Annotated[User, Depends(get_websocket_user)],
+    user: Annotated[UserEntity, Depends(get_websocket_user)],
     chat_service: Annotated[ChatService,Depends(get_chat_service)],
 ):
     """
