@@ -4,6 +4,9 @@ from datetime import datetime
 
 @dataclass
 class TrackEntity:
+    """
+    Сущность модели Track
+    """
     id: uuid.UUID
     spotify_id: str
     spotify_uri: str

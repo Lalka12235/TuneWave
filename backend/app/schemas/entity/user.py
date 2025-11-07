@@ -4,7 +4,7 @@ import uuid
 @dataclass
 class UserEntity:
     """
-    Сущность User
+    Сущность модели User
     """
     id: uuid.UUID
     username: str

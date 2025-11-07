@@ -5,6 +5,9 @@ from datetime import datetime
 
 @dataclass
 class RoomTrackAssociationEntity:
+    """
+    Сущность модели RoomTrackAssociation
+    """
     id: uuid.UUID
     room_id: uuid.UUID
     track_id: uuid.UUID

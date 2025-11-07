@@ -5,6 +5,9 @@ from datetime import datetime
 
 @dataclass
 class MemberRoomEntity:
+    """
+    Сущность модели Member Room
+    """
     user_id: uuid.UUID
     room_id: uuid.UUID
     role: str
