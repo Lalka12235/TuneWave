@@ -17,6 +17,9 @@ from app.exceptions.notification_exception import NotificationNotFound,Notificat
 
 
 class NotificationService:
+    """
+    Реализует бизнес логику для работы с уведомлениями
+    """
 
     def __init__(self,notify_repo: ABCNotificationRepository,user_repo: ABCUserRepository,room_repo: ABCRoomRepository,notify_mapper: NotificationMapper):
         self.notify_repo = notify_repo

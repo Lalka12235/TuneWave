@@ -5,7 +5,7 @@ import httpx
 
 from app.config.settings import settings
 from app.logger.log_config import logger
-from app.models.user import User
+from app.schemas.entity import UserEntity
 from app.schemas.spotify_schemas import (
     SpotifyPlaylistsSearchPaging,
     SpotifyPlaylistTracksPaging,
@@ -24,7 +24,7 @@ class SpotifyService:
     SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
     SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com/api"
 
-    def __init__(self,user: User):
+    def __init__(self,user: UserEntity):
         self.user = user
         self._check_user_spotify_credentials()
 

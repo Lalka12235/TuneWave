@@ -4,16 +4,19 @@ from datetime import datetime
 from app.logger.log_config import logger
 from app.repositories.abc.chat_repo import ABCChatRepository
 from app.schemas.message_schemas import MessageCreate, MessageResponse
-from app.repositories.room_repo import RoomRepository
+from app.repositories.abc.room_repo import ABCRoomRepository
 from app.services.mappers.message_mapper import MessageMapper
 
 from app.exceptions.exception import ServerError
 from app.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError
 
 
-class ChatService():
+class ChatService:
+    """
+    Реализует бизнес логику для работы с чатом комнаты
+    """
 
-    def __init__(self,chat_repo: ABCChatRepository,room_repo: RoomRepository,message_mapper: MessageMapper):
+    def __init__(self,chat_repo: ABCChatRepository,room_repo: ABCRoomRepository,message_mapper: MessageMapper):
         self.chat_repo = chat_repo
         self.room_repo = room_repo
         self.message_mapper = message_mapper

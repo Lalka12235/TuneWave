@@ -1,34 +1,36 @@
 import json
 import uuid
 
-#from fastapi import HTTPException, status
-
 from app.logger.log_config import logger
-from app.models import User,RoomTrackAssociationModel
+from app.schemas.entity import UserEntity,RoomTrackAssociationEntity
 
-from app.repositories.room_repo import RoomRepository
-from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
+from app.repositories.abc.room_repo import ABCRoomRepository
+from app.repositories.abc.room_track_association_repo import ABCRoomTrackAssociationRepository
 
 from app.schemas.enum import Role
 from app.schemas.room_schemas import TrackInQueueResponse
 
 from app.services.mappers.mappers import TrackMapper
-from app.repositories.track_repo import TrackRepository
+from app.repositories.abc.track_repo import ABCTrackRepository
 
 from app.ws.connection_manager import manager
-from app.repositories.member_room_association_repo import MemberRoomAssociationRepository
+from app.repositories.abc.member_room_association import ABCMemberRoomAssociationRepository
 
 from app.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError,RoomPermissionDeniedError,TrackAlreadyInQueueError
 from app.exceptions.track_exception import TrackNotFound
 from app.exceptions.exception import ServerError
 
 class RoomQueueService:
+    """
+    Реализует бизнес логику для работы с очередью треков комнаты
+    """
+    
     def __init__(
         self,
-        room_repo: RoomRepository,
-        room_track_repo: RoomTrackAssociationRepository,
-        track_repo: TrackRepository,
-        member_room_repo: MemberRoomAssociationRepository,
+        room_repo: ABCRoomRepository,
+        room_track_repo: ABCRoomTrackAssociationRepository,
+        track_repo: ABCTrackRepository,
+        member_room_repo: ABCMemberRoomAssociationRepository,
     ):
         self.room_repo = room_repo
         self.room_track_repo = room_track_repo
@@ -65,8 +67,8 @@ class RoomQueueService:
     self, 
     room_id: uuid.UUID,
     track_spotify_id: str, 
-    current_user: User,
-        ) -> RoomTrackAssociationModel:
+    current_user: UserEntity,
+        ) -> RoomTrackAssociationEntity:
         """
         Добавляет трек в очередь конкретной комнаты.
         """
@@ -213,7 +215,7 @@ class RoomQueueService:
     #        )
 
 
-    async def move_track_in_queue(self,room_id: uuid.UUID,association_id: uuid.UUID,current_user: User,new_position: int,) -> RoomTrackAssociationModel:
+    async def move_track_in_queue(self,room_id: uuid.UUID,association_id: uuid.UUID,current_user: UserEntity,new_position: int,) -> RoomTrackAssociationEntity:
         """Перемещает трек в очереди."""
         room = self.room_repo.get_room_by_id(room_id)
         if not room:

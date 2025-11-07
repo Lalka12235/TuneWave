@@ -10,6 +10,9 @@ from app.exceptions.exception import ServerError
 
 
 class TrackService:
+    """
+    Реализует бизнес логику для работы с треками
+    """
 
     def __init__(self, track_repo: ABCTrackRepository, track_mapper: TrackMapper):
         self.track_repo = track_repo

@@ -22,6 +22,9 @@ from app.exceptions.exception import ServerError
 
 
 class UserService:
+    """
+    Реализует бизнес логику для работы с пользователем
+    """
 
     def __init__(
         self,

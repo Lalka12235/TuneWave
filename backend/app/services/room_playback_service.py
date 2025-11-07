@@ -1,16 +1,12 @@
 import json
 import uuid
 
-# from fastapi import HTTPException, status
-
 from app.logger.log_config import logger
-from app.models import User
-from app.repositories.member_room_association_repo import (
-    MemberRoomAssociationRepository,
-)
-from app.repositories.room_repo import RoomRepository
-from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
-from app.repositories.user_repo import UserRepository
+from app.schemas.entity import UserEntity
+from app.repositories.abc.member_room_association import ABCMemberRoomAssociationRepository
+from app.repositories.abc.room_repo import ABCRoomRepository
+from app.repositories.abc.room_track_association_repo import ABCRoomTrackAssociationRepository
+from app.repositories.abc.user_repo import ABCUserRepository
 
 from app.schemas.enum import Role
 from app.schemas.room_schemas import RoomResponse
@@ -32,13 +28,16 @@ from app.exceptions.spotify_exception import SpotifyAuthorizeError,SpotifyDevice
 
 
 class RoomPlaybackService:
+    """
+    Реализует бизнес логику для работы с плеером комнаты
+    """
 
     def __init__(
         self,
-        user_repo: UserRepository,
-        room_track_repo: RoomTrackAssociationRepository,
-        room_repo: RoomRepository,
-        member_room_repo: MemberRoomAssociationRepository,
+        user_repo: ABCUserRepository,
+        room_track_repo: ABCRoomTrackAssociationRepository,
+        room_repo: ABCRoomRepository,
+        member_room_repo: ABCMemberRoomAssociationRepository,
     ):
         self.user_repo = user_repo
         self.room_track_repo = room_track_repo
@@ -46,7 +45,7 @@ class RoomPlaybackService:
         self.member_room_repo = member_room_repo
 
     async def set_playback_host(
-        self, room_id: uuid.UUID, user_id: uuid.UUID, current_user: User
+        self, room_id: uuid.UUID, user_id: uuid.UUID, current_user: UserEntity
     ) -> RoomResponse:
         """
         Назначает пользователя хостом воспроизведения для комнаты.
@@ -246,7 +245,7 @@ class RoomPlaybackService:
     async def player_command_play(
         self,
         room_id: uuid.UUID,
-        current_user: User,
+        current_user: UserEntity,
         track_uri: str | None = None,
         position_ms: int = 0,
     ) -> dict[str, str]:
@@ -334,7 +333,7 @@ class RoomPlaybackService:
         return {"message": "Команда 'play' успешно отправлена."}
 
     async def player_command_pause(
-        self, room_id: uuid.UUID, current_user: User
+        self, room_id: uuid.UUID, current_user: UserEntity
     ) -> dict[str, str]:
         """
         Отправляет команду "PAUSE" на Spotify плеер комнаты через хоста воспроизведения.
@@ -409,7 +408,7 @@ class RoomPlaybackService:
         return {"message": "Команда 'pause' успешно отправлена."}
 
     async def player_command_skip_next(
-        self, room_id: uuid.UUID, current_user: User
+        self, room_id: uuid.UUID, current_user: UserEntity
     ) -> dict[str, str]:
         """
         Отправляет команду "SKIP NEXT" на Spotify плеер комнаты через хоста воспроизведения.
@@ -481,7 +480,7 @@ class RoomPlaybackService:
         return {"message": "Команда 'skip next' успешно отправлена."}
 
     async def player_command_skip_previous(
-        self, room_id: uuid.UUID, current_user: User
+        self, room_id: uuid.UUID, current_user: UserEntity
     ) -> dict[str, str]:
         """
         Отправляет команду "SKIP PREVIOUS" на Spotify плеер комнаты через хоста воспроизведения.
@@ -553,7 +552,7 @@ class RoomPlaybackService:
         return {"message": "Команда 'skip previous' успешно отправлена."}
 
     async def get_room_player_state(
-        self, room_id: uuid.UUID, current_user: User
+        self, room_id: uuid.UUID, current_user: UserEntity
     ) -> dict[str, str]:
         """
         Получает текущее состояние Spotify плеера для комнаты.

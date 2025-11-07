@@ -10,6 +10,9 @@ from app.schemas.entity import UserEntity
 
 
 class BanService:
+    """
+    Реализует бизнес логику для работы с баном пользователей
+    """
 
     def __init__(self,ban_repo: ABCBanRepository,ban_mapper: BanMapper):
         self.ban_repo = ban_repo
