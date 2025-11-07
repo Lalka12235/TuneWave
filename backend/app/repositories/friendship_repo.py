@@ -4,9 +4,11 @@ from app.models import Friendship
 import uuid
 from app.schemas.enum import FriendshipStatus
 from datetime import datetime
+from app.schemas.entity import FriendshipEntity
+from app.repositories.abc.friendship_repo import ABCFriendshipRepository
 
 
-class FriendshipRepository:
+class FriendshipRepository(ABCFriendshipRepository):
     """
     Репозиторий для выполнения операций CRUD над моделью Friendship.
     Отвечает за управление записями о дружбе и запросах на дружбу.
@@ -16,7 +18,18 @@ class FriendshipRepository:
         self._db = db
 
     
-    def get_friendship_by_id(self,friendship_id: uuid.UUID) -> Friendship | None:
+    def from_model_to_entity(self,model: Friendship) -> FriendshipEntity:
+        return FriendshipEntity(
+            id=model.id,
+            requester_id=model.requester_id,
+            accepter_id=model.accepter_id,
+            status=model.status,
+            created_at=model.created_at,
+            accepted_at=model.accepted_at,
+        )
+
+    
+    def get_friendship_by_id(self,friendship_id: uuid.UUID) -> FriendshipEntity | None:
         """
         Получает запись о дружбе по её ID.
         Загружает отношения requester и accepter для удобства.
@@ -34,12 +47,12 @@ class FriendshipRepository:
             joinedload(Friendship.requester),
             joinedload(Friendship.accepter),
         )
-        result = self._db.execute(stmt)
-        return result.scalar_one_or_none()
+        result = self._db.execute(stmt).scalar_one_or_none()
+        return self.from_model_to_entity(result)
     
 
     
-    def get_friendship_by_users(self,user1_id: uuid.UUID,user2_id: uuid.UUID) -> Friendship | None:
+    def get_friendship_by_users(self,user1_id: uuid.UUID,user2_id: uuid.UUID) -> FriendshipEntity | None:
         """
         Получает запись о дружбе между двумя конкретными пользователями,
         независимо от того, кто отправитель, а кто получатель.
@@ -62,12 +75,12 @@ class FriendshipRepository:
             joinedload(Friendship.requester),
             joinedload(Friendship.accepter),
         )
-        result = self._db.execute(stmt)
-        return result.scalar_one_or_none()
+        result = self._db.execute(stmt).scalar_one_or_none()
+        return self.from_model_to_entity(result)
     
 
     
-    def get_user_friends(self,user_id: uuid.UUID) -> list[Friendship]:
+    def get_user_friends(self,user_id: uuid.UUID) -> list[FriendshipEntity]:
         """
         Получает список всех принятых друзей для указанного пользователя.
         Загружает отношения requester и accepter.
@@ -89,12 +102,12 @@ class FriendshipRepository:
             joinedload(Friendship.requester),
             joinedload(Friendship.accepter),
         )
-        result = self._db.execute(stmt)
-        return result.scalars().all()
+        result = self._db.execute(stmt).scalars().all()
+        return self.from_model_to_entity(result)
     
 
     
-    def get_sent_requests(self,requester_id: uuid.UUID) -> list[Friendship]:
+    def get_sent_requests(self,requester_id: uuid.UUID) -> list[FriendshipEntity]:
         """
         Получает список всех запросов на дружбу, отправленных указанным пользователем,
         которые находятся в статусе PENDING.
@@ -113,12 +126,12 @@ class FriendshipRepository:
         ).options(
             joinedload(Friendship.accepter),
         )
-        result = self._db.execute(stmt)
-        return result.scalars().all()
+        result = self._db.execute(stmt).scalars().all()
+        return self.from_model_to_entity(result)
     
 
     
-    def get_received_requests(self,accepter_id: uuid.UUID) -> list[Friendship]:
+    def get_received_requests(self,accepter_id: uuid.UUID) -> list[FriendshipEntity]:
         """
         Получает список всех запросов на дружбу, полученных указанным пользователем,
         которые находятся в статусе PENDING.
@@ -137,13 +150,13 @@ class FriendshipRepository:
         ).options(
             joinedload(Friendship.requester),
         )
-        result = self._db.execute(stmt)
-        return result.scalars().all()
+        result = self._db.execute(stmt).scalars().all()
+        return self.from_model_to_entity(result)
 
 
 
     
-    def add_friend_requet(self,requester_id: uuid.UUID,accepter_id: uuid.UUID) -> Friendship:
+    def add_friend_requet(self,requester_id: uuid.UUID,accepter_id: uuid.UUID) -> FriendshipEntity:
         """
         Создает новый запрос на дружбу со статусом PENDING.
 
@@ -161,7 +174,7 @@ class FriendshipRepository:
         )
         self._db.add(new_friendship)
         self._db.flush()
-        return new_friendship
+        return self.from_model_to_entity(new_friendship)
     
     
     
