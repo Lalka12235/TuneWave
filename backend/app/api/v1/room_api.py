@@ -1,14 +1,11 @@
-import json
 import uuid
-from typing import Annotated,Callable
+from typing import Annotated
 
 from fastapi import APIRouter,Depends, Path, Query, status
 from fastapi_limiter.depends import RateLimiter
-from infrastructure.redis.redis import get_redis_client
-from redis.asyncio import Redis
+
 
 from app.auth.auth import get_current_user
-from app.logger.log_config import logger
 from app.schemas.entity import UserEntity
 from app.schemas.room_schemas import (
     RoomCreate,
@@ -18,47 +15,14 @@ from app.schemas.room_schemas import (
 from app.services.room_service import RoomService
 from app.services.dep import get_room_service
 
+from app.services.redis_service import RedisService
+from app.services.dep import get_redis_client
+
 room = APIRouter(tags=["Room"], prefix="/rooms")
 
 user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
-
-
-def cache(key_generator: Callable, expiration: int = 300):
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # Извлекаем redis_client из kwargs (он будет добавлен FastAPI)
-            redis_client: Redis = kwargs.get("redis_client")
-
-            # Если Redis недоступен, выполняем функцию без кэширования
-            if not redis_client:
-                logger.warning("Redis client not available, skipping cache...")
-                return await func(*args, **kwargs)
-
-            # ✅ Используем переданную функцию-генератор для создания ключа
-            try:
-                cache_key = key_generator(*args, **kwargs)
-            except Exception as e:
-                logger.error(
-                    f"Error generating cache key: {e}. Skipping cache...", exc_info=True
-                )
-                return await func(*args, **kwargs)
-
-            # 1. Пробуем получить данные из кэша
-            cached_data = await redis_client.get(cache_key)
-            if cached_data:
-                logger.info(f"Cache hit for key: {cache_key}")
-                return json.loads(cached_data)
-
-            # 2. Если данных в кэше нет, выполняем оригинальную функцию
-            logger.info(f"Cache miss for key: {cache_key}. Fetching from DB...")
-            result = await func(*args, **kwargs)
-
-            await redis_client.setex(cache_key, expiration, json.dumps(result))
-            return result
-
-        return wrapper
-
-    return decorator
+redis_service = Annotated[RedisService,Depends(get_redis_client)]
+room_service = Annotated[RoomService,Depends(get_room_service)]
 
 
 @room.post(
@@ -70,7 +34,7 @@ def cache(key_generator: Callable, expiration: int = 300):
 async def create_room(
     room_data: RoomCreate,
     current_user: user_dependencies,
-    room_service: Annotated[RoomService,Depends(get_room_service)],
+    room_service: room_service,
 ) -> RoomResponse:
     """
     Создает новую комнату.
@@ -88,7 +52,7 @@ def update_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для обновления")],
     update_data: RoomUpdate,
     current_user: user_dependencies,
-    room_service: Annotated[RoomService,Depends(get_room_service)],
+    room_service: room_service,
 ) -> RoomResponse:
     """
     Обновляет информацию о комнате по ее ID.
@@ -105,7 +69,7 @@ def update_room(
 def delete_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для удаления")],
     current_user: user_dependencies,
-    room_service: Annotated[RoomService,Depends(get_room_service)],
+    room_service: room_service,
 ) -> dict:
     """
     Удаляет комнату по ее ID.
@@ -127,17 +91,19 @@ def delete_room(
     response_model=RoomResponse,
     dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
-@cache(key_generator=lambda name, **kwargs: f"room_name:{name}", expiration=300)
 async def get_room_by_name(
     name: Annotated[str, Query(..., description="Название комнаты")],
-    room_service: Annotated[RoomService,Depends(get_room_service)],
-    redis_client: Annotated[Redis,Depends(get_redis_client)],
+    room_service: room_service,
+    redis_client: redis_service,
 ) -> RoomResponse:
     """
     Получает информацию о комнате по ее названию.
     Не требует аутентификации.
     """
-    return await room_service.get_room_by_name(name)
+    key = f'rooms:get_room_by_name:{name}'
+    async def fetch():
+        return await room_service.get_room_by_name(name)
+    return await redis_client.get_or_set(key,fetch,300)
 
 
 @room.get(
@@ -145,19 +111,17 @@ async def get_room_by_name(
     response_model=list[RoomResponse],
     dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
-@cache(
-    key_generator=lambda current_user, **kwargs: f"room_my:{current_user.id}",
-    expiration=300,
-)
 async def get_my_rooms(
-    current_user: user_dependencies,room_service: Annotated[RoomService,Depends(get_room_service)], redis_client: Redis = Depends(get_redis_client)
+    current_user: user_dependencies,room_service: room_service, redis_client: redis_service
 ) -> list[RoomResponse]:
     """
     Получает список всех комнат, в которых состоит текущий аутентифицированный пользователь.
     Требуется аутентификация.
     """
-    return await room_service.get_user_rooms(current_user)
-
+    key = f'rooms:get_my_rooms:{current_user.id}'
+    async def fetch():
+        return await room_service.get_user_rooms(current_user)
+    return await redis_client.get_or_set(key,fetch,300)
 
 @room.get(
     "/",
@@ -165,8 +129,7 @@ async def get_my_rooms(
     dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def get_all_rooms(
-    room_service: Annotated[RoomService,Depends(get_room_service)],
-    redis_client: Annotated[Redis,Depends(get_redis_client)],
+    room_service: room_service,
 ) -> list[RoomResponse]:
     """
     Получает список всех доступных комнат.
@@ -180,14 +143,16 @@ async def get_all_rooms(
     response_model=RoomResponse,
     dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
-@cache(key_generator=lambda room_id, **kwargs: f"room_id:{room_id}", expiration=300)
 async def get_room_by_id(
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],
-    room_service: Annotated[RoomService,Depends(get_room_service)],
-    redis_client: Annotated[Redis,Depends(get_redis_client)],
+    room_service: room_service,
+    redis_client: redis_service,
 ) -> RoomResponse:
     """
     Получает информацию о комнате по ее ID.
     Не требует аутентификации.
     """
-    return await room_service.get_room_by_id(room_id)
+    key = f'rooms:get_room_by_id:{room_id}'
+    async def fetch():
+        return await room_service.get_room_by_id(room_id)
+    return await redis_client.get_or_set(key,fetch,300)

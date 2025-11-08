@@ -15,6 +15,7 @@ ban = APIRouter(
 )
 
 user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
+ban_service = Annotated[BanService,Depends(get_ban_service)]
 
 
 @ban.get(
@@ -24,7 +25,7 @@ user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
     dependencies=[Depends(RateLimiter(times=15, seconds=60))],
 )
 async def get_bans_by_admin(
-    ban_service: Annotated[BanService,Depends(get_ban_service)],
+    ban_service: ban_service,
     user: user_dependencies,
     
 ) -> list[BanResponse]:
@@ -48,7 +49,7 @@ async def get_bans_by_admin(
     dependencies=[Depends(RateLimiter(times=15, seconds=60))],
 )
 async def get_bans_on_user(
-    ban_service: Annotated[BanService,Depends(get_ban_service)],
+    ban_service: ban_service,
     user: user_dependencies,
 ) -> list[BanResponse]:
     """

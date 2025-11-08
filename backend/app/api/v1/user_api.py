@@ -1,18 +1,17 @@
-import json
 import uuid
-from typing import Annotated, Callable
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, UploadFile
 from fastapi_limiter.depends import RateLimiter
-from infrastructure.redis.redis import get_redis_client
-from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
-from app.logger.log_config import logger
 from app.schemas.entity import UserEntity
 from app.schemas.user_schemas import UserResponse, UserUpdate
 from app.services.dep import get_user_service
 from app.services.user_service import UserService
+
+from app.services.redis_service import RedisService
+from app.services.dep import get_redis_client
 
 user = APIRouter(
     tags=['User'],
@@ -20,49 +19,14 @@ user = APIRouter(
 )
 
 user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
-
-def cache(key_generator: Callable, expiration: int = 300):
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # Извлекаем redis_client из kwargs (он будет добавлен FastAPI)
-            redis_client: Redis = kwargs.get('redis_client')
-            
-            # Если Redis недоступен, выполняем функцию без кэширования
-            if not redis_client:
-                logger.warning("Redis client not available, skipping cache...")
-                return await func(*args, **kwargs)
-
-            # ✅ Используем переданную функцию-генератор для создания ключа
-            try:
-                cache_key = key_generator(*args, **kwargs)
-            except Exception as e:
-                logger.error(f"Error generating cache key: {e}. Skipping cache...", exc_info=True)
-                return await func(*args, **kwargs)
-
-            # 1. Пробуем получить данные из кэша
-            cached_data = await redis_client.get(cache_key)
-            if cached_data:
-                logger.info(f"Cache hit for key: {cache_key}")
-                return json.loads(cached_data)
-
-            # 2. Если данных в кэше нет, выполняем оригинальную функцию
-            logger.info(f"Cache miss for key: {cache_key}. Fetching from DB...")
-            result = await func(*args, **kwargs)
-
-
-            await redis_client.setex(cache_key, expiration, json.dumps(result))
-            return result
-        return wrapper
-    return decorator
-
-
+redis_service = Annotated[RedisService,Depends(get_redis_client)]
+user_service = Annotated[UserService,Depends(get_user_service)]
 
 @user.get('/me',response_model=UserResponse,dependencies=[Depends(RateLimiter(times=10, seconds=60))])
-@cache(key_generator=lambda user, **kwargs: f"user_me:{user.id}", expiration=300)
 async def get_me(
     user: user_dependencies,
-    redis_client: Annotated[Redis,Depends(get_redis_client)],
-    user_service: Annotated[UserService,Depends(get_user_service)]
+    redis_client: redis_service,
+    user_service: user_service,
     
 ) -> UserResponse:
     """
@@ -71,14 +35,16 @@ async def get_me(
     Returns:
         UserResponse: Pydantic-модель с данными профиля пользователя.
     """
-    return user_service.user_mapper.to_response(user)
-
+    cache_key = f'users:get_me:{user.id}'
+    async def fetch():
+        return user_service.user_mapper.to_response(user)
+    return await redis_client.get_or_set(cache_key,fetch,300)
 
 @user.put('/{user_id}',response_model=UserResponse)
 async def update_profile(
     user: user_dependencies,
     update_data: UserUpdate,
-    user_service: Annotated[UserService,Depends(get_user_service)]
+    user_service: user_service
 ) -> UserResponse:
     """_summary_
 
@@ -97,7 +63,7 @@ async def update_profile(
 async def load_avatar(
     user: user_dependencies,
     avatar_file: UploadFile,
-    user_service: Annotated[UserService,Depends(get_user_service)]
+    user_service: user_service
 ) -> UserResponse:
     """
     Загружает новую аватарку для текущего пользователя.
@@ -118,14 +84,16 @@ async def load_avatar(
     response_model=UserResponse,
     dependencies=[Depends(RateLimiter(times=20, seconds=60))],
 )
-@cache(key_generator=lambda user_id, **kwargs: f"user_profile:{user_id}", expiration=300)
 async def get_user_by_id(
     user_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID пользователя")],
-    user_service: Annotated[UserService,Depends(get_user_service)],
-    redis_client: Annotated[Redis,Depends(get_redis_client)],
+    user_service: user_service,
+    redis_client: redis_service,
 ) -> UserResponse:
     """
     Получает публичную информацию о пользователе по его ID.
     Не требует аутентификации, если предназначен для публичного просмотра.
     """
-    return await user_service.get_user_by_id(user_id)
+    key = f'users:get_user_by_id:{user_id}'
+    async def fetch():
+        return await user_service.get_user_by_id(user_id)
+    return await redis_client.get_or_set(key,fetch,300)

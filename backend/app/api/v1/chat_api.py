@@ -17,11 +17,12 @@ chat = APIRouter(
 )
 
 user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
+chat_service = Annotated[ChatService,Depends(get_chat_service)]
 
 
 @chat.get('/{room_id}',response_model=list[MessageResponse],dependencies=[Depends(RateLimiter(times=10, seconds=60))])
 async def get_message_for_room(
-    chat_service: Annotated[ChatService,Depends(get_chat_service)],
+    chat_service: chat_service,
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
     limit: Annotated[int,Query(...,description='Лимит на отображение сообщений в комнате')] = 10,
     before_timestamp: Annotated[datetime | None, Query(
@@ -49,7 +50,7 @@ async def get_message_for_room(
 
 @chat.post('/{room_id}',response_model=MessageResponse, status_code=201,dependencies=[Depends(RateLimiter(times=5, seconds=5))])
 async def create_message(
-    chat_service: Annotated[ChatService,Depends(get_chat_service)],
+    chat_service: chat_service,
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
     user: user_dependencies,
     message: MessageCreate,

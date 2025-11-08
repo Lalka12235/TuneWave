@@ -1,18 +1,16 @@
-import json
 import uuid
-from typing import Annotated, Any, Callable
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Path, status
 from fastapi_limiter.depends import RateLimiter
-from infrastructure.redis.redis import get_redis_client
-from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
-from app.logger.log_config import logger
 from app.schemas.entity import UserEntity
 from app.schemas.favorite_track_schemas import FavoriteTrackAdd, FavoriteTrackResponse
 from app.services.favorite_track_service import FavoriteTrackService
 from app.services.dep import get_favorite_track_service
+from app.services.redis_service import RedisService
+from app.services.dep import get_redis_client
 
 ft = APIRouter(
     tags=['Favorite Track'],
@@ -20,48 +18,15 @@ ft = APIRouter(
 )
 
 user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
+favorite_track_service = Annotated[FavoriteTrackService,Depends(get_favorite_track_service)]
+redis_service = Annotated[RedisService,Depends(get_redis_client)]
 
-
-def cache(key_generator: Callable, expiration: int = 300):
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # Извлекаем redis_client из kwargs (он будет добавлен FastAPI)
-            redis_client: Redis = kwargs.get('redis_client')
-            
-            # Если Redis недоступен, выполняем функцию без кэширования
-            if not redis_client:
-                logger.warning("Redis client not available, skipping cache...")
-                return await func(*args, **kwargs)
-
-            # ✅ Используем переданную функцию-генератор для создания ключа
-            try:
-                cache_key = key_generator(*args, **kwargs)
-            except Exception as e:
-                logger.error(f"Error generating cache key: {e}. Skipping cache...", exc_info=True)
-                return await func(*args, **kwargs)
-
-            # 1. Пробуем получить данные из кэша
-            cached_data = await redis_client.get(cache_key)
-            if cached_data:
-                logger.info(f"Cache hit for key: {cache_key}")
-                return json.loads(cached_data)
-
-            # 2. Если данных в кэше нет, выполняем оригинальную функцию
-            logger.info(f"Cache miss for key: {cache_key}. Fetching from DB...")
-            result = await func(*args, **kwargs)
-
-
-            await redis_client.setex(cache_key, expiration, json.dumps(result))
-            return result
-        return wrapper
-    return decorator
 
 @ft.get('/me',response_model=list[FavoriteTrackResponse],dependencies=[Depends(RateLimiter(times=15, seconds=60))])
-@cache(key_generator=lambda user, **kwargs: f"user_me_favorite_track:{user.id}", expiration=300)
 async def get_user_favorite_tracks(
-    favorite_track_service: Annotated[FavoriteTrackService,Depends(get_favorite_track_service)],
+    favorite_track_service: favorite_track_service,
     user: user_dependencies,
-    redis_client: Annotated[Redis,Depends(get_redis_client)]
+    redis_client: redis_service
 ) -> list[FavoriteTrackResponse]:
     """
     Получает список всех любимых треков текущего аутентифицированного пользователя.
@@ -72,12 +37,15 @@ async def get_user_favorite_tracks(
     Returns:
         list[FavoriteTrackResponse]: Список любимых треков пользователя.
     """
-    return favorite_track_service.get_user_favorite_tracks(user.id)
+    key = f'favorite_track:get_user_favorite_track:{user.id}'
+    async def fetch():
+        return favorite_track_service.get_user_favorite_tracks(user.id)
+    return await redis_client.get_or_set(key,fetch,300)
 
 
 @ft.post('/me',response_model=FavoriteTrackResponse,status_code=status.HTTP_201_CREATED,dependencies=[Depends(RateLimiter(times=5, seconds=60))])
 async def add_favorite_track(
-    favorite_track_service: Annotated[FavoriteTrackService,Depends(get_favorite_track_service)],
+    favorite_track_service: favorite_track_service,
     user: user_dependencies,
     add_data: FavoriteTrackAdd,
 ) -> FavoriteTrackResponse:
@@ -96,7 +64,7 @@ async def add_favorite_track(
 
 @ft.delete('/me{spotify_id}', response_model=dict[str,Any],dependencies=[Depends(RateLimiter(times=5, seconds=60))])
 async def remvoe_favorite_track(
-    favorite_track_service: Annotated[FavoriteTrackService,Depends(get_favorite_track_service)],
+    favorite_track_service: favorite_track_service,
     user: user_dependencies,
     spotify_id: Annotated[str,Path(...,description='Spotify ID трека для удаления из избранного')],
 ) -> dict[str,Any]:
@@ -115,11 +83,10 @@ async def remvoe_favorite_track(
 
 @ft.get('/{user_id}', response_model=list[FavoriteTrackResponse],
         dependencies=[Depends(RateLimiter(times=10, seconds=60))])
-@cache(key_generator=lambda user_id, **kwargs: f"user_favorite_track:{user_id}", expiration=300)
 async def get_user_favorite_tracks_public(
-    favorite_track_service: Annotated[FavoriteTrackService,Depends(get_favorite_track_service)],
+    favorite_track_service: favorite_track_service,
     user_id: Annotated[uuid.UUID, Path(..., description="ID пользователя, чьи любимые треки нужно получить")],
-    redis_client: Annotated[Redis,Depends(get_redis_client)]
+    redis_client: redis_service
 ) -> list[FavoriteTrackResponse]:
     """
     Получает список любимых треков указанного пользователя.
@@ -131,4 +98,7 @@ async def get_user_favorite_tracks_public(
     Returns:
         list[FavoriteTrackResponse]: Список любимых треков пользователя.
     """
-    return favorite_track_service.get_user_favorite_tracks( user_id)
+    key = f'favorite_track:get_user_favorite_track_public:{user_id}'
+    async def fetch():
+        return favorite_track_service.get_user_favorite_tracks(user_id)
+    return await redis_client.get_or_set(key,fetch,300)

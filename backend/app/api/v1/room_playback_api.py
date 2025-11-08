@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends,status
+from fastapi import APIRouter, Body, Depends, status
 
 from app.auth.auth import get_current_user
 from app.schemas.entity import UserEntity
@@ -11,6 +11,10 @@ from app.services.dep import get_room_playback_service
 room_playback = APIRouter(tags=["Room"], prefix="/rooms")
 
 user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
+room_playback_service = Annotated[
+    RoomPlaybackService,
+    Depends(get_room_playback_service)
+]
 
 
 @room_playback.put(
@@ -20,24 +24,25 @@ user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
 )
 async def set_room_playback_host(
     room_id: uuid.UUID,
-    room_playback_service: Annotated[RoomPlaybackService,Depends(get_room_playback_service)],
-    user_id_to_set_as_host: Annotated[uuid.UUID,Body(..., embed=True)] ,
+    room_playback_service: room_playback_service,
+    user_id_to_set_as_host: Annotated[uuid.UUID, Body(..., embed=True)],
     current_user: user_dependencies,
-    
 ) -> dict[str, Any]:
     """
     Назначает указанного пользователя хостом воспроизведения для комнаты.
     Только владелец или модератор могут назначить хоста.
     Назначаемый пользователь должен быть авторизован в Spotify и иметь активное устройство.
     """
-    return await room_playback_service.set_playback_host(room_id, user_id_to_set_as_host)
+    return await room_playback_service.set_playback_host(
+        room_id, user_id_to_set_as_host
+    )
 
 
 @room_playback.put("/{room_id}/player/play", status_code=status.HTTP_204_NO_CONTENT)
 async def player_play_command(
     room_id: uuid.UUID,
     current_user: user_dependencies,
-    room_playback_service: Annotated[RoomPlaybackService,Depends(get_room_playback_service)],
+    room_playback_service: room_playback_service,
     track_uri: str | None = None,
     position_ms: int = 0,
 ):
@@ -51,7 +56,9 @@ async def player_play_command(
 
 @room_playback.put("/{room_id}/player/pause", status_code=status.HTTP_204_NO_CONTENT)
 async def player_pause_command(
-    room_id: uuid.UUID, current_user: user_dependencies,room_playback_service: Annotated[RoomPlaybackService,Depends(get_room_playback_service)],
+    room_id: uuid.UUID,
+    current_user: user_dependencies,
+    room_playback_service: room_playback_service,
 ):
     """
     Ставит воспроизведение Spotify на паузу в комнате через хоста воспроизведения.
@@ -61,7 +68,9 @@ async def player_pause_command(
 
 @room_playback.post("/{room_id}/player/next", status_code=status.HTTP_204_NO_CONTENT)
 async def player_skip_next_command(
-    room_id: uuid.UUID, current_user: user_dependencies,room_playback_service: Annotated[RoomPlaybackService,Depends(get_room_playback_service)],
+    room_id: uuid.UUID,
+    current_user: user_dependencies,
+    room_playback_service: room_playback_service,
 ):
     """
     Переключает на следующий трек в Spotify плеере комнаты через хоста воспроизведения.
@@ -69,19 +78,27 @@ async def player_skip_next_command(
     return await room_playback_service.player_command_skip_next(room_id, current_user)
 
 
-@room_playback.post("/{room_id}/player/previous", status_code=status.HTTP_204_NO_CONTENT)
+@room_playback.post(
+    "/{room_id}/player/previous", status_code=status.HTTP_204_NO_CONTENT
+)
 async def player_skip_previous_command(
-    room_id: uuid.UUID, current_user: user_dependencies,room_playback_service: Annotated[RoomPlaybackService,Depends(get_room_playback_service)],
+    room_id: uuid.UUID,
+    current_user: user_dependencies,
+    room_playback_service: room_playback_service,
 ):
     """
     Переключает на предыдущий трек в Spotify плеере комнаты через хоста воспроизведения.
     """
-    return await room_playback_service.player_command_skip_previous(room_id, current_user)
+    return await room_playback_service.player_command_skip_previous(
+        room_id, current_user
+    )
 
 
 @room_playback.get("/{room_id}/player/state", response_model=dict[str, Any])
 async def get_room_player_state(
-    room_id: uuid.UUID, current_user: user_dependencies,room_playback_service: Annotated[RoomPlaybackService,Depends(get_room_playback_service)],
+    room_id: uuid.UUID,
+    current_user: user_dependencies,
+    room_playback_service: room_playback_service,
 ) -> dict[str, Any]:
     """
     Получает текущее состояние Spotify плеера для комнаты.

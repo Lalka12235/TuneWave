@@ -1,14 +1,10 @@
-import json
 import uuid
-from typing import Annotated, Any, Callable
+from typing import Annotated, Any
 
 from fastapi import APIRouter,Depends, Path,status
 from fastapi_limiter.depends import RateLimiter
-from infrastructure.redis.redis import get_redis_client
-from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
-from app.logger.log_config import logger
 from app.schemas.entity import UserEntity
 from app.schemas.ban_schemas import BanCreate, BanResponse
 from app.schemas.room_member_schemas import JoinRoomRequest,RoomMemberResponse,RoomMemberRoleUpdate
@@ -20,47 +16,14 @@ from app.schemas.user_schemas import UserResponse
 from app.services.room_member_service import RoomMemberService
 from app.services.dep import get_room_member_service
 
+from app.services.redis_service import RedisService
+from app.services.dep import get_redis_client
+
 room_member = APIRouter(tags=["Room"], prefix="/rooms")
 
 user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
-
-def cache(key_generator: Callable, expiration: int = 300):
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # Извлекаем redis_client из kwargs (он будет добавлен FastAPI)
-            redis_client: Redis = kwargs.get("redis_client")
-
-            # Если Redis недоступен, выполняем функцию без кэширования
-            if not redis_client:
-                logger.warning("Redis client not available, skipping cache...")
-                return await func(*args, **kwargs)
-
-            # ✅ Используем переданную функцию-генератор для создания ключа
-            try:
-                cache_key = key_generator(*args, **kwargs)
-            except Exception as e:
-                logger.error(
-                    f"Error generating cache key: {e}. Skipping cache...", exc_info=True
-                )
-                return await func(*args, **kwargs)
-
-            # 1. Пробуем получить данные из кэша
-            cached_data = await redis_client.get(cache_key)
-            if cached_data:
-                logger.info(f"Cache hit for key: {cache_key}")
-                return json.loads(cached_data)
-
-            # 2. Если данных в кэше нет, выполняем оригинальную функцию
-            logger.info(f"Cache miss for key: {cache_key}. Fetching from DB...")
-            result = await func(*args, **kwargs)
-
-            await redis_client.setex(cache_key, expiration, json.dumps(result))
-            return result
-
-        return wrapper
-
-    return decorator
-
+room_member_service = Annotated[RoomMemberService,Depends(get_room_member_service)]
+redis_service = Annotated[RedisService,Depends(get_redis_client)]
 
 
 async def join_room(
@@ -70,7 +33,7 @@ async def join_room(
     ],
     current_user: user_dependencies,
     request_data: JoinRoomRequest,
-    room_member_service: Annotated[RoomMemberService,Depends(get_room_member_service)],
+    room_member_service: room_member_service,
 ) -> RoomResponse:
     """
     Пользователь присоединяется к комнате.
@@ -86,7 +49,7 @@ async def leave_room(
         uuid.UUID, Path(..., description="ID комнаты, которую покидает пользователь")
     ],
     current_user: user_dependencies,
-    room_member_service: Annotated[RoomMemberService,Depends(get_room_member_service)],
+    room_member_service: room_member_service,
 ) -> dict:
     """
     Пользователь покидает комнату.
@@ -100,22 +63,22 @@ async def leave_room(
     response_model=list[UserResponse],
     dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
-@cache(
-    key_generator=lambda room_id, **kwargs: f"room_members:{room_id}", expiration=300
-)
 async def get_room_members(
     room_id: Annotated[
         uuid.UUID, Path(..., description="ID комнаты для получения списка участников")
     ],
-    room_member_service: Annotated[RoomMemberService,Depends(get_room_member_service)],
-    redis_client: Annotated[Redis,Depends(get_redis_client)],
+    room_member_service: room_member_service,
+    redis_client: redis_service,
     
 ) -> list[UserResponse]:
     """
     Получает список всех участников комнаты.
     Не требует аутентификации.
     """
-    return await room_member_service.get_room_members(room_id)
+    key = f'rooms_member:get_room_member:{room_id}'
+    async def fetch():
+        return await room_member_service.get_room_members(room_id)
+    return await redis_client.get_or_set(key,fetch,300)
 
 
 @room_member.post(
@@ -137,7 +100,7 @@ async def add_ban(
     ],
     ban_data: BanCreate,
     user: user_dependencies,
-    room_member_service: Annotated[RoomMemberService,Depends(get_room_member_service)],
+    room_member_service: room_member_service,
 ) -> BanResponse:
     """
     Банит пользователя в конкретной комнате или глобально.
@@ -176,7 +139,7 @@ async def unban_user(
         uuid.UUID, Path(..., description="ID пользователя, с которого нужно снять бан.")
     ],
     current_user: user_dependencies,
-    room_member_service: Annotated[RoomMemberService,Depends(get_room_member_service)],
+    room_member_service: room_member_service,
 ) -> dict[str, Any]:
     """
     Снимает бан с пользователя в конкретной комнате или глобально.
@@ -209,7 +172,7 @@ async def send_room_invite(
         uuid.UUID, Path(..., description="ID пользователя, которого нужно пригласить.")
     ],
     current_user: user_dependencies,
-    room_member_service: Annotated[RoomMemberService,Depends(get_room_member_service)],
+    room_member_service: room_member_service,
 ) -> dict[str, str]:
     """
     Отправляет приглашение указанному пользователю присоединиться к комнате.
@@ -239,7 +202,7 @@ async def respond_to_room_invite(
     ],
     response_data: InviteResponse,
     current_user: user_dependencies,
-    room_member_service: Annotated[RoomMemberService,Depends(get_room_member_service)],
+    room_member_service: room_member_service,
 ) -> dict[str, str]:
     """
     Отвечает на приглашение в комнату (принимает или отклоняет).
@@ -272,7 +235,7 @@ async def update_member_role(
     ],
     user: user_dependencies,
     new_role: RoomMemberRoleUpdate,
-    room_member_service: Annotated[RoomMemberService,Depends(get_room_member_service)],
+    room_member_service: room_member_service,
 ) -> RoomMemberResponse:
     """
     Изменяет роль члена комнаты. Доступно только владельцу комнаты.

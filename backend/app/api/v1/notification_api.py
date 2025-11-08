@@ -16,6 +16,7 @@ notification = APIRouter(
 )
 
 user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
+notify_service = Annotated[NotificationService,Depends(get_notification_service)]
 
 
 @notification.get(
@@ -26,7 +27,7 @@ user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 )
 async def get_my_notifications(
     user:user_dependencies,
-    notify_service: Annotated[NotificationService,Depends(get_notification_service)],
+    notify_service: notify_service,
     limit: Annotated[int, Query(ge=1, le=100, description="Максимальное количество уведомлений для возврата.")] = 10,
     offset: Annotated[int, Query(ge=0, description="Смещение для пагинации.")] = 0,
 ) -> list[NotificationResponse]:
@@ -55,7 +56,7 @@ async def get_my_notifications(
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def mark_notification_as_read(
-    notify_service: Annotated[NotificationService,Depends(get_notification_service)],
+    notify_service: notify_service,
     notification_id: Annotated[uuid.UUID,Path(...,description="ID уведомления, которое нужно отметить как прочитанное.")],
     user: user_dependencies,
 ) -> NotificationResponse:
@@ -81,7 +82,7 @@ async def mark_notification_as_read(
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def delete_notifications(
-    notify_service: Annotated[NotificationService,Depends(get_notification_service)],
+    notify_service: notify_service,
     notification_id: Annotated[uuid.UUID,Path(...,description="ID уведомления, которое нужно отметить как прочитанное.")],
     user: user_dependencies,
 ) -> dict[str,str]:

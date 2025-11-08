@@ -1,18 +1,17 @@
-import json
 import uuid
-from typing import Annotated, Callable
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, status
 from fastapi_limiter.depends import RateLimiter
-from infrastructure.redis.redis import get_redis_client
-from redis.asyncio import Redis
 
 from app.auth.auth import get_current_user
-from app.logger.log_config import logger
 from app.schemas.entity import UserEntity
 from app.schemas.friendship_schemas import FriendshipRequestCreate, FriendshipResponse
 from app.services.friendship_service import FriendshipService
 from app.services.dep import get_friendship_service
+
+from app.services.redis_service import RedisService
+from app.services.dep import get_redis_client
 
 friendship = APIRouter(
     tags=['Friendship'],
@@ -20,41 +19,10 @@ friendship = APIRouter(
 )
 
 user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
+redis_service = Annotated[RedisService,Depends(get_redis_client)]
+friendship_service = Annotated[FriendshipService,Depends(get_friendship_service)]
 
 
-def cache(key_generator: Callable, expiration: int = 300):
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # Извлекаем redis_client из kwargs (он будет добавлен FastAPI)
-            redis_client: Redis = kwargs.get('redis_client')
-            
-            # Если Redis недоступен, выполняем функцию без кэширования
-            if not redis_client:
-                logger.warning("Redis client not available, skipping cache...")
-                return await func(*args, **kwargs)
-
-            # ✅ Используем переданную функцию-генератор для создания ключа
-            try:
-                cache_key = key_generator(*args, **kwargs)
-            except Exception as e:
-                logger.error(f"Error generating cache key: {e}. Skipping cache...", exc_info=True)
-                return await func(*args, **kwargs)
-
-            # 1. Пробуем получить данные из кэша
-            cached_data = await redis_client.get(cache_key)
-            if cached_data:
-                logger.info(f"Cache hit for key: {cache_key}")
-                return json.loads(cached_data)
-
-            # 2. Если данных в кэше нет, выполняем оригинальную функцию
-            logger.info(f"Cache miss for key: {cache_key}. Fetching from DB...")
-            result = await func(*args, **kwargs)
-
-
-            await redis_client.setex(cache_key, expiration, json.dumps(result))
-            return result
-        return wrapper
-    return decorator
 
 @friendship.post(
     '/send-request',
@@ -63,7 +31,7 @@ def cache(key_generator: Callable, expiration: int = 300):
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def send_friend_request(
-    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
+    friend_service: friendship_service,
     request_data: FriendshipRequestCreate,
     user: user_dependencies,
 ) -> FriendshipResponse:
@@ -88,7 +56,7 @@ async def send_friend_request(
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def accept_friend_request(
-    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
+    friend_service: friendship_service,
     friendship_id: Annotated[uuid.UUID,Path(..., description="ID запроса на дружбу для принятия.")],
     user: user_dependencies
 ) -> FriendshipResponse:
@@ -113,7 +81,7 @@ async def accept_friend_request(
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def decline_friend_request(
-    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
+    friend_service: friendship_service,
     friendship_id: Annotated[uuid.UUID,Path(..., description="ID запроса на дружбу для отклонения.")],
     user: user_dependencies
 ) -> FriendshipResponse:
@@ -137,7 +105,7 @@ async def decline_friend_request(
     dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def delete_friendship(
-    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
+    friend_service: friendship_service,
     friendship_id: Annotated[uuid.UUID, Path(..., description="ID записи о дружбе для удаления.")],
     current_user: user_dependencies,
 ) -> dict[str, str]:
@@ -162,11 +130,10 @@ async def delete_friendship(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(RateLimiter(times=15, seconds=60))]
 )
-@cache(key_generator=lambda user, **kwargs: f"user_me_friend:{user.id}", expiration=300)
 async def get_my_friend(
-    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
+    friend_service: friendship_service,
     user: user_dependencies,
-    redis_client: Annotated[Redis,Depends(get_redis_client)] 
+    redis_client: redis_service
 ) -> list[FriendshipResponse]:
     """
     Получает список всех принятых друзей текущего аутентифицированного пользователя.
@@ -178,8 +145,10 @@ async def get_my_friend(
     Returns:
         List[FriendshipResponse]: Список объектов FriendshipResponse со статусом ACCEPTED.
     """
-    return friend_service.get_my_fridns(user.id)
-
+    key = f'friendship:get_my_friend:{user.id}'
+    async def fetch():
+        return friend_service.get_my_fridns(user.id)
+    return await redis_client.get_or_set(key,fetch,300)
 
 @friendship.get(
     '/my-send-requests',
@@ -187,11 +156,10 @@ async def get_my_friend(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(RateLimiter(times=15, seconds=60))]
 )
-@cache(key_generator=lambda user, **kwargs: f"user_me_request:{user.id}", expiration=300)
 async def get_my_sent_requests(
-    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
+    friend_service: friendship_service,
     current_user: user_dependencies,
-    redis_client: Annotated[Redis,Depends(get_redis_client)]
+    redis_client: redis_service
 ) -> list[FriendshipResponse]:
     """
     Получает список запросов на дружбу, отправленных текущим аутентифицированным пользователем,
@@ -204,7 +172,10 @@ async def get_my_sent_requests(
     Returns:
         List[FriendshipResponse]: Список объектов FriendshipResponse со статусом PENDING.
     """
-    return await friend_service.get_my_sent_requests(current_user.id)
+    key = f'friendship:get_my_sent_requests:{current_user.id}'
+    async def fetch():
+        return await friend_service.get_my_sent_requests(current_user.id)
+    return await redis_client.get_or_set(key,fetch,300)
 
 
 @friendship.get(
@@ -213,11 +184,10 @@ async def get_my_sent_requests(
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(RateLimiter(times=15, seconds=60))]
 )
-@cache(key_generator=lambda user, **kwargs: f"user_me_received:{user.id}", expiration=300)
 async def get_my_received_requests(
-    friend_service: Annotated[FriendshipService,Depends(get_friendship_service)],
+    friend_service: friendship_service,
     current_user: user_dependencies,
-    redis_client: Annotated[Redis,Depends(get_redis_client)]
+    redis_client: redis_service
 ) -> list[FriendshipResponse]:
     """
     Получает список запросов на дружбу, полученных текущим аутентифицированным пользователем,
@@ -230,4 +200,7 @@ async def get_my_received_requests(
     Returns:
         List[FriendshipResponse]: Список объектов FriendshipResponse со статусом PENDING.
     """
-    return await friend_service.get_my_received_requests(current_user.id)
+    key = f'friendship:get_my_received_requests:{current_user.id}'
+    async def fetch():
+        return await friend_service.get_my_received_requests(current_user.id)
+    return redis_client.get_or_set(key,fetch,300)
