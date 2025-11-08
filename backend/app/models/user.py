@@ -30,16 +30,16 @@ class User(Base):
     #google
     google_id: Mapped[str] = mapped_column(unique=True,nullable=True)
     google_image_url: Mapped[str] = mapped_column(nullable=True)
-    google_access_token: Mapped[str] = mapped_column(nullable=True)
-    google_refresh_token: Mapped[str] = mapped_column(nullable=True)
-    google_token_expires_at: Mapped[int] = mapped_column(nullable=True)
+    #google_access_token: Mapped[str] = mapped_column(nullable=True)
+    #google_refresh_token: Mapped[str] = mapped_column(nullable=True)
+    #google_token_expires_at: Mapped[int] = mapped_column(nullable=True)
     #spotify
     spotify_id: Mapped[str] = mapped_column(unique=True,nullable=True)
     spotify_profile_url: Mapped[str] = mapped_column(nullable=True)
     spotify_image_url: Mapped[str] = mapped_column(nullable=True)
-    spotify_access_token: Mapped[str] = mapped_column(nullable=True)
-    spotify_refresh_token: Mapped[str] = mapped_column(nullable=True)
-    spotify_token_expires_at: Mapped[int] = mapped_column(nullable=True)
+    #spotify_access_token: Mapped[str] = mapped_column(nullable=True)
+    #spotify_refresh_token: Mapped[str] = mapped_column(nullable=True)
+    #spotify_token_expires_at: Mapped[int] = mapped_column(nullable=True)
 
     owned_rooms: Mapped[list["Room"]] = relationship(
         "Room",
