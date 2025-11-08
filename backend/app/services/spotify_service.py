@@ -14,6 +14,8 @@ from app.schemas.spotify_schemas import (
 
 from app.exceptions.exception import ServerError
 from app.exceptions.spotify_exception import SpotifyAPIError,SpotifyAuthorizeError,CommandError
+from app.services.redis_service import RedisService
+from app.services.base_oauth_service import _generic_refresh_token
 
 
 class SpotifyService:
@@ -24,8 +26,9 @@ class SpotifyService:
     SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
     SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com/api"
 
-    def __init__(self,user: UserEntity):
+    def __init__(self,user: UserEntity,redis_service: RedisService):
         self.user = user
+        self.redis_service = redis_service
         self._check_user_spotify_credentials()
 
 
@@ -80,7 +83,9 @@ class SpotifyService:
         """
         Проверяет наличие необходимых токенов Spotify у пользователя.
         """
-        if not self.user.spotify_access_token or not self.user.spotify_refresh_token:
+        key = f'spotify_auth:{self.user.id}'
+        access_token,refresh_token,_ = self.redis_service.get(key)
+        if not access_token and not refresh_token:
             logger.error(f'SpotifyService: Отсутствуют токены Spotify у пользователя {self.user.id}.')
             raise SpotifyAuthorizeError(
                 detail="Пользователь не авторизован в Spotify или токены отсутствуют."
@@ -92,69 +97,43 @@ class SpotifyService:
         Обновляет токен, если он истек.
         """
         current_time = int(time()) 
-        if self.user.spotify_token_expires_at is None or \
-           self.user.spotify_token_expires_at <= (current_time + 300):
+        key = f'spotify_auth:{self.user.id}'
+        access_token,refresh_token,expires_at = self.redis_service.get(key)
+        if expires_at is None or \
+           expires_at <= (current_time + 300):
             logger.info(f'SpotifyService: Токен Spotify пользователя {self.user.id} истек или отсутствует, инициируем обновление.')
             await self._refresh_access_token()
         else:
-            logger.debug(f"SpotifyService: Используем действующий токен Spotify для пользователя {self.user.id}. Истекает через {self.user.spotify_token_expires_at - current_time} сек.")
+            logger.debug(f"SpotifyService: Используем действующий токен Spotify для пользователя {self.user.id}. Истекает через {expires_at - current_time} сек.")
 
         return {
-            "Authorization": f"Bearer {self.user.spotify_access_token}"
+            "Authorization": f"Bearer {access_token}"
         }
     
-    async def _refresh_access_token(self) -> dict[str,str]:
+    async def _refresh_access_token(self) -> dict[str, str]:
         """
         Обновляет токен доступа Spotify с использованием токена обновления.
-        Сохраняет новый токен и время его истечения в базу данных.
         """
         token_url = f"{self.SPOTIFY_ACCOUNTS_BASE_URL}/token"
-
-        token_data = {
-            'grant_type': 'refresh_token',
-            'refresh_token': self.user.spotify_refresh_token,
-            'client_id': settings.spotify.SPOTIFY_CLIENT_ID,
-            'client_secret': settings.spotify.SPOTIFY_CLIENT_SECRET
-        }
-
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-        try:
-            async with httpx.AsyncClient() as client:
-                logger.info(f"SpotifyService: Отправляем запрос на обновление токена Spotify для пользователя {self.user.id} по адресу: {token_url}")
-                response = await client.post(url=token_url, data=token_data, headers=headers)
-                response.raise_for_status()
-                new_tokens: dict = response.json()
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 400:
-                self.user.spotify_access_token = None
-                self.user.spotify_refresh_token = None
-                self.user.spotify_token_expires_at = None
-                logger.error(f"SpotifyService: Ошибка 400 при обновлении токена Spotify для пользователя {self.user.id}. Refresh-токен недействителен. Ответ: {e.response.text}", exc_info=True)
-                raise SpotifyAuthorizeError(
-                    detail="Токен обновления Spotify недействителен. Пожалуйста, переавторизуйтесь в Spotify."
-                )
-            logger.error(f"SpotifyService: Ошибка HTTP при обновлении токена Spotify для пользователя {self.user.id}: Статус {e.response.status_code} - Ответ: {e.response.text}", exc_info=True)
-            raise SpotifyAPIError(
-                status_code=e.response.status_code,
-                detail="Ошибка при обновлении токена Spotify"
-            )
-        except Exception as e:
-            logger.error(f"SpotifyService: Неизвестная ошибка при обновлении токена Spotify для пользователя {self.user.id}: {e}", exc_info=True)
-            raise SpotifyAPIError(
-                detail="Неизвестная ошибка при обновлении токена Spotify"
-            )
+        key = f'spotify_auth:{self.user.id}'
         
-        self.user.spotify_access_token = new_tokens.get('access_token')
-        self.user.spotify_refresh_token = new_tokens.get('refresh_token',self.user.spotify_refresh_token)
-        self.user.spotify_token_expires_at = int(time()+ new_tokens['expires_in'])
+        tokens_str = await self.redis_service.get(key)
+        if not tokens_str or tokens_str == f'{None}:{None}:{None}':
+            raise SpotifyAuthorizeError(detail="Отсутствует refresh token Spotify.")
+            
+        _, refresh_token, _ = tokens_str.split(':')
         
-        return {
-            'status': 'success',
-            'detail': 'refresh token'
-        }
+        new_tokens = await _generic_refresh_token(
+            self=self,
+            token_url=token_url,
+            key_prefix='spotify_auth',
+            refresh_token=refresh_token,
+            client_id=settings.spotify.SPOTIFY_CLIENT_ID,
+            client_secret=settings.spotify.SPOTIFY_CLIENT_SECRET,
+            api_name='Spotify',
+        )
     
+        return {'status': 'success', 'detail': 'refresh token'}
 
     async def _make_spotify_request(self,method: str,endpoint: str, **kwargs) -> dict[str,str]:
         """
