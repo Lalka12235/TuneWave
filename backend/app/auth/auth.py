@@ -2,13 +2,14 @@ from app.auth.jwt import decode_access_token
 from fastapi import Depends
 from typing import Annotated
 from app.repositories.user_repo import UserRepository
-from app.repositories.ban_repo import BanRepository
+from app.repositories.abc.ban_repo import ABCBanRepository
+from app.repositories.abc.user_repo import ABCUserRepository
 from app.services.mappers.mappers import UserMapper
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 
 import uuid
 from app.schemas.entity import UserEntity
 from app.logger.log_config import logger
-from app.auth.jwt import create_access_token, decode_access_token
+from app.auth.jwt import decode_access_token
 from app.schemas.user_schemas import (
     GoogleOAuthData,
     SpotifyOAuthData,
@@ -18,17 +19,14 @@ from app.schemas.user_schemas import (
 from jwt import exceptions
 from infrastructure.celery.tasks import send_email_task
 
-from app.exceptions.user_exception import (
-    UserNotAuthorized,
-) 
 from app.exceptions.exception import ServerError
 from app.exceptions.auth_exception import (
     InvalidTokenError,
     TokenDecodeError,
     UserBannedError,
 )
-from app.exceptions.user_exception import UserNotFound
-from app.config.settings import settings
+from app.exceptions.user_exception import UserNotFound,UserNotAuthorized
+from app.services.redis_service import RedisService
 
 
 oauth2_scheme = HTTPBearer(description="Введите ваш JWT-токен (Bearer <TOKEN>)")
@@ -36,13 +34,14 @@ oauth2_scheme = HTTPBearer(description="Введите ваш JWT-токен (Be
 
 class AuthService:
 
-    def __init__(self,user_repo: UserRepository,ban_repo: BanRepository,user_mapper: UserMapper):
+    def __init__(self,user_repo: ABCUserRepository,ban_repo: ABCBanRepository,user_mapper: UserMapper,redis_service: RedisService):
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         self.user_mapper = user_mapper
+        self.redis_service = redis_service
 
 
-    def _check_existing_user_by_email(self,email: str) -> User:
+    def _check_existing_user_by_email(self,email: str) -> UserEntity:
         """
         Проверяет существование пользователя по почте
         """
@@ -82,13 +81,17 @@ class AuthService:
         if user:
             self._check_global_bal_user(user.id)
             update_data = {
-                "google_access_token": google_data.google_access_token,
-                "google_token_expires_at": google_data.google_token_expires_at,
+
             }
+            value = f'{google_data.google_access_token}:{google_data.google_refresh_token}:{google_data.google_token_expires_at}'
+            key = f'google_auth:{user.id}'
+            result = await self.redis_service.set(key,value,google_data.google_token_expires_at)
 
-            if google_data.google_refresh_token:
-                update_data["google_refresh_token"] = google_data.google_refresh_token
-
+            if not result:
+                raise ServerError(
+                    detail='Ошибка при сохранение токенов. Попробуй заново авторизоваться'
+                )
+            
             if not user.google_id:
                 update_data["google_id"] = google_data.google_id
                 update_data["google_image_url"] = google_data.google_image_url
@@ -114,9 +117,6 @@ class AuthService:
                 "is_email_verified": google_data.is_email_verified,
                 "google_id": google_data.google_id,
                 "google_image_url": google_data.google_image_url,
-                "google_access_token": google_data.google_access_token,
-                "google_refresh_token": google_data.google_refresh_token,
-                "google_token_expires_at": google_data.google_token_expires_at,
             }
             try:
                 user = self.user_repo.create_user(user_data)
@@ -133,15 +133,8 @@ class AuthService:
                     detail="Ошибка при создании пользователя",
                 )
 
-            from datetime import timedelta
-
-            access_token = create_access_token(
-                payload={"sub": str(user.id)},
-                expires_delta=timedelta(minutes=settings.jwt.ACCESS_TOKEN_EXPIRE_MINUTES),
-            )
-
             return self.user_mapper.to_response(user), Token(
-                access_token=access_token, token_type="bearer"
+                access_token=google_data.google_access_token, token_type="bearer"
             )
 
     async def authenticate_user_with_spotify(
@@ -159,16 +152,17 @@ class AuthService:
         if user:
             self._check_global_bal_user(user.id)
             update_data = {}
+            value = f'{spotify_data.spotify_access_token}:{spotify_data.spotify_refresh_token}:{spotify_data.spotify_token_expires_at}'
+            key = f'spotify_auth:{user.id}'
+            result = await self.redis_service.set(key,value,spotify_data.spotify_token_expires_at)
+            if not result:
+                raise ServerError(
+                    detail='Ошибка при сохранение токенов. Попробуй заново авторизоваться'
+                )
             if not user.spotify_id:
                 update_data["spotify_id"] = spotify_data.spotify_id
                 update_data["spotify_image_url"] = spotify_data.spotify_image_url
                 update_data["spotify_profile_url"] = spotify_data.spotify_profile_url
-
-            update_data["spotify_access_token"] = spotify_data.spotify_access_token
-            update_data["spotify_refresh_token"] = spotify_data.spotify_refresh_token
-            update_data["spotify_token_expires_at"] = (
-                spotify_data.spotify_token_expires_at
-            )
             update_data["spotify_scope"] = spotify_data.spotify_scope
 
             try:
@@ -194,9 +188,6 @@ class AuthService:
                 "spotify_id": spotify_data.spotify_id,
                 "spotify_profile_url": spotify_data.spotify_profile_url,
                 "spotify_image_url": spotify_data.spotify_image_url,
-                "spotify_access_token": spotify_data.spotify_access_token,
-                "spotify_refresh_token": spotify_data.spotify_refresh_token,
-                "spotify_token_expires_at": spotify_data.spotify_token_expires_at,
                 "spotify_scope": spotify_data.spotify_scope,
             }
 
@@ -215,16 +206,12 @@ class AuthService:
                     detail="Ошибка при создании пользователя",
                 )
 
-        from datetime import timedelta
-
-        access_token = create_access_token(
-            payload={"sub": str(user.id)},
-            expires_delta=timedelta(minutes=settings.jwt.ACCESS_TOKEN_EXPIRE_MINUTES),
-        )
-
         return self.user_mapper.to_response(user), Token(
-            access_token=access_token, token_type="bearer"
+            access_token=spotify_data.spotify_access_token, token_type="bearer"
         )
+
+
+
 
 def get_user_by_token(token: str) -> UserEntity:
         """_summary_

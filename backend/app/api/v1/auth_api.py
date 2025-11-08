@@ -8,6 +8,8 @@ import jwt
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from fastapi_limiter.depends import RateLimiter
+from app.auth.auth import get_current_user
+from app.schemas.entity import UserEntity
 
 
 from app.config.settings import settings
@@ -15,7 +17,12 @@ from app.schemas.config_schemas import FrontendConfig
 from app.schemas.user_schemas import GoogleOAuthData, SpotifyOAuthData
 from app.auth.dep import get_auth_service
 from app.auth.auth import AuthService
+from app.services.google_service import GoogleService
+from app.repositories.dep import get_user_repo
+from app.repositories.user_repo import UserRepository
+from app.services.spotify_service import SpotifyService
 
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 
 auth = APIRouter(
     tags=['auth'],
@@ -276,3 +283,26 @@ async def spotify_callback(
     )
 
     return response
+
+
+@auth.post(
+    '/google/refresh_token',
+)
+async def google_refresh_token(
+    user: user_dependencies,
+):
+    user_repo = Annotated[UserRepository,Depends(get_user_repo)]
+    google_service = GoogleService(user,user_repo)
+
+    return google_service._refresh_access_token()
+
+
+@auth.post(
+    '/spotify/refresh_token',
+)
+async def spotify_refresh_token(
+    user: user_dependencies,
+):
+    spotify_service = SpotifyService(user)
+
+    return spotify_service._refresh_access_token()
