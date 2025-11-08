@@ -11,6 +11,8 @@ from app.repositories.dep import (
     get_track_repo,
 )
 
+from infrastructure.redis.redis import get_redis_client
+
 from app.services.user_service import UserService
 from app.services.ban_service import BanService
 from app.services.chat_service import ChatService
@@ -22,6 +24,7 @@ from app.services.track_service import TrackService
 from app.services.room_member_service import RoomMemberService
 from app.services.room_playback_service import RoomPlaybackService
 from app.services.room_queue_service import RoomQueueService
+from app.services.redis_service import RedisService
 
 
 from typing import Annotated
@@ -198,3 +201,8 @@ def get_room_queue_service(
     return RoomQueueService(
         room_repo,room_track_repo,track_repo,member_room_repo
     )
+
+def get_redis_service(
+        redis_client: Annotated[RedisService,Depends(get_redis_client)],
+) -> RedisService:
+    return RedisService(redis_client)

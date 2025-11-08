@@ -4,11 +4,9 @@ from typing import Annotated
 from app.repositories.user_repo import UserRepository
 from app.repositories.ban_repo import BanRepository
 from app.services.mappers.mappers import UserMapper
-from sqlalchemy.orm import Session
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 
 import uuid
-from app.config.session import get_db
-from app.models.user import User
+from app.schemas.entity import UserEntity
 from app.logger.log_config import logger
 from app.auth.jwt import create_access_token, decode_access_token
 from app.schemas.user_schemas import (
@@ -18,7 +16,7 @@ from app.schemas.user_schemas import (
     UserResponse
 )
 from jwt import exceptions
-from infrastructure.celery.tasks import EmailService
+from infrastructure.celery.tasks import send_email_task
 
 from app.exceptions.user_exception import (
     UserNotAuthorized,
@@ -38,11 +36,10 @@ oauth2_scheme = HTTPBearer(description="Введите ваш JWT-токен (Be
 
 class AuthService:
 
-    def __init__(self,user_repo: UserRepository,ban_repo: BanRepository,user_mapper: UserMapper,email_service: EmailService):
+    def __init__(self,user_repo: UserRepository,ban_repo: BanRepository,user_mapper: UserMapper):
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         self.user_mapper = user_mapper
-        self.email_service = email_service
 
 
     def _check_existing_user_by_email(self,email: str) -> User:
@@ -126,7 +123,7 @@ class AuthService:
                 logger.info(
                     f"Новый пользователь '{user.id}' зарегистрирован через Google OAuth."
                 )
-                self.email_service.send_email_task.delay(google_data.email,google_data.username)
+                send_email_task.delay(google_data.email,google_data.username)
             except Exception as e:
                 logger.error(
                     f"Ошибка при создании пользователя через Google OAuth '{google_data.email}': {e}",
@@ -208,7 +205,7 @@ class AuthService:
                 logger.info(
                     f"Новый пользователь '{user.id}' зарегистрирован через Spotify OAuth."
                 )
-                self.email_service.send_email_task.delay(spotify_data.email,spotify_data.username)
+                send_email_task.delay(spotify_data.email,spotify_data.username)
             except Exception as e:
                 logger.error(
                     f"Ошибка при создании пользователя через Spotify OAuth '{spotify_data.email}': {e}",
@@ -229,7 +226,7 @@ class AuthService:
             access_token=access_token, token_type="bearer"
         )
 
-def get_user_by_token(token: str) -> User:
+def get_user_by_token(token: str) -> UserEntity:
         """_summary_
         Args:
             db (Session): _description_
@@ -291,7 +288,7 @@ def get_current_user_id(credentials: Annotated[HTTPAuthorizationCredentials, Dep
     
 def get_current_user(
         user_id:Annotated[uuid.UUID,Depends(get_current_user_id)]
-) -> User:
+) -> UserEntity:
     """
     Зависимость FastAPI, которая возвращает объект User для текущего аутентифицированного пользователя.
     
