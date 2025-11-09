@@ -44,3 +44,28 @@ class RedisService:
         except Exception as e:
             logger.exception("RedisService: fetch_func failed for key=%s: %s", key, e,exc_info=True)
             raise
+
+    
+    async def hget(self,key: str) -> dict[str,str] | None:
+        try:
+            result = await self._client.hgetall(key)
+            if not result:
+                logger.info('RedisService: Данные не найдены')
+                return None
+            result = {
+                k.decode('utf-8'): v.decode('utf-8')
+                for k,v in result.items()
+            }
+            logger.info('RedisService: Возвращаю данные по ключу %s',key)
+            return result
+        except Exception as e:
+            logger.error('RedisService: ошибка при получение кэша %r',e,exc_info=True)
+
+    
+    async def hset(self,key: str,data: dict[str,str]) -> bool:
+        try:
+            await self._client.hset(key,mapping=data)
+            return True
+        except Exception as e:
+            logger.error("RedisService: set error for key=%s: %s", key, e, exc_info=True)
+            return False
