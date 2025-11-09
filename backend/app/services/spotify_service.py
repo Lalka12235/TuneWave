@@ -83,8 +83,11 @@ class SpotifyService:
         """
         Проверяет наличие необходимых токенов Spotify у пользователя.
         """
-        key = f'spotify_auth:{self.user.id}'
-        access_token,refresh_token,_ = self.redis_service.get(key)
+        key_access = f'spotify_auth:{self.user.id}:access'
+        key_config = f'spotify_auth:{self.user.id}:config'
+        access_token = self.redis_service.get(key_access)
+        data_token: dict = self.redis_service.hget(key_config)
+        refresh_token = data_token.get('refresh_token',None)
         if not access_token and not refresh_token:
             logger.error(f'SpotifyService: Отсутствуют токены Spotify у пользователя {self.user.id}.')
             raise SpotifyAuthorizeError(
@@ -97,8 +100,11 @@ class SpotifyService:
         Обновляет токен, если он истек.
         """
         current_time = int(time()) 
-        key = f'spotify_auth:{self.user.id}'
-        access_token,refresh_token,expires_at = self.redis_service.get(key)
+        key_access = f'spotify_auth:{self.user.id}:access'
+        key_config = f'spotify_auth:{self.user.id}:config'
+        data_token: dict = self.redis_service.hget(key_config)
+        access_token = self.redis_service.get(key_access)
+        expires_at = data_token.get('expires_at',None)
         if expires_at is None or \
            expires_at <= (current_time + 300):
             logger.info(f'SpotifyService: Токен Spotify пользователя {self.user.id} истек или отсутствует, инициируем обновление.')
@@ -115,13 +121,14 @@ class SpotifyService:
         Обновляет токен доступа Spotify с использованием токена обновления.
         """
         token_url = f"{self.SPOTIFY_ACCOUNTS_BASE_URL}/token"
-        key = f'spotify_auth:{self.user.id}'
+        key = f'spotify_auth:{self.user.id}:config'
         
-        tokens_str = await self.redis_service.get(key)
-        if not tokens_str or tokens_str == f'{None}:{None}:{None}':
+        tokens_str:dict = await self.redis_service.hget(key)
+
+        if not tokens_str:
             raise SpotifyAuthorizeError(detail="Отсутствует refresh token Spotify.")
             
-        _, refresh_token, _ = tokens_str.split(':')
+        refresh_token = tokens_str.get('refresh_token')
         
         new_tokens = await _generic_refresh_token(
             self=self,

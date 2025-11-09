@@ -46,13 +46,13 @@ class GoogleService:
         Делает запрос к Google API для обновления access_token с помощью refresh_token.
         """
         token_url = f"{self.GOOGLE_API_BASE_URl}/token"
-        key = f'google_auth:{self.user.id}'
+        key = f'google_auth:{self.user.id}:config'
         
-        tokens_str = await self.redis_service.get(key)
-        if not tokens_str or tokens_str == f'{None}:{None}:{None}':
+        tokens_str:dict = await self.redis_service.hget(key)
+        if not tokens_str:
             raise UserNotAuthorized(detail="Отсутствует refresh token Google.")
             
-        _, refresh_token, _ = tokens_str.split(':')
+        refresh_token = tokens_str.get('refresh_token')
         
         new_tokens = await _generic_refresh_token(
             self=self,

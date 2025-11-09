@@ -80,14 +80,20 @@ class AuthService:
 
         if user:
             self._check_global_bal_user(user.id)
-            update_data = {
+            update_data = {}
 
+            key_access = f'google_auth:{user.id}:access'
+            key_config = f'google_auth:{user.id}:config'
+
+            hset_dict = {
+                'refresh_token':google_data.google_refresh_token,
+                'expires_at':str(google_data.google_token_expires_at),
             }
-            value = f'{google_data.google_access_token}:{google_data.google_refresh_token}:{google_data.google_token_expires_at}'
-            key = f'google_auth:{user.id}'
-            result = await self.redis_service.set(key,value,google_data.google_token_expires_at)
 
-            if not result:
+            save_access_token = await self.redis_service.set(key_access,google_data.google_access_token,google_data.google_token_expires_at)
+            save_refresh_token = await self.redis_service.hset(key_config,hset_dict)
+
+            if not save_access_token and not save_refresh_token:
                 raise ServerError(
                     detail='Ошибка при сохранение токенов. Попробуй заново авторизоваться'
                 )
@@ -152,13 +158,23 @@ class AuthService:
         if user:
             self._check_global_bal_user(user.id)
             update_data = {}
-            value = f'{spotify_data.spotify_access_token}:{spotify_data.spotify_refresh_token}:{spotify_data.spotify_token_expires_at}'
-            key = f'spotify_auth:{user.id}'
-            result = await self.redis_service.set(key,value,spotify_data.spotify_token_expires_at)
-            if not result:
+
+            key_access = f'spotify_auth:{user.id}:access'
+            key_config = f'spotify_auth:{user.id}:config'
+            
+            hset_dict = {
+                'refresh_token': spotify_data.spotify_access_token,
+                'expires_at': str(spotify_data.spotify_token_expires_at),
+            }
+            
+            save_access_token = await self.redis_service.set(key_access,spotify_data.spotify_access_token,spotify_data.spotify_token_expires_at)
+            save_refresh_token = await self.redis_service.hset(key_config   ,hset_dict)
+
+            if not save_access_token and not save_refresh_token:
                 raise ServerError(
                     detail='Ошибка при сохранение токенов. Попробуй заново авторизоваться'
                 )
+            
             if not user.spotify_id:
                 update_data["spotify_id"] = spotify_data.spotify_id
                 update_data["spotify_image_url"] = spotify_data.spotify_image_url

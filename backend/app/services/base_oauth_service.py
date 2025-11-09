@@ -14,7 +14,8 @@ async def _generic_refresh_token(
 ) -> dict:
     """Универсальная логика обновления токена OAuth."""
     
-    key = f'{key_prefix}:{self.user.id}'
+    key_config = f'{key_prefix}:{self.user.id}:config'
+    key_access = f'{key_prefix}:{self.user.id}:access'
     
     token_data = {
         'grant_type': 'refresh_token',
@@ -34,8 +35,12 @@ async def _generic_refresh_token(
             
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 400:
-            value = f'{None}:{None}:{None}'
-            await self.redis_service.set(key, value, 0)
+            hset_dict = {
+                'refresh_token': None,
+                'expires_at': 0
+            }
+            await self.redis_service.hset(key_config, hset_dict)
+            await self.redis_service.set(key_access,None,0)
             logger.error(f"{api_name}Service: Ошибка 400. Refresh-токен недействителен.", exc_info=True)
             raise ServerError(
                 detail=f"Токен обновления {api_name} недействителен. Пожалуйста, переавторизуйтесь."
@@ -55,7 +60,10 @@ async def _generic_refresh_token(
     new_refresh_token = new_tokens.get('refresh_token', refresh_token)
     token_expires_at = int(time() + new_tokens['expires_in'])
 
-    value = f'{access_token}:{new_refresh_token}:{token_expires_at}'
-    await self.redis_service.set(key, value, token_expires_at)
-    
+    hset_dict = {
+        'refresh_token': new_refresh_token,
+        'expires_at': token_expires_at
+    }
+    await self.redis_service.set(key_access, access_token, token_expires_at)
+    await self.redis_service.hset(key_config, hset_dict)
     return new_tokens
