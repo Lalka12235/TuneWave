@@ -166,7 +166,7 @@ class AuthService:
                 'refresh_token': spotify_data.spotify_access_token,
                 'expires_at': str(spotify_data.spotify_token_expires_at),
             }
-            
+
             save_access_token = await self.redis_service.set(key_access,spotify_data.spotify_access_token,spotify_data.spotify_token_expires_at)
             save_refresh_token = await self.redis_service.hset(key_config   ,hset_dict)
 

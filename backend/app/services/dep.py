@@ -29,18 +29,18 @@ from app.services.redis_service import RedisService
 
 from typing import Annotated
 
-from app.repositories.user_repo import UserRepository
-from app.repositories.ban_repo import BanRepository
-from app.repositories.chat_repo import ChatRepository
-from app.repositories.favorite_track_repo import FavoriteTrackRepository
-from app.repositories.friendship_repo import FriendshipRepository
+from app.repositories.user_repo import SQLalchemyUserRepository
+from app.repositories.ban_repo import SQLalchemyBanRepository
+from app.repositories.chat_repo import SQLalchemyChatRepository
+from app.repositories.favorite_track_repo import SQLalchemyFavoriteTrackRepository
+from app.repositories.friendship_repo import SQLalchemyFriendshipRepository
 from app.repositories.member_room_association_repo import (
-    MemberRoomAssociationRepository,
+    SQLalchemyMemberRoomAssociationRepository,
 )
-from app.repositories.notification_repo import NotificationRepository
-from app.repositories.room_repo import RoomRepository
-from app.repositories.track_repo import TrackRepository
-from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
+from app.repositories.notification_repo import SQLalchemyNotificationRepository
+from app.repositories.room_repo import SQLalchemyRoomRepository
+from app.repositories.track_repo import SQLalchemyTrackRepository
+from app.repositories.room_track_association_repo import SQLalchemyRoomTrackAssociationRepository
 from fastapi import Depends
 
 from app.services.mappers.mappers import (
@@ -66,23 +66,23 @@ from app.services.mappers.mappers import RoomMemberMapper
 
 
 def get_user_service(
-    user_repo: Annotated[UserRepository, Depends(get_user_repo)],
-    ban_repo: Annotated[BanRepository, Depends(get_ban_repo)],
+    user_repo: Annotated[SQLalchemyUserRepository, Depends(get_user_repo)],
+    ban_repo: Annotated[SQLalchemyBanRepository, Depends(get_ban_repo)],
     user_mapper: Annotated[UserMapper, Depends(get_user_mapper)],
 ):
     return UserService(user_repo, ban_repo, user_mapper)
 
 
 def get_ban_service(
-    ban_repo: Annotated[BanRepository, Depends(get_ban_repo)],
+    ban_repo: Annotated[SQLalchemyBanRepository, Depends(get_ban_repo)],
     ban_mapper: Annotated[BanMapper, Depends(get_ban_mapper)],
 ):
     return BanService(ban_repo, ban_mapper)
 
 
 def get_chat_service(
-    chat_repo: Annotated[ChatRepository, Depends(get_chat_repo)],
-    room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
+    chat_repo: Annotated[SQLalchemyChatRepository, Depends(get_chat_repo)],
+    room_repo: Annotated[SQLalchemyRoomRepository, Depends(get_room_repo)],
     message_mapper: Annotated[MessageMapper, Depends(get_message_mapper)],
 ):
     return ChatService(chat_repo, room_repo, message_mapper)
@@ -90,9 +90,9 @@ def get_chat_service(
 
 def get_favorite_track_service(
     favorite_track_repo: Annotated[
-        FavoriteTrackRepository, Depends(get_favorite_track_repo)
+        SQLalchemyFavoriteTrackRepository, Depends(get_favorite_track_repo)
     ],
-    track_repo: Annotated[TrackRepository, Depends(get_track_repo)],
+    track_repo: Annotated[SQLalchemyTrackRepository, Depends(get_track_repo)],
     favorite_track_mapper: Annotated[
         FavoriteTrackMapper, Depends(get_favorite_track_mapper)
     ],
@@ -101,11 +101,11 @@ def get_favorite_track_service(
 
 
 def get_friendship_service(
-    friendship_repo: Annotated[FriendshipRepository, Depends(get_friendship_repo)],
+    friendship_repo: Annotated[SQLalchemyFriendshipRepository, Depends(get_friendship_repo)],
     notification_repo: Annotated[
-        NotificationRepository, Depends(get_notification_repo)
+        SQLalchemyNotificationRepository, Depends(get_notification_repo)
     ],
-    user_repo: Annotated[UserRepository, Depends(get_user_repo)],
+    user_repo: Annotated[SQLalchemyUserRepository, Depends(get_user_repo)],
     friendship_mapper: Annotated[FriendshipMapper, Depends(get_friendship_mapper)],
 ):
     return FriendshipService(
@@ -115,10 +115,10 @@ def get_friendship_service(
 
 def get_notification_service(
     notification_repo: Annotated[
-        NotificationRepository, Depends(get_notification_repo)
+        SQLalchemyNotificationRepository, Depends(get_notification_repo)
     ],
-    user_repo: Annotated[UserRepository, Depends(get_user_repo)],
-    room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
+    user_repo: Annotated[SQLalchemyUserRepository, Depends(get_user_repo)],
+    room_repo: Annotated[SQLalchemyRoomRepository, Depends(get_room_repo)],
     notification_mapper: Annotated[
         NotificationMapper, Depends(get_notification_mapper)
     ],
@@ -129,9 +129,9 @@ def get_notification_service(
 
 
 def get_room_service(
-    room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
+    room_repo: Annotated[SQLalchemyRoomRepository, Depends(get_room_repo)],
     member_room_repo: Annotated[
-        MemberRoomAssociationRepository, Depends(get_member_room_repo)
+        SQLalchemyMemberRoomAssociationRepository, Depends(get_member_room_repo)
     ],
     room_mapper: Annotated[RoomMapper, Depends(get_room_mapper)],
 ):
@@ -143,22 +143,22 @@ def get_room_service(
 
 
 def get_track_service(
-    track_repo: Annotated[TrackRepository, Depends(get_track_repo)],
+    track_repo: Annotated[SQLalchemyTrackRepository, Depends(get_track_repo)],
     track_mapper: Annotated[TrackMapper, Depends(get_track_mapper)],
 ):
     return TrackService(track_repo, track_mapper)
 
 
 def get_room_member_service(
-    room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
-    user_repo: Annotated[UserRepository, Depends(get_user_repo)],
+    room_repo: Annotated[SQLalchemyRoomRepository, Depends(get_room_repo)],
+    user_repo: Annotated[SQLalchemyUserRepository, Depends(get_user_repo)],
     member_room_repo: Annotated[
-        MemberRoomAssociationRepository, Depends(get_member_room_repo)
+        SQLalchemyMemberRoomAssociationRepository, Depends(get_member_room_repo)
     ],
     notification_repo: Annotated[
-        NotificationRepository, Depends(get_notification_repo)
+        SQLalchemyNotificationRepository, Depends(get_notification_repo)
     ],
-    ban_repo: Annotated[BanRepository, Depends(get_ban_repo)],
+    ban_repo: Annotated[SQLalchemyBanRepository, Depends(get_ban_repo)],
     room_mapper: Annotated[RoomMapper, Depends(get_room_mapper)],
     user_mapper: Annotated[UserMapper, Depends(get_user_mapper)],
     ban_mapper: Annotated[BanMapper, Depends(get_ban_mapper)],
@@ -178,11 +178,11 @@ def get_room_member_service(
 
 
 def get_room_playback_service(
-        user_repo: Annotated[UserRepository, Depends(get_user_repo)],
-        room_track_repo: Annotated[RoomTrackAssociationRepository,Depends(get_room_track_repo)],
-        room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
+        user_repo: Annotated[SQLalchemyUserRepository, Depends(get_user_repo)],
+        room_track_repo: Annotated[SQLalchemyRoomTrackAssociationRepository,Depends(get_room_track_repo)],
+        room_repo: Annotated[SQLalchemyRoomRepository, Depends(get_room_repo)],
         member_room_repo: Annotated[
-        MemberRoomAssociationRepository, Depends(get_member_room_repo)
+        SQLalchemyMemberRoomAssociationRepository, Depends(get_member_room_repo)
     ],
 ) -> RoomPlaybackService:
     return RoomPlaybackService(
@@ -191,11 +191,11 @@ def get_room_playback_service(
 
 
 def get_room_queue_service(
-        room_repo: Annotated[RoomRepository, Depends(get_room_repo)],
-        room_track_repo: Annotated[RoomTrackAssociationRepository,Depends(get_room_track_repo)],
-        track_repo: Annotated[TrackRepository, Depends(get_track_repo)],
+        room_repo: Annotated[SQLalchemyRoomRepository, Depends(get_room_repo)],
+        room_track_repo: Annotated[SQLalchemyRoomTrackAssociationRepository,Depends(get_room_track_repo)],
+        track_repo: Annotated[SQLalchemyTrackRepository, Depends(get_track_repo)],
         member_room_repo: Annotated[
-        MemberRoomAssociationRepository, Depends(get_member_room_repo)
+        SQLalchemyMemberRoomAssociationRepository, Depends(get_member_room_repo)
     ],
 ) -> RoomQueueService:
     return RoomQueueService(

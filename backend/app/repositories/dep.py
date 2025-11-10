@@ -1,24 +1,24 @@
-from app.repositories.user_repo import UserRepository
-from app.repositories.ban_repo import BanRepository
-from app.repositories.chat_repo import ChatRepository
-from app.repositories.favorite_track_repo import FavoriteTrackRepository
-from app.repositories.friendship_repo import FriendshipRepository
-from app.repositories.member_room_association_repo import MemberRoomAssociationRepository
-from app.repositories.notification_repo import NotificationRepository
-from app.repositories.room_repo import RoomRepository
-from app.repositories.track_repo import TrackRepository
-from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
+from app.repositories.user_repo import SQLalchemyUserRepository
+from app.repositories.ban_repo import SQLalchemyBanRepository
+from app.repositories.chat_repo import SQLalchemyChatRepository
+from app.repositories.favorite_track_repo import SQLalchemyFavoriteTrackRepository
+from app.repositories.friendship_repo import SQLalchemyFriendshipRepository
+from app.repositories.member_room_association_repo import SQLalchemyMemberRoomAssociationRepository
+from app.repositories.notification_repo import SQLalchemyNotificationRepository
+from app.repositories.room_repo import SQLalchemyRoomRepository
+from app.repositories.track_repo import SQLalchemyTrackRepository
+from app.repositories.room_track_association_repo import SQLalchemyRoomTrackAssociationRepository
 
-from app.repositories.abc.ban_repo import ABCBanRepository
-from app.repositories.abc.chat_repo import ABCChatRepository
-from app.repositories.abc.track_repo import ABCTrackRepository
-from app.repositories.abc.user_repo import ABCUserRepository
-from app.repositories.abc.member_room_association import ABCMemberRoomAssociationRepository
-from app.repositories.abc.notification_repo import ABCNotificationRepository
-from app.repositories.abc.room_repo import ABCRoomRepository
-from app.repositories.abc.room_track_association_repo import ABCRoomTrackAssociationRepository
-from app.repositories.abc.favorite_track_repo import ABCFavoriteTrackRepository
-from app.repositories.abc.friendship_repo import ABCFriendshipRepository
+from app.repositories.abc.ban_repo import BanRepository
+from app.repositories.abc.chat_repo import ChatRepository
+from app.repositories.abc.track_repo import TrackRepository
+from app.repositories.abc.user_repo import UserRepository
+from app.repositories.abc.member_room_association import MemberRoomAssociationRepository
+from app.repositories.abc.notification_repo import NotificationRepository
+from app.repositories.abc.room_repo import RoomRepository
+from app.repositories.abc.room_track_association_repo import RoomTrackAssociationRepository
+from app.repositories.abc.favorite_track_repo import FavoriteTrackRepository
+from app.repositories.abc.friendship_repo import FriendshipRepository
 
 from app.config.session import get_db
 from fastapi import Depends
@@ -26,43 +26,43 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 
 
-def get_user_repo(db: Annotated[Session, Depends(get_db)]) -> ABCUserRepository:
+def get_user_repo(db: Annotated[Session, Depends(get_db)]) -> UserRepository:
     """Get the user repository."""
-    return UserRepository(db)
+    return SQLalchemyUserRepository(db)
 
 
-def get_ban_repo(db: Annotated[Session, Depends(get_db)]) -> ABCBanRepository:
+def get_ban_repo(db: Annotated[Session, Depends(get_db)]) -> BanRepository:
     """Get the ban repository."""
-    return BanRepository(db)
+    return SQLalchemyBanRepository(db)
 
-def get_chat_repo(db: Annotated[Session, Depends(get_db)]) -> ABCChatRepository:
+def get_chat_repo(db: Annotated[Session, Depends(get_db)]) -> ChatRepository:
     """Get the chat repository."""
-    return ChatRepository(db)
+    return SQLalchemyChatRepository(db)
 
-def get_favorite_track_repo(db: Annotated[Session, Depends(get_db)]) -> ABCFavoriteTrackRepository:
+def get_favorite_track_repo(db: Annotated[Session, Depends(get_db)]) -> FavoriteTrackRepository:
     """Get the favorite track repository."""
-    return FavoriteTrackRepository(db)
+    return SQLalchemyFavoriteTrackRepository(db)
 
-def get_friendship_repo(db: Annotated[Session, Depends(get_db)]) -> ABCFriendshipRepository:
+def get_friendship_repo(db: Annotated[Session, Depends(get_db)]) -> FriendshipRepository:
     """Get the friendship repository."""
-    return FriendshipRepository(db)
+    return SQLalchemyFriendshipRepository(db)
 
-def get_member_room_repo(db: Annotated[Session, Depends(get_db)]) -> ABCMemberRoomAssociationRepository:
+def get_member_room_repo(db: Annotated[Session, Depends(get_db)]) -> MemberRoomAssociationRepository:
     """Get the member room association repository."""
-    return MemberRoomAssociationRepository(db)
+    return SQLalchemyMemberRoomAssociationRepository(db)
 
-def get_notification_repo(db: Annotated[Session, Depends(get_db)]) -> ABCNotificationRepository:
+def get_notification_repo(db: Annotated[Session, Depends(get_db)]) -> NotificationRepository:
     """Get the notification repository."""
-    return NotificationRepository(db)
+    return SQLalchemyNotificationRepository(db)
 
-def get_room_repo(db: Annotated[Session, Depends(get_db)]) -> ABCRoomRepository:
+def get_room_repo(db: Annotated[Session, Depends(get_db)]) -> RoomRepository:
     """Get the room repository."""
-    return RoomRepository(db)
+    return SQLalchemyRoomRepository(db)
 
-def get_track_repo(db: Annotated[Session, Depends(get_db)]) -> ABCTrackRepository:
+def get_track_repo(db: Annotated[Session, Depends(get_db)]) -> TrackRepository:
     """Get the track repository."""
-    return TrackRepository(db)
+    return SQLalchemyTrackRepository(db)
 
-def get_room_track_repo(db: Annotated[Session, Depends(get_db)]) -> ABCRoomTrackAssociationRepository:
+def get_room_track_repo(db: Annotated[Session, Depends(get_db)]) -> RoomTrackAssociationRepository:
     """Get the room track association repository."""
-    return RoomTrackAssociationRepository(db)
+    return SQLalchemyRoomTrackAssociationRepository(db)
