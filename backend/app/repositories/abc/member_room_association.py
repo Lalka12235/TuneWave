@@ -3,7 +3,7 @@ import uuid
 from app.schemas.entity import MemberRoomEntity,RoomEntity
 
 
-class ABCMemberRoomAssociationRepository(ABC):
+class MemberRoomAssociationRepository(ABC):
     """
     Абстрактный репозиторий для работы с участниками комнаты.
     """

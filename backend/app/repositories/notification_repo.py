@@ -4,10 +4,10 @@ from app.models import Notification
 import uuid
 from app.schemas.enum import NotificationType
 from app.schemas.entity import NotificationEntity
-from app.repositories.abc.notification_repo import ABCNotificationRepository
+from app.repositories.abc.notification_repo import NotificationRepository
 
 
-class NotificationRepository(ABCNotificationRepository):
+class SQLalchemyNotificationRepository(NotificationRepository):
     """
     Репозиторий для выполнения операций CRUD над моделью Notification.
     Отвечает за управление записями уведомлений.

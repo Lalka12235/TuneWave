@@ -3,7 +3,7 @@ import uuid
 from app.schemas.entity import TrackEntity
 
 
-class ABCTrackRepository(ABC):
+class TrackRepository(ABC):
     """
     Абстрактный репозиторий для работы с треками.
     """

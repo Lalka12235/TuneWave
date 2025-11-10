@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session,joinedload
 from app.models import FavoriteTrack
 import uuid
 from app.schemas.entity import FavoriteTrackEntity
-from app.repositories.abc.favorite_track_repo import ABCFavoriteTrackRepository
+from app.repositories.abc.favorite_track_repo import FavoriteTrackRepository
 
 
-class FavoriteTrackRepository(ABCFavoriteTrackRepository):
+class SQLalchemyFavoriteTrackRepository(FavoriteTrackRepository):
 
     def __init__(self, db: Session):
         self._db = db

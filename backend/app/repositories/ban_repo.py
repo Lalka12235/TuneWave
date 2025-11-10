@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 from app.models.ban import Ban
 import uuid
 from app.schemas.entity import BanEntity
-from app.repositories.abc.ban_repo import ABCBanRepository
+from app.repositories.abc.ban_repo import BanRepository
 
 
-class BanRepository(ABCBanRepository):
+class SQLalchemyBanRepository(BanRepository):
     """
     Репозиторий для выполнения операций CRUD над моделью Ban.
     Отвечает за управление записями о банах пользователей.

@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session,joinedload
 from app.models import Member_room_association,Room
 from app.schemas.entity import RoomEntity,MemberRoomEntity
 import uuid
-from app.repositories.abc.member_room_association import ABCMemberRoomAssociationRepository
+from app.repositories.abc.member_room_association import MemberRoomAssociationRepository
 
 
-class MemberRoomAssociationRepository(ABCMemberRoomAssociationRepository):
+class SQLalchemyMemberRoomAssociationRepository(MemberRoomAssociationRepository):
     """
     Репозиторий для выполнения операций CRUD над моделью Member_room_association.
     Отвечает за управление связями между пользователями и комнатами (членство).

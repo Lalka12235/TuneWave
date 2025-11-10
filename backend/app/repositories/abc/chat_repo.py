@@ -4,7 +4,7 @@ from app.schemas.entity import MessageEntity
 from datetime import datetime
 
 
-class ABCChatRepository(ABC):
+class ChatRepository(ABC):
     """
     Абстрактный репозиторий для работы с чатом комнаты.
     """

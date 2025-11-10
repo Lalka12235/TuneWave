@@ -5,10 +5,10 @@ import uuid
 from app.schemas.enum import FriendshipStatus
 from datetime import datetime
 from app.schemas.entity import FriendshipEntity
-from app.repositories.abc.friendship_repo import ABCFriendshipRepository
+from app.repositories.abc.friendship_repo import FriendshipRepository
 
 
-class FriendshipRepository(ABCFriendshipRepository):
+class SQLalchemyFriendshipRepository(FriendshipRepository):
     """
     Репозиторий для выполнения операций CRUD над моделью Friendship.
     Отвечает за управление записями о дружбе и запросах на дружбу.

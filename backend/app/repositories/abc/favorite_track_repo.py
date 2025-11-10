@@ -3,7 +3,7 @@ import uuid
 from app.schemas.entity import FavoriteTrackEntity
 
 
-class ABCFavoriteTrackRepository(ABC):
+class FavoriteTrackRepository(ABC):
 
     @abstractmethod
     def get_favorite_tracks(self, user_id: uuid.UUID) -> list[FavoriteTrackEntity]:

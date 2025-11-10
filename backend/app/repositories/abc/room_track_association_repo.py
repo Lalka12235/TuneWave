@@ -3,7 +3,7 @@ import uuid
 from app.schemas.entity import RoomTrackAssociationEntity
 
 
-class ABCRoomTrackAssociationRepository(ABC):
+class RoomTrackAssociationRepository(ABC):
     """
     Абстрактный репозиторий для работы с треками комнаты.
     """

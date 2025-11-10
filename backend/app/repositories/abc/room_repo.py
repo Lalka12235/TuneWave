@@ -4,7 +4,7 @@ from app.schemas.entity import RoomEntity
 from typing import Any
 
 
-class ABCRoomRepository(ABC):
+class RoomRepository(ABC):
     """
     Абстрактный репозиторий для работы с комнатами.
     """

@@ -6,7 +6,7 @@ from datetime import datetime
 
 
 
-class ABCFriendshipRepository(ABC):
+class FriendshipRepository(ABC):
     """
     Абстрактный репозиторий для работы с дружбой.
     """

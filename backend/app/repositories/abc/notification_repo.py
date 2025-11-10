@@ -5,7 +5,7 @@ from app.schemas.enum import NotificationType
 
 
 
-class ABCNotificationRepository(ABC):
+class NotificationRepository(ABC):
     """
     Абстрактный репозиторий для работы с уведомлениями.
     """

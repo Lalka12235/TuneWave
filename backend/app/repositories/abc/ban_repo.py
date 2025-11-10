@@ -3,7 +3,7 @@ import uuid
 from app.schemas.entity import BanEntity
 
 
-class ABCBanRepository(ABC):
+class BanRepository(ABC):
     """
     Абстрактный репозиторий для работы с банами пользователей.
     """

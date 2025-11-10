@@ -2,11 +2,11 @@ from sqlalchemy import select,delete
 from sqlalchemy.orm import Session
 from app.models import Track
 import uuid
-from app.repositories.abc.track_repo import ABCTrackRepository
+from app.repositories.abc.track_repo import TrackRepository
 from app.schemas.entity import TrackEntity
 
 
-class TrackRepository(ABCTrackRepository):
+class SQLalchemyTrackRepository(TrackRepository):
 
     def __init__(self, db: Session):
         self._db = db
