@@ -4,17 +4,17 @@ import uuid
 from app.logger.log_config import logger
 from app.schemas.entity import UserEntity,RoomTrackAssociationEntity
 
-from app.repositories.abc.room_repo import ABCRoomRepository
-from app.repositories.abc.room_track_association_repo import ABCRoomTrackAssociationRepository
+from app.repositories.abc.room_repo import RoomRepository
+from app.repositories.abc.room_track_association_repo import RoomTrackAssociationRepository
 
 from app.schemas.enum import Role
 from app.schemas.room_schemas import TrackInQueueResponse
 
 from app.services.mappers.mappers import TrackMapper
-from app.repositories.abc.track_repo import ABCTrackRepository
+from app.repositories.abc.track_repo import TrackRepository
 
 from app.ws.connection_manager import manager
-from app.repositories.abc.member_room_association import ABCMemberRoomAssociationRepository
+from app.repositories.abc.member_room_association import MemberRoomAssociationRepository
 
 from app.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError,RoomPermissionDeniedError,TrackAlreadyInQueueError
 from app.exceptions.track_exception import TrackNotFound
@@ -27,10 +27,10 @@ class RoomQueueService:
     
     def __init__(
         self,
-        room_repo: ABCRoomRepository,
-        room_track_repo: ABCRoomTrackAssociationRepository,
-        track_repo: ABCTrackRepository,
-        member_room_repo: ABCMemberRoomAssociationRepository,
+        room_repo: RoomRepository,
+        room_track_repo: RoomTrackAssociationRepository,
+        track_repo: TrackRepository,
+        member_room_repo: MemberRoomAssociationRepository,
     ):
         self.room_repo = room_repo
         self.room_track_repo = room_track_repo

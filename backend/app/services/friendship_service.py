@@ -4,10 +4,10 @@ from datetime import datetime
 
 from app.logger.log_config import logger
 from app.schemas.enum import NotificationType,FriendshipStatus
-from app.repositories.abc.friendship_repo import ABCFriendshipRepository
-from app.repositories.abc.user_repo import ABCUserRepository
+from app.repositories.abc.friendship_repo import FriendshipRepository
+from app.repositories.abc.user_repo import UserRepository
 from app.schemas.friendship_schemas import FriendshipResponse
-from app.repositories.abc.notification_repo import ABCNotificationRepository
+from app.repositories.abc.notification_repo import NotificationRepository
 from app.ws.connection_manager import manager
 
 from app.services.mappers.friendship_mapper import FriendshipMapper
@@ -32,9 +32,9 @@ class FriendshipService:
 
     def __init__(
         self,
-        friend_repo: ABCFriendshipRepository,
-        notify_repo: ABCNotificationRepository,
-        user_repo: ABCUserRepository,
+        friend_repo: FriendshipRepository,
+        notify_repo: NotificationRepository,
+        user_repo: UserRepository,
         friendship_mapper: FriendshipMapper,
     ):
         self.friend_repo = friend_repo

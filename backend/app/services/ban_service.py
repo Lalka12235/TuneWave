@@ -1,7 +1,7 @@
 import uuid
 
 from app.logger.log_config import logger
-from app.repositories.abc.ban_repo import ABCBanRepository
+from app.repositories.abc.ban_repo import BanRepository
 from app.schemas.ban_schemas import BanCreate, BanRemove, BanResponse
 from app.services.mappers.ban_mapper import BanMapper
 from app.exceptions.ban_exception import UserBannedInRoom,UserBannedGlobal,UserNotExistingBan
@@ -14,7 +14,7 @@ class BanService:
     Реализует бизнес логику для работы с баном пользователей
     """
 
-    def __init__(self,ban_repo: ABCBanRepository,ban_mapper: BanMapper):
+    def __init__(self,ban_repo: BanRepository,ban_mapper: BanMapper):
         self.ban_repo = ban_repo
         self.ban_mapper = ban_mapper
 

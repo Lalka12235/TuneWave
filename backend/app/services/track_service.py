@@ -1,7 +1,7 @@
 import uuid
 
 from app.logger.log_config import logger
-from app.repositories.abc.track_repo import ABCTrackRepository
+from app.repositories.abc.track_repo import TrackRepository
 from app.schemas.track_schemas import TrackCreate, TrackResponse
 
 from app.services.mappers.track_mapper import TrackMapper
@@ -14,7 +14,7 @@ class TrackService:
     Реализует бизнес логику для работы с треками
     """
 
-    def __init__(self, track_repo: ABCTrackRepository, track_mapper: TrackMapper):
+    def __init__(self, track_repo: TrackRepository, track_mapper: TrackMapper):
         self.track_repo = track_repo
         self.track_mapper = track_mapper
 

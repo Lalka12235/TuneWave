@@ -3,10 +3,10 @@ import uuid
 
 from app.logger.log_config import logger
 from app.schemas.entity import UserEntity
-from app.repositories.abc.member_room_association import ABCMemberRoomAssociationRepository
-from app.repositories.abc.room_repo import ABCRoomRepository
-from app.repositories.abc.room_track_association_repo import ABCRoomTrackAssociationRepository
-from app.repositories.abc.user_repo import ABCUserRepository
+from app.repositories.abc.member_room_association import MemberRoomAssociationRepository
+from app.repositories.abc.room_repo import RoomRepository
+from app.repositories.abc.room_track_association_repo import RoomTrackAssociationRepository
+from app.repositories.abc.user_repo import UserRepository
 
 from app.schemas.enum import Role
 from app.schemas.room_schemas import RoomResponse
@@ -34,10 +34,10 @@ class RoomPlaybackService:
 
     def __init__(
         self,
-        user_repo: ABCUserRepository,
-        room_track_repo: ABCRoomTrackAssociationRepository,
-        room_repo: ABCRoomRepository,
-        member_room_repo: ABCMemberRoomAssociationRepository,
+        user_repo: UserRepository,
+        room_track_repo: RoomTrackAssociationRepository,
+        room_repo: RoomRepository,
+        member_room_repo: MemberRoomAssociationRepository,
     ):
         self.user_repo = user_repo
         self.room_track_repo = room_track_repo

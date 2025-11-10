@@ -2,8 +2,8 @@ import uuid
 
 from app.logger.log_config import logger
 from app.schemas.entity import UserEntity
-from app.repositories.abc.member_room_association import ABCMemberRoomAssociationRepository
-from app.repositories.abc.room_repo import ABCRoomRepository
+from app.repositories.abc.member_room_association import MemberRoomAssociationRepository
+from app.repositories.abc.room_repo import RoomRepository
 
 from app.schemas.enum import Role
 from app.schemas.room_schemas import (
@@ -33,8 +33,8 @@ class RoomService:
 
     def __init__(
         self,
-        room_repo: ABCRoomRepository,
-        member_room_repo: ABCMemberRoomAssociationRepository,
+        room_repo: RoomRepository,
+        member_room_repo: MemberRoomAssociationRepository,
         room_mapper: RoomMapper,
     ):
         self.room_repo = room_repo

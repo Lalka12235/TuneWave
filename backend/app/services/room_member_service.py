@@ -3,10 +3,10 @@ import uuid
 
 from app.logger.log_config import logger
 from app.schemas.entity import UserEntity,RoomEntity
-from app.repositories.abc.ban_repo import ABCBanRepository
-from app.repositories.abc.member_room_association import ABCMemberRoomAssociationRepository
-from app.repositories.abc.room_repo import ABCRoomRepository
-from app.repositories.abc.user_repo import ABCUserRepository
+from app.repositories.abc.ban_repo import BanRepository
+from app.repositories.abc.member_room_association import MemberRoomAssociationRepository
+from app.repositories.abc.room_repo import RoomRepository
+from app.repositories.abc.user_repo import UserRepository
 
 from app.schemas.ban_schemas import BanCreate, BanResponse
 from app.schemas.enum import NotificationType, Role
@@ -21,7 +21,7 @@ from app.services.mappers.mappers import (
     BanMapper,
     RoomMemberMapper,
 )
-from app.repositories.abc.notification_repo import ABCNotificationRepository
+from app.repositories.abc.notification_repo import NotificationRepository
 
 from app.auth.hash import verify_pass
 from app.ws.connection_manager import manager
@@ -50,11 +50,11 @@ class RoomMemberService:
 
     def __init__(
         self,
-        room_repo: ABCRoomRepository,
-        user_repo: ABCUserRepository,
-        member_room_repo: ABCMemberRoomAssociationRepository,
-        ban_repo: ABCBanRepository,
-        notify_repo: ABCNotificationRepository,
+        room_repo: RoomRepository,
+        user_repo: UserRepository,
+        member_room_repo: MemberRoomAssociationRepository,
+        ban_repo: BanRepository,
+        notify_repo: NotificationRepository,
         room_mapper: RoomMapper,
         user_mapper: UserMapper,
         ban_mapper: BanMapper,
