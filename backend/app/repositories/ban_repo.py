@@ -5,7 +5,6 @@ import uuid
 from app.schemas.entity import BanEntity
 from app.repositories.abc.ban_repo import BanRepository
 
-
 class SQLalchemyBanRepository(BanRepository):
     """
     Репозиторий для выполнения операций CRUD над моделью Ban.
@@ -15,7 +14,7 @@ class SQLalchemyBanRepository(BanRepository):
         self._db: Session = db
     
 
-    def from_modedl_to_entity(self,model: Ban | None) -> BanEntity | None:
+    def from_model_to_entity(self,model: Ban) -> BanEntity:
         return BanEntity(
             id=model.id,
             ban_user_id=model.ban_user_id,
@@ -31,7 +30,6 @@ class SQLalchemyBanRepository(BanRepository):
         Получает список банов, выданных указанным пользователем (кто забанил).
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя, который выдал бан.
 
         Returns:
@@ -42,7 +40,7 @@ class SQLalchemyBanRepository(BanRepository):
         )
         result = self._db.execute(stmt)
         result = result.scalars().all()
-        return self.from_modedl_to_entity(result)
+        return result
 
     
     def get_bans_on_user(self,user_id: uuid.UUID) -> list[BanEntity]:
@@ -50,7 +48,6 @@ class SQLalchemyBanRepository(BanRepository):
         Получает список банов, полученных указанным пользователем (кого забанили).
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя, который был забанен.
 
         Returns:
@@ -61,7 +58,7 @@ class SQLalchemyBanRepository(BanRepository):
         )
         result = self._db.execute(stmt)
         result = result.scalars().all()
-        return self.from_modedl_to_entity(result)
+        return result
     
 
     def add_ban(self,room_id: uuid.UUID,ban_user_id: uuid.UUID,reason: str,by_ban_user_id: uuid.UUID) -> BanEntity | None:
@@ -69,7 +66,6 @@ class SQLalchemyBanRepository(BanRepository):
         Добавляет новую запись о бане в базу данных.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             ban_user_id (uuid.UUID): ID пользователя, которого нужно забанить.
             reason (Optional[str]): Причина бана.
             by_ban_user_id (uuid.UUID): ID пользователя, который выдал бан.
@@ -87,7 +83,7 @@ class SQLalchemyBanRepository(BanRepository):
         self._db.add(new_ban_user)
         self._db.flush()
         self._db.refresh(new_ban_user)
-        return self.from_modedl_to_entity(new_ban_user)
+        return self.from_model_to_entity(new_ban_user)
     
 
     
@@ -96,7 +92,6 @@ class SQLalchemyBanRepository(BanRepository):
         Удаляет запись о бане из базы данных.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             ban_user_id (uuid.UUID): ID пользователя, с которого нужно снять бан.
             room_id (Optional[uuid.UUID]): ID комнаты, в которой нужно снять бан. None для глобального бана.
 
@@ -116,7 +111,6 @@ class SQLalchemyBanRepository(BanRepository):
         """_summary_
 
         Args:
-            db (Session): _description_
             ban_user_id (uuid.UUID): _description_
 
         Returns:
@@ -137,7 +131,6 @@ class SQLalchemyBanRepository(BanRepository):
         Проверяет, забанен ли пользователь ГЛОБАЛЬНО (то есть, во всех комнатах).
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя для проверки.
 
         Returns:
@@ -149,7 +142,7 @@ class SQLalchemyBanRepository(BanRepository):
         )
         result = self._db.execute(stmt)
         result = result.scalar_one_or_none()
-        return self.from_modedl_to_entity(result)
+        return self.from_model_to_entity(result)
     
     
     
@@ -158,7 +151,6 @@ class SQLalchemyBanRepository(BanRepository):
         Проверяет, забанен ли пользователь в КОНКРЕТНОЙ комнате.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя для проверки.
             room_id (uuid.UUID): ID комнаты, для которой проверяется бан.
 
@@ -171,4 +163,4 @@ class SQLalchemyBanRepository(BanRepository):
         )
         result = self._db.execute(stmt)
         result = result.scalar_one_or_none()
-        return self.from_modedl_to_entity(result)
+        return self.from_model_to_entity(result)

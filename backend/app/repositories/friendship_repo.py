@@ -35,7 +35,6 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
         Загружает отношения requester и accepter для удобства.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             friendship_id (uuid.UUID): ID записи о дружбе.
 
         Returns:
@@ -59,7 +58,6 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
         Загружает отношения requester и accepter.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user1_id (uuid.UUID): ID первого пользователя.
             user2_id (uuid.UUID): ID второго пользователя.
 
@@ -86,7 +84,6 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
         Загружает отношения requester и accepter.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя, для которого ищутся друзья.
 
         Returns:
@@ -103,7 +100,7 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
             joinedload(Friendship.accepter),
         )
         result = self._db.execute(stmt).scalars().all()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -114,7 +111,6 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
         Загружает отношение accepter.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             requester_id (uuid.UUID): ID пользователя, который отправил запросы.
 
         Returns:
@@ -127,7 +123,7 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
             joinedload(Friendship.accepter),
         )
         result = self._db.execute(stmt).scalars().all()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -138,7 +134,6 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
         Загружает отношение requester.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             accepter_id (uuid.UUID): ID пользователя, который получил запросы.
 
         Returns:
@@ -151,7 +146,7 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
             joinedload(Friendship.requester),
         )
         result = self._db.execute(stmt).scalars().all()
-        return self.from_model_to_entity(result)
+        return result
 
 
 
@@ -161,7 +156,6 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
         Создает новый запрос на дружбу со статусом PENDING.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             requester_id (uuid.UUID): ID пользователя, который отправляет запрос.
             accepter_id (uuid.UUID): ID пользователя, который получает запрос.
 
@@ -183,7 +177,6 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
         Обновляет статус существующего запроса на дружбу.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             friendship_id (uuid.UUID): ID записи о дружбе.
             new_status (FriendshipStatus): Новый статус (ACCEPTED или DECLINED).
 
@@ -203,7 +196,6 @@ class SQLalchemyFriendshipRepository(FriendshipRepository):
         Удаляет запись о дружбе (или запрос) по её ID.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             friendship_id (uuid.UUID): ID записи о дружбе для удаления.
 
         Returns:

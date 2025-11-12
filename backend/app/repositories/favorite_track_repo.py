@@ -26,7 +26,6 @@ class SQLalchemyFavoriteTrackRepository(FavoriteTrackRepository):
         включая связанные объекты треков.
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): Уникальный ID пользователя.
 
         Returns:
@@ -40,7 +39,7 @@ class SQLalchemyFavoriteTrackRepository(FavoriteTrackRepository):
             joinedload(FavoriteTrack.track)
         )
         result = self._db.execute(stmt).scalars().all()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -49,7 +48,6 @@ class SQLalchemyFavoriteTrackRepository(FavoriteTrackRepository):
         Добавляет трек в список избранных треков пользователя.
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя, который добавляет трек.
             track_id (uuid.UUID): ID трека, который нужно добавить в избранное.
 
@@ -73,7 +71,6 @@ class SQLalchemyFavoriteTrackRepository(FavoriteTrackRepository):
         Удаляет трек из списка избранных треков пользователя.
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя, который удаляет трек.
             track_id (uuid.UUID): ID трека, который нужно удалить из избранного.
 
@@ -95,7 +92,6 @@ class SQLalchemyFavoriteTrackRepository(FavoriteTrackRepository):
         Проверяет, является ли указанный трек любимым для данного пользователя.
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя.
             track_id (uuid.UUID): ID трека.
 

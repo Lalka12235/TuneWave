@@ -13,7 +13,7 @@ class SQLalchemyChatRepository(ChatRepository):
         self._db: Session = db
 
     
-    def from_model_to_entity(self,model: Message | None) -> MessageEntity | None:
+    def from_model_to_entity(self,model: Message) -> MessageEntity | None:
         return MessageEntity(
             id=model.id,
             text=model.text,
@@ -26,7 +26,6 @@ class SQLalchemyChatRepository(ChatRepository):
         """Возвращает все сообщения в комнате
 
         Args:
-            db (Session): Сессия базы данных
             room_id (uuid.UUID): Для нахождения сообщений в нужной комнате
 
         Returns:
@@ -45,7 +44,7 @@ class SQLalchemyChatRepository(ChatRepository):
 
         result = self._db.execute(stmt)
         result = result.scalars().all()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -53,7 +52,6 @@ class SQLalchemyChatRepository(ChatRepository):
         """Создает сообщение в базе данных
 
         Args:
-            db (Session): Сессия базы данных
             room_id (uuid.UUID): Комната в которой создается сообщение
             user_id (uuid.UUID): Кто отправляет сообщение
             text (str): Сообщение создаваемое в базе данных

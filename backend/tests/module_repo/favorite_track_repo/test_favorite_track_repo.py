@@ -1,9 +1,3 @@
-from tests.module_repo.favorite_track_repo.conftest import (
-    create_table,
-    favorite_track_repo,
-)
-from tests.module_repo.user_repo.conftest import user_repo, user_data
-from tests.module_repo.track_repo.conftest import track_repo, track_data
 from app.repositories.favorite_track_repo import FavoriteTrackRepository
 from app.repositories.user_repo import UserRepository
 from app.repositories.track_repo import TrackRepository
@@ -25,7 +19,7 @@ def test_get_favorite_track(
     created_track: Track = track_repo.create_track(track_data)
     assert created_track is not None
 
-    new_favorite_track: FavoriteTrack = favorite_track_repo.add_favorite_track(created_user.id,created_track.id)
+    favorite_track_repo.add_favorite_track(created_user.id,created_track.id)
 
     fetched: list[FavoriteTrack] = favorite_track_repo.get_favorite_tracks(
         created_user.id
@@ -82,7 +76,7 @@ def test_remove_favorite_track(
     assert len(fetched) > 0
 
     success_delete: bool = favorite_track_repo.remove_favorite_track(created_user.id,created_track.id)
-    assert success_delete == True
+    assert success_delete
 
 
 def test_is_favorite_track(
@@ -104,4 +98,4 @@ def test_is_favorite_track(
 
     fetched: bool = favorite_track_repo.is_favorite_track(created_user.id,created_track.id)
 
-    assert fetched == True
+    assert fetched

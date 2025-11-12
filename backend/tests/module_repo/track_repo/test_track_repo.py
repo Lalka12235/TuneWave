@@ -1,4 +1,3 @@
-from tests.module_repo.track_repo.conftest import create_table, track_repo,track_data
 from app.models import Track
 from app.repositories.track_repo import TrackRepository
 from app.schemas.track_schemas import TrackCreate
@@ -20,7 +19,7 @@ def test_get_track_by_id_invalid_id(create_table,track_repo: TrackRepository,tra
     assert result is None
 
 def test_get_track_by_spotify_id(create_table,track_repo: TrackRepository,track_data: TrackCreate):
-    created: Track = track_repo.create_track(track_data)
+    track_repo.create_track(track_data)
 
     fetched: Track = track_repo.get_track_by_spotify_id(track_data.spotify_id)
 
@@ -43,7 +42,7 @@ def test_delete_track(create_table,track_repo: TrackRepository,track_data: Track
     assert track_repo.get_track_by_id(created.id) is not None
 
     deleted: bool = track_repo.delete_track(created.id)
-    assert deleted == True
+    assert deleted
     assert track_repo.get_track_by_id(created.id) is None
 
 

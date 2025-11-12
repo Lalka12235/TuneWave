@@ -22,7 +22,7 @@ class Message(Base):
     text: Mapped[str] = mapped_column(Text,nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True),ForeignKey('users.id'),nullable=False)
     room_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True),ForeignKey('rooms.id'),nullable=False)
-    created_at: Mapped[DateTime] = mapped_column(DateTime,default=datetime.utcnow,nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime,default=datetime.utcnow,nullable=False)
 
     user: Mapped['User'] = relationship(back_populates='message')
     room: Mapped['Room'] = relationship(back_populates='message')

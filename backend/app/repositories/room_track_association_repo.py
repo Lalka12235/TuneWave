@@ -54,7 +54,7 @@ class SQLalchemyRoomTrackAssociationRepository(RoomTrackAssociationRepository):
                 joinedload(RoomTrackAssociationModel.user)
             )
         result = self._db.execute(stmt).scalars().all()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -120,7 +120,6 @@ class SQLalchemyRoomTrackAssociationRepository(RoomTrackAssociationRepository):
         """_summary_
 
         Args:
-            db (Session): _description_
             room_id (uuid.UUID): _description_
 
         Returns:

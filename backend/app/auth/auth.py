@@ -9,7 +9,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import uuid
 from app.schemas.entity import UserEntity
 from app.logger.log_config import logger
-from app.auth.jwt import decode_access_token
 from app.schemas.user_schemas import (
     GoogleOAuthData,
     SpotifyOAuthData,

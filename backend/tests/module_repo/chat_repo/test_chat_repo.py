@@ -1,5 +1,3 @@
-from tests.module_repo.chat_repo.conftest import chat_repo,create_table,room_repo,room_data
-from tests.module_repo.user_repo.conftest import user_repo,user_data
 from app.models import Message,Room,User
 from app.repositories.chat_repo import ChatRepository
 from app.repositories.room_repo import RoomRepository

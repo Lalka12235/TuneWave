@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from app.models import Base,User
+from app.models import Base
 from app.repositories.friendship_repo import FriendshipRepository
 from sqlalchemy.orm import Session
 from typing import Generator

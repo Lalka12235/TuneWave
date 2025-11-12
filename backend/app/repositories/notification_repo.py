@@ -37,7 +37,6 @@ class SQLalchemyNotificationRepository(NotificationRepository):
         Загружает отношения user, sender и room для удобства.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             notification_id (uuid.UUID): ID записи об уведомлении.
 
         Returns:
@@ -59,7 +58,6 @@ class SQLalchemyNotificationRepository(NotificationRepository):
         Может быть отфильтрован по статусу прочитанности.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя, для которого ищутся уведомления.
             is_read (Optional[bool]): Фильтр по статусу прочитанности (True, False или None для всех).
             limit (int): Максимальное количество уведомлений для возврата.
@@ -77,7 +75,7 @@ class SQLalchemyNotificationRepository(NotificationRepository):
             ).limit(limit
             ).offset(offset)
         result = self._db.execute(stmt).scalars().all()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -94,7 +92,6 @@ class SQLalchemyNotificationRepository(NotificationRepository):
         Создает новую запись об уведомлении.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя-получателя уведомления.
             notification_type (NotificationType): Тип уведомления.
             message (str): Текст уведомления.
@@ -125,7 +122,6 @@ class SQLalchemyNotificationRepository(NotificationRepository):
         Отмечает конкретное уведомление как прочитанное.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             notification_id (uuid.UUID): ID уведомления для отметки.
 
         Returns:
@@ -144,7 +140,6 @@ class SQLalchemyNotificationRepository(NotificationRepository):
         Удаляет запись об уведомлении по её ID.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             notification_id (uuid.UUID): ID уведомления для удаления.
 
         Returns:

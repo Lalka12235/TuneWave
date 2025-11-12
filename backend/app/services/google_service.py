@@ -1,6 +1,4 @@
-import time
 
-import httpx
 from app.config.settings import settings
 from app.schemas.entity import UserEntity
 

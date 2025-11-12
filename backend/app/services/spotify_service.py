@@ -130,7 +130,7 @@ class SpotifyService:
             
         refresh_token = tokens_str.get('refresh_token')
         
-        new_tokens = await _generic_refresh_token(
+        await _generic_refresh_token(
             self=self,
             token_url=token_url,
             key_prefix='spotify_auth',

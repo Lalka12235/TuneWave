@@ -40,7 +40,6 @@ class SQLalchemyRoomRepository(RoomRepository):
         Получает комнату по ее уникальному идентификатору (ID).
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): ID комнаты для поиска.
 
         Returns:
@@ -60,7 +59,6 @@ class SQLalchemyRoomRepository(RoomRepository):
         Получает комнату по ее названию.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             name (str): Название комнаты для поиска.
 
         Returns:
@@ -78,9 +76,6 @@ class SQLalchemyRoomRepository(RoomRepository):
     def get_all_rooms(self) -> list[RoomEntity]:
         """
         Получает список всех комнат из базы данных.
-
-        Args:
-            db (Session): Сессия базы данных SQLAlchemy.
 
         Returns:
             List[Room]: Список объектов Room.
@@ -101,7 +96,6 @@ class SQLalchemyRoomRepository(RoomRepository):
         Создает новую комнату в базе данных.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             room_data (Dict[str, Any]): Словарь с данными для создания комнаты.
                                         Должен содержать поля, соответствующие модели Room.
 
@@ -120,7 +114,6 @@ class SQLalchemyRoomRepository(RoomRepository):
         Обновляет существующую комнату в базе данных.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             room (Room): Объект комнаты, который нужно обновить.
             update_data (Dict[str, Any]): Словарь с данными для обновления.
 
@@ -138,7 +131,6 @@ class SQLalchemyRoomRepository(RoomRepository):
         Удаляет комнату из базы данных по ее ID.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): ID комнаты для удаления.
 
         Returns:
@@ -169,7 +161,6 @@ class SQLalchemyRoomRepository(RoomRepository):
         """_summary_
 
         Args:
-            db (Session): _description_
             room_id (uuid.UUID): _description_
 
         Returns:

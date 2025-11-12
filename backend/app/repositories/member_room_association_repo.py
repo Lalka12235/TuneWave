@@ -49,7 +49,6 @@ class SQLalchemyMemberRoomAssociationRepository(MemberRoomAssociationRepository)
         Добавляет пользователя в комнату (создает запись о членстве).
         
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя, который присоединяется.
             room_id (uuid.UUID): ID комнаты, к которой присоединяется пользователь.
             
@@ -73,7 +72,6 @@ class SQLalchemyMemberRoomAssociationRepository(MemberRoomAssociationRepository)
         Удаляет пользователя из комнаты (удаляет запись о членстве).
         
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя, которого нужно удалить.
             room_id (uuid.UUID): ID комнаты, из которой нужно удалить пользователя.
             
@@ -94,7 +92,6 @@ class SQLalchemyMemberRoomAssociationRepository(MemberRoomAssociationRepository)
         Получает запись об ассоциации (членстве) по ID пользователя и ID комнаты.
         
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             user_id (uuid.UUID): ID пользователя.
             room_id (uuid.UUID): ID комнаты.
             
@@ -116,7 +113,6 @@ class SQLalchemyMemberRoomAssociationRepository(MemberRoomAssociationRepository)
         Получает список объектов User, которые являются участниками данной комнаты.
         
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): ID комнаты.
             
         Returns:
@@ -128,7 +124,7 @@ class SQLalchemyMemberRoomAssociationRepository(MemberRoomAssociationRepository)
             joinedload(Member_room_association.user)
         )
         result = self._db.execute(stmt).scalars().all()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -152,7 +148,7 @@ class SQLalchemyMemberRoomAssociationRepository(MemberRoomAssociationRepository)
             joinedload(Room.current_track)
         )
         result = self._db.execute(stmt).scalars().unique().all()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -161,10 +157,9 @@ class SQLalchemyMemberRoomAssociationRepository(MemberRoomAssociationRepository)
         Обновляет роль члена комнаты в базе данных.
         
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
-            user_id (uuid.UUID): ID пользователя, чью роль нужно обновить.
             room_id (uuid.UUID): ID комнаты, в которой нужно обновить роль.
-            new_role (str): Новая роль для пользователя.
+            user_id (uuid.UUID): ID пользователя, чью роль нужно обновить.
+            role (str): Новая роль для пользователя.
             
         Returns:
             Member_room_association | None: Обновленный объект ассоциации, если найден и обновлен, иначе None.
@@ -184,7 +179,6 @@ class SQLalchemyMemberRoomAssociationRepository(MemberRoomAssociationRepository)
         Загружает отношения user и room.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): ID комнаты.
             user_id (uuid.UUID): ID пользователя.
 

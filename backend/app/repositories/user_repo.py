@@ -14,7 +14,7 @@ class SQLalchemyUserRepository(UserRepository):
     def __init__(self,db : Session):
         self._db = db
     
-    def from_model_to_entity(self,model: User | None) -> UserEntity | None:
+    def from_model_to_entity(self,model: User) -> UserEntity | None:
         return UserEntity(
             id=model.id,
             username=model.username,
@@ -24,15 +24,9 @@ class SQLalchemyUserRepository(UserRepository):
             bio=model.bio,
             google_id=model.google_id,
             google_image_url=model.google_image_url,
-            google_access_token=model.google_access_token,
-            google_refresh_token=model.google_refresh_token,
-            google_token_expires_at=model.google_token_expires_at,
             spotify_id=model.spotify_id,
             spotify_profile_url=model.spotify_profile_url,
             spotify_image_url=model.spotify_image_url,
-            spotify_access_token=model.spotify_access_token,
-            spotify_refresh_token=model.spotify_refresh_token,
-            spotify_token_expires_at=model.spotify_token_expires_at
         )
 
     
@@ -41,7 +35,6 @@ class SQLalchemyUserRepository(UserRepository):
         Получает пользователя по его уникальному ID.
         
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): Уникальный идентификатор пользователя.
             
         Returns:
@@ -60,7 +53,6 @@ class SQLalchemyUserRepository(UserRepository):
         Получает пользователя по его email.
         
         Args:
-            db (Session): Сессия базы данных.
             email (str): Email пользователя.
             
         Returns:
@@ -77,7 +69,6 @@ class SQLalchemyUserRepository(UserRepository):
         Получает пользователя по его Google ID.
         
         Args:
-            db (Session): Сессия базы данных.
             google_id (str): Google ID пользователя.
             
         Returns:
@@ -94,7 +85,6 @@ class SQLalchemyUserRepository(UserRepository):
         Получает пользователя по его Spotify ID.
         
         Args:
-            db (Session): Сессия базы данных.
             spotify_id (str): Spotify ID пользователя.
             
         Returns:
@@ -110,7 +100,6 @@ class SQLalchemyUserRepository(UserRepository):
         Создает нового пользователя в базе данных.
         
         Args:
-            db (Session): Сессия базы данных.
             user_data (dict): Словарь с данными пользователя (например, email, username, google_id, spotify_id).
                               Должен содержать как минимум 'email' и 'username'.
             
@@ -127,9 +116,6 @@ class SQLalchemyUserRepository(UserRepository):
             spotify_id=user_data.get('spotify_id'),
             spotify_profile_url=user_data.get('spotify_profile_url'),
             spotify_image_url=user_data.get('spotify_image_url'),
-            spotify_access_token=user_data.get('spotify_access_token'),
-            spotify_refresh_token=user_data.get('spotify_refresh_token'),
-            spotify_token_expires_at=user_data.get('spotify_token_expires_at')
         )
 
         self._db.add(new_user)
@@ -143,8 +129,7 @@ class SQLalchemyUserRepository(UserRepository):
         Обновляет существующего пользователя в базе данных.
         
         Args:
-            db (Session): Сессия базы данных.
-            user (User): Объект пользователя, который нужно обновить.
+            user_entity (User): Объект пользователя, который нужно обновить.
             update_data (dict): Словарь с данными для обновления. Ключи словаря
                                 должны соответствовать именам полей модели User.
             
@@ -166,7 +151,6 @@ class SQLalchemyUserRepository(UserRepository):
         Использовать с крайней осторожностью, так как данные будут безвозвратно утеряны.
         
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя для физического удаления.
             
         Returns:

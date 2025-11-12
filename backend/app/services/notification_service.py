@@ -1,7 +1,6 @@
 import uuid
 
 
-from app.logger.log_config import logger
 from app.repositories.abc.notification_repo import NotificationRepository
 from app.repositories.abc.room_repo import RoomRepository
 from app.repositories.abc.user_repo import UserRepository

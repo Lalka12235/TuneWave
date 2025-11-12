@@ -1,6 +1,5 @@
 from app.models import Friendship,User
 from app.repositories.friendship_repo import FriendshipRepository
-from tests.module_repo.friendship_repo.conftest import friendship_repo,create_table,user_data1,user_data2
 from app.schemas.enum import FriendshipStatus
 from datetime import datetime
 

@@ -4,9 +4,7 @@ from sqlalchemy import create_engine
 from app.models import Base
 from app.repositories.track_repo import TrackRepository
 from sqlalchemy.orm import Session
-from typing import Generator,Any
-import uuid
-import datetime
+from typing import Generator
 from app.schemas.track_schemas import TrackCreate
 
 db_url = "sqlite:///:memory:"

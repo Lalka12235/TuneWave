@@ -1,7 +1,6 @@
 import uuid
 from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
 from app.models.room_track_association import RoomTrackAssociationModel
-from tests.module_repo.room_track_repo.conftest import room_track_repo,create_table
 
 def test_add_track_and_get_last_order(room_track_repo: RoomTrackAssociationRepository):
     room_id = uuid.uuid4()

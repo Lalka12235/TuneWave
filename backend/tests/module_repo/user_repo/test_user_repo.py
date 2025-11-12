@@ -1,11 +1,10 @@
-from backend.tests.module_repo.user_repo.conftest import user_data, create_table, user_repo
 from app.models import User
 from app.repositories.user_repo import UserRepository
 from app.schemas.user_schemas import UserCreate
 
 def test_get_user_by_email(user_data: UserCreate, user_repo: UserRepository):
     """Проверяет получение пользователя по email."""
-    created_user: User = user_repo.create_user(user_data)
+    user_repo.create_user(user_data)
     email = user_data["email"]
 
     fetched_user: User = user_repo.get_user_by_email(email)

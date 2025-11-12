@@ -1,14 +1,8 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import ORJSONResponse
-from sqlalchemy.exc import DatabaseError
 from app.exceptions.exception import ServerError
 from app.exceptions.user_exception import (
     UserAlrediExist,
-    UserNotFound,
-    UserNotPermission,
-    UserNotAuthorized,
-    AvatarFyleType,
-    FileExceedsSize,
 )
 
 def register_errors_handlers(app: FastAPI) -> None:

@@ -30,6 +30,7 @@ dependencies = [
     "markdown-it-py==3.0.0",
     "markupsafe==3.0.2",
     "mdurl==0.1.2",
+    "myapplication>=0.1.0",
     "packaging==24.2",
     "pluggy==1.5.0",
     "psycopg==3.2.5",

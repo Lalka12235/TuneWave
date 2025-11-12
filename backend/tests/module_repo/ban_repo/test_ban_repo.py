@@ -1,4 +1,3 @@
-import pytest
 from app.repositories.ban_repo import BanRepository
 import uuid
 

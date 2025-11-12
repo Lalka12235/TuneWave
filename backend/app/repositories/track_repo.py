@@ -11,7 +11,7 @@ class SQLalchemyTrackRepository(TrackRepository):
     def __init__(self, db: Session):
         self._db = db
 
-    def from_model_to_entity(self,model: Track | None) -> TrackEntity:
+    def from_model_to_entity(self,model: Track) -> TrackEntity:
         return TrackEntity(
             id=model.id,
             spotify_id=model.spotify_id,

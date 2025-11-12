@@ -5,7 +5,6 @@ from app.models import Base
 from app.repositories.room_repo import RoomRepository
 from sqlalchemy.orm import Session
 from typing import Generator,Any
-from app.schemas.room_schemas import RoomCreate
 
 db_url = "sqlite:///:memory:"
 

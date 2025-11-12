@@ -1,6 +1,5 @@
 import uuid
 
-from app.logger.log_config import logger
 from app.schemas.entity import UserEntity
 from app.repositories.abc.member_room_association import MemberRoomAssociationRepository
 from app.repositories.abc.room_repo import RoomRepository

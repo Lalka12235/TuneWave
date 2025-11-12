@@ -1,9 +1,7 @@
-from tests.module_repo.room_repo.conftest import create_table,room_repo,room_data
 from app.repositories.room_repo import RoomRepository
 from app.repositories.user_repo import UserRepository
 from typing import Any
 from app.models import Room,User
-from tests.module_repo.user_repo.conftest import user_repo,user_data
 from app.schemas.user_schemas import UserCreate
 
 def test_get_room_by_id(create_table,room_repo: RoomRepository,room_data: dict[str,Any],user_repo: UserRepository,user_data: UserCreate):
@@ -88,7 +86,7 @@ def test_delete_room(create_table,room_repo: RoomRepository,room_data: dict[str,
     assert created is not None
 
     updated: bool = room_repo.delete_room(created.id)
-    assert updated == True
+    assert updated
 
 def test_get_active_rooms(create_table,room_repo: RoomRepository,room_data: dict[str,Any],user_repo: UserRepository,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)

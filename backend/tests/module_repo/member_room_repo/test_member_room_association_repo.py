@@ -4,13 +4,6 @@ from app.repositories.member_room_association_repo import (
 )
 from app.repositories.room_repo import RoomRepository
 from app.models.member_room_association import Member_room_association
-from app.schemas.enum import Role
-from tests.module_repo.member_room_repo.conftest import (
-    create_table,
-    member_room_repo,
-    user_data1,
-)
-from tests.module_repo.room_repo.conftest import room_repo, room_data
 
 
 def test_add_member(
