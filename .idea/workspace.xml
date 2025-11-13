@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="8e0df762-1298-4958-879c-38c3969c8360" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/backend/.dockerignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/.python-version" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic.ini" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/README" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/env.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/script.py.mako" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/1e948794f114_add_google_access_and_refresh_token.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/21ce24baa75a_create_table.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/333ae3a44836_add_playback_host_and_player_state_.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/382c10104ec1_add_created_at_room.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/3cd48d4d200a_create_notification_table_and_finalize_.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/4f41cbd6ec2d_new_field_role.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/52172d047b7a_new_field_bio_and_avatar_url.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/57f100e1c658_fix_table_room.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/5851b39e9b7e_message_model.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/599d7edaaa99_new_table_ban.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/6e74286a8788_refine_ban_model_relationships.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/795a1c940a8e_update_track_and_roomtrackassociation_.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/8963470b23f9_recreate_notificationtype_enum_with_all_.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/b06cbcb60a4a_delete_token_from_user_model.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/f03eb68f7eb5_create_friendship_model_and_update_user_.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/alembic/versions/f3eba9a91266_update_room_track.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/all_route.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/auth_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/ban_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/chat_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/favorite_track_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/friendship_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/notification_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/room_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/room_member_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/room_playback_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/room_queue_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/spotify_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/spotify_public_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/track_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/user_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/ws_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/api/v1/ws_chat_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/auth/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/auth/auth.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/auth/dep.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/auth/hash.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/auth/jwt.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/config/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/config/loggingMiddleware.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/config/session.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/config/settings.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/error_handler.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/auth_exception.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/ban_exception.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/exception.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/favorite_track_exception.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/friendship_exception.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/notification_exception.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/room_exception.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/spotify_exception.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/track_exception.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/exceptions/user_exception.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/logger/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/logger/log_config.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/ban.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/base.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/favorite_track.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/friendship.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/member_room_association.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/message.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/notification.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/room.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/room_track_association.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/track.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/models/user.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/prestart.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/ban_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/chat_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/favorite_track_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/friendship_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/member_room_association.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/notification_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/room_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/room_track_association_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/track_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/abc/user_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/ban_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/chat_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/dep.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/favorite_track_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/friendship_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/member_room_association_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/notification_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/room_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/room_track_association_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/track_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/repositories/user_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/ban_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/config_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/ban.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/favorite_track.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/friendship.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/member_room_association.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/message.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/notification.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/room.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/room_track_association.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/track.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/entity/user.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/enum.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/favorite_track_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/friendship_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/message_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/notification_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/room_member_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/room_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/spotify_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/track_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/schemas/user_schemas.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/ban_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/base_oauth_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/chat_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/dep.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/favorite_track_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/friendship_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/google_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/ban_mapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/base_mapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/favorite_track_mapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/friendship_mapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/mappers.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/message_mapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/notification_mapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/room_mapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/room_member_mapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/track_mapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/mappers/user_mapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/notification_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/redis_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/room_member_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/room_playback_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/room_queue_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/room_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/scheduler_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/spotify_public_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/spotify_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/track_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/services/user_service.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/ws/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/ws/connection_manager.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/docker-compose.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/celery/.python-version" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/celery/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/celery/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/celery/celery.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/celery/email.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/celery/pyproject.toml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/celery/tasks.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/celery/uv.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/nginx/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/nginx/nginx.conf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/redis/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/infrastructure/redis/redis.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/pyproject.toml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/requirements.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/ban_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/ban_repo/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/ban_repo/test_ban_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/chat_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/chat_repo/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/chat_repo/test_chat_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/favorite_track_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/favorite_track_repo/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/favorite_track_repo/test_favorite_track_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/friendship_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/friendship_repo/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/friendship_repo/test_friendship_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/member_room_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/member_room_repo/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/member_room_repo/test_member_room_association_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/notification_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/notification_repo/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/notification_repo/test_notification_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/room_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/room_repo/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/room_repo/test_room_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/room_track_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/room_track_repo/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/room_track_repo/test_room_track_association_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/track_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/track_repo/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/track_repo/test_track_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/user_repo/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/user_repo/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/module_repo/user_repo/test_user_repo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/user_api/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/user_api/conftest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/user_api/test_user_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/uv.lock" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 1
+}</component>
+  <component name="ProjectId" id="35NqSTIMwmVyCfGT3ToCpH2y2Lb" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Programming\TuneWave\app\domain\enum" />
+      <recent name="D:\Programming\TuneWave\app\presentation\api\v1" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-4e2b1448bda8-9a97661f3031-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.27397.106" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="8e0df762-1298-4958-879c-38c3969c8360" name="Changes" comment="" />
+      <created>1762960877253</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1762960877253</updated>
+      <workItem from="1762960878615" duration="299000" />
+      <workItem from="1763024356097" duration="606000" />
+      <workItem from="1763025402917" duration="896000" />
+    </task>
+    <servers />
+  </component>
+</project>
