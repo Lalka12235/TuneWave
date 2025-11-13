@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 
 
-@dataclass
+@dataclass(slots=True,frozen=True)
 class BanEntity:
     """
     Сущность модели Ban

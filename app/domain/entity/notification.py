@@ -4,7 +4,7 @@ from datetime import datetime
 from app.domain.enum.enum import NotificationType
 
 
-@dataclass
+@dataclass(slots=True,frozen=True)
 class NotificationEntity:
     """
     Сущность модели Notification

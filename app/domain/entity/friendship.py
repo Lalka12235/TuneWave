@@ -3,7 +3,7 @@ import uuid
 from app.domain.enum.enum import FriendshipStatus
 from datetime import datetime
 
-@dataclass
+@dataclass(slots=True,frozen=True)
 class FriendshipEntity:
     id: uuid.UUID
     requester_id: uuid.UUID

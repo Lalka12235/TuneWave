@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import uuid
 from datetime import datetime
 
-@dataclass
+@dataclass(slots=True,frozen=True)
 class TrackEntity:
     """
     Сущность модели Track
