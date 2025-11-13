@@ -1,4 +1,4 @@
-from app.infrastracture.db.models.base import Base
+from app.infrastructure.db.models.base import Base
 from sqlalchemy.orm import Mapped,mapped_column,relationship
 from sqlalchemy import UUID,JSON,DateTime,func
 from typing import TYPE_CHECKING
@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Optional
 
 if TYPE_CHECKING:
-    from app.infrastracture.db.models import FavoriteTrack,RoomTrackAssociationModel
+    from app.infrastructure.db.models import FavoriteTrack,RoomTrackAssociationModel
 
 class Track(Base):
     __tablename__ = 'tracks'

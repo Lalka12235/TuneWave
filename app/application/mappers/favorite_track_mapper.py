@@ -1,4 +1,4 @@
-from app.infrastracture.db.models import FavoriteTrack
+from app.infrastructure.db.models import FavoriteTrack
 from app.presentation.schemas.favorite_track_schemas import FavoriteTrackResponse
 from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.track_mapper import TrackMapper

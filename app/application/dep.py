@@ -1,4 +1,4 @@
-from app.infrastracture.db.repositories.dep import (
+from app.infrastructure.db.repositories.dep import (
     get_user_repo,
     get_ban_repo,
     get_friendship_repo,
@@ -11,7 +11,7 @@ from app.infrastracture.db.repositories.dep import (
     get_track_repo,
 )
 
-from app.infrastracture.redis.redis import get_redis_client
+from app.infrastructure.redis.redis import get_redis_client
 
 from app.application.services.user_service import UserService
 from app.application.services.ban_service import BanService
@@ -29,18 +29,18 @@ from app.application.services.redis_service import RedisService
 
 from typing import Annotated
 
-from app.infrastracture.db.repositories.user_repo import SQLalchemyUserRepository
-from app.infrastracture.db.repositories.ban_repo import SQLalchemyBanRepository
-from app.infrastracture.db.repositories.chat_repo import SQLalchemyChatRepository
-from app.infrastracture.db.repositories.favorite_track_repo import SQLalchemyFavoriteTrackRepository
-from app.infrastracture.db.repositories.friendship_repo import SQLalchemyFriendshipRepository
-from app.infrastracture.db.repositories.member_room_association_repo import (
+from app.infrastructure.db.repositories.user_repo import SQLalchemyUserRepository
+from app.infrastructure.db.repositories.ban_repo import SQLalchemyBanRepository
+from app.infrastructure.db.repositories.chat_repo import SQLalchemyChatRepository
+from app.infrastructure.db.repositories.favorite_track_repo import SQLalchemyFavoriteTrackRepository
+from app.infrastructure.db.repositories.friendship_repo import SQLalchemyFriendshipRepository
+from app.infrastructure.db.repositories.member_room_association_repo import (
     SQLalchemyMemberRoomAssociationRepository,
 )
-from app.infrastracture.db.repositories.notification_repo import SQLalchemyNotificationRepository
-from app.infrastracture.db.repositories.room_repo import SQLalchemyRoomRepository
-from app.infrastracture.db.repositories.track_repo import SQLalchemyTrackRepository
-from app.infrastracture.db.repositories.room_track_association_repo import SQLalchemyRoomTrackAssociationRepository
+from app.infrastructure.db.repositories.notification_repo import SQLalchemyNotificationRepository
+from app.infrastructure.db.repositories.room_repo import SQLalchemyRoomRepository
+from app.infrastructure.db.repositories.track_repo import SQLalchemyTrackRepository
+from app.infrastructure.db.repositories.room_track_association_repo import SQLalchemyRoomTrackAssociationRepository
 from fastapi import Depends
 
 from app.application.mappers.mappers import (

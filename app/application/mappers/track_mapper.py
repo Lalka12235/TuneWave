@@ -1,4 +1,4 @@
-from app.infrastracture.db.models import Track
+from app.infrastructure.db.models import Track
 from app.presentation.schemas.room_schemas import TrackInQueueResponse
 from app.application.mappers.base_mapper import BaseMapper
 

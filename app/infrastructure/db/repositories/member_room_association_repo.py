@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete,update,and_
 from sqlalchemy.orm import Session,joinedload
-from app.infrastracture.db.models import Member_room_association,Room
+from app.infrastructure.db.models import Member_room_association,Room
 from app.domain.entity import RoomEntity,MemberRoomEntity
 import uuid
 from app.domain.interfaces.member_room_association import MemberRoomAssociationRepository

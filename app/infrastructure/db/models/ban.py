@@ -1,4 +1,4 @@
-from app.infrastracture.db.models.base import Base
+from app.infrastructure.db.models.base import Base
 from sqlalchemy import ForeignKey, DateTime,UUID,func
 from sqlalchemy.orm import Mapped,mapped_column, relationship
 from typing import TYPE_CHECKING
@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 
 if TYPE_CHECKING:
-    from app.infrastracture.db.models import User,Room
+    from app.infrastructure.db.models import User,Room
 
 
 class Ban(Base):

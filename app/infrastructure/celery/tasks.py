@@ -1,6 +1,6 @@
-from app.infrastracture.celery.celery import celery_app
+from app.infrastructure.celery.celery import celery_app
 from app.config.log_config import logger
-from app.infrastracture.celery.email import EmailService
+from app.infrastructure.celery.email import EmailService
 
 
   

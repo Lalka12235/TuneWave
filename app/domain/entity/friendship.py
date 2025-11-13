@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import uuid
-from app.domain.enum.enum import FriendshipStatus
+from app.domain.enum import FriendshipStatus
 from datetime import datetime
 
 @dataclass(slots=True,frozen=True)

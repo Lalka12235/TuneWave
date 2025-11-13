@@ -1,4 +1,4 @@
-from app.infrastracture.db.models import Notification
+from app.infrastructure.db.models import Notification
 from app.presentation.schemas.notification_schemas import NotificationResponse
 from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.user_mapper import UserMapper

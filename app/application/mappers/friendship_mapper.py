@@ -1,4 +1,4 @@
-from app.infrastracture.db.models import Friendship
+from app.infrastructure.db.models import Friendship
 from app.presentation.schemas.friendship_schemas import FriendshipResponse
 from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.user_mapper import UserMapper

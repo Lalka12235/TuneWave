@@ -1,4 +1,4 @@
-from app.infrastracture.db.models import User
+from app.infrastructure.db.models import User
 from app.presentation.schemas.user_schemas import UserResponse
 from app.application.mappers.base_mapper import BaseMapper
 

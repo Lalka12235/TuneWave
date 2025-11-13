@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import uuid
 from datetime import datetime
-from app.domain.enum.enum import NotificationType
+from app.domain.enum import NotificationType
 
 
 @dataclass(slots=True,frozen=True)

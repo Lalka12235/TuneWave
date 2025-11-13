@@ -1,7 +1,7 @@
 from pydantic import BaseModel,Field,ConfigDict
 import uuid
 from datetime import datetime
-from app.domain.enum.enum import FriendshipStatus
+from app.domain.enum import FriendshipStatus
 from app.presentation.schemas.user_schemas import UserResponse
 
 

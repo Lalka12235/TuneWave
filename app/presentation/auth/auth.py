@@ -1,7 +1,7 @@
 from app.presentation.auth.jwt import decode_access_token
 from fastapi import Depends
 from typing import Annotated
-from app.infrastracture.db.repositories.user_repo import SQLalchemyUserRepository
+from app.infrastructure.db.repositories.user_repo import SQLalchemyUserRepository
 from app.domain.interfaces.ban_repo import BanRepository
 from app.domain.interfaces.user_repo import UserRepository 
 from app.application.mappers.mappers import UserMapper 
@@ -16,7 +16,7 @@ from app.presentation.schemas.user_schemas import (
     UserResponse
 )
 from jwt import exceptions
-from app.infrastracture.db.repositories.dep import get_user_repo
+from app.infrastructure.db.repositories.dep import get_user_repo
 
 from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.auth_exception import ( 

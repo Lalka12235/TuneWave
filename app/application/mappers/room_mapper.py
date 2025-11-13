@@ -1,4 +1,4 @@
-from app.infrastracture.db.models import Room
+from app.infrastructure.db.models import Room
 from app.presentation.schemas.room_schemas import RoomResponse, TrackInQueueResponse
 from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.user_mapper import UserMapper

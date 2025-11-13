@@ -3,12 +3,12 @@ import uuid
 from datetime import datetime
 
 from app.config.log_config import logger
-from app.domain.enum.enum import NotificationType, FriendshipStatus  # Added Role for potential future use or consistency
+from app.domain.enum import NotificationType, FriendshipStatus  # Added Role for potential future use or consistency
 from app.domain.interfaces.friendship_repo import FriendshipRepository
 from app.domain.interfaces.user_repo import UserRepository
 from app.presentation.schemas.friendship_schemas import FriendshipResponse
 from app.domain.interfaces.notification_repo import NotificationRepository
-from app.infrastracture.ws.connection_manager import manager
+from app.infrastructure.ws.connection_manager import manager
 from app.application.mappers.friendship_mapper import FriendshipMapper
 
 from app.domain.exceptions.exception import ServerError
@@ -46,7 +46,6 @@ class FriendshipService:
         Получает список всех принятых друзей для указанного пользователя.
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя, для которого ищутся друзья.
 
         Returns:

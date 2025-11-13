@@ -1,11 +1,11 @@
-from app.infrastracture.db.models.base import Base
+from app.infrastructure.db.models.base import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID 
 import uuid
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.infrastracture.db.models import Room,FavoriteTrack,RoomTrackAssociationModel,Member_room_association,Message,Ban,Friendship,Notification
+    from app.infrastructure.db.models import Room,FavoriteTrack,RoomTrackAssociationModel,Member_room_association,Message,Ban,Friendship,Notification
 
 
 class User(Base):

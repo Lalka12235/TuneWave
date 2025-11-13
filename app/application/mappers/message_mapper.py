@@ -1,4 +1,4 @@
-from app.infrastracture.db.models import Message
+from app.infrastructure.db.models import Message
 from app.presentation.schemas.message_schemas import MessageResponse
 from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.user_mapper import UserMapper

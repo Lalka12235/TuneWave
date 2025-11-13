@@ -1,8 +1,8 @@
 from sqlalchemy import select,delete,or_,and_,update
 from sqlalchemy.orm import Session,joinedload
-from app.infrastracture.db.models import Friendship
+from app.infrastructure.db.models import Friendship
 import uuid
-from app.domain.enum.enum import FriendshipStatus
+from app.domain.enum import FriendshipStatus
 from datetime import datetime
 from app.domain.entity import FriendshipEntity
 from app.domain.interfaces.friendship_repo import FriendshipRepository

@@ -9,7 +9,7 @@ from app.domain.interfaces.room_repo import RoomRepository
 from app.domain.interfaces.user_repo import UserRepository
 
 from app.presentation.schemas.ban_schemas import BanCreate, BanResponse
-from app.domain.enum.enum import NotificationType, Role
+from app.domain.enum import NotificationType, Role
 from app.presentation.schemas.notification_schemas import NotificationResponse
 from app.presentation.schemas.room_member_schemas import RoomMemberResponse
 from app.presentation.schemas.room_schemas import RoomResponse
@@ -24,7 +24,7 @@ from app.application.mappers.mappers import (
 from app.domain.interfaces.notification_repo import NotificationRepository
 
 from app.presentation.auth.hash import verify_pass
-from app.infrastracture.ws.connection_manager import manager
+from app.infrastructure.ws.connection_manager import manager
 from app.presentation.schemas.user_schemas import UserResponse
 
 from app.domain.exceptions.exception import ServerError

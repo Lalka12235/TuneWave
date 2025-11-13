@@ -1,4 +1,4 @@
-from app.infrastracture.db.models import Room,Member_room_association,RoomTrackAssociationModel
+from app.infrastructure.db.models import Room,Member_room_association,RoomTrackAssociationModel
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session,joinedload
 import uuid

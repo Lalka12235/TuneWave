@@ -1,4 +1,4 @@
-from app.infrastracture.db.models.base import Base
+from app.infrastructure.db.models.base import Base
 from sqlalchemy import ForeignKey,func,DateTime
 from sqlalchemy.orm import Mapped,mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID 
@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from datetime import datetime
 
 if TYPE_CHECKING:
-    from app.infrastracture.db.models import User,Track,RoomTrackAssociationModel,Member_room_association,Message,Ban,notification
+    from app.infrastructure.db.models import User,Track,RoomTrackAssociationModel,Member_room_association,Message,Ban,notification
 
 
 class Room(Base):

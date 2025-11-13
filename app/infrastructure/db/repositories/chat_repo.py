@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session,joinedload
-from app.infrastracture.db.models import Message
+from app.infrastructure.db.models import Message
 from datetime import datetime
 import uuid
 from app.domain.interfaces.chat_repo import ChatRepository

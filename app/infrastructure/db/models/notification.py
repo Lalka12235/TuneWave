@@ -1,14 +1,14 @@
-from app.infrastracture.db.models.base import Base
+from app.infrastructure.db.models.base import Base
 from sqlalchemy import ForeignKey,DateTime,func,Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID 
 import uuid
 from typing import TYPE_CHECKING
 from datetime import datetime
-from app.domain.enum.enum import NotificationType
+from app.domain.enum import NotificationType
 
 if TYPE_CHECKING:
-    from app.infrastracture.db.models import User,Room
+    from app.infrastructure.db.models import User,Room
 
 
 class Notification(Base):

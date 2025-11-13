@@ -1,4 +1,4 @@
-from app.infrastracture.db.models import Member_room_association
+from app.infrastructure.db.models import Member_room_association
 from app.presentation.schemas.room_member_schemas import RoomMemberResponse
 from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.user_mapper import UserMapper

@@ -1,6 +1,6 @@
 from pydantic import BaseModel,Field,ConfigDict
 import uuid
-from app.domain.enum.enum import NotificationType
+from app.domain.enum import NotificationType
 from app.presentation.schemas.user_schemas import UserResponse
 from datetime import datetime
 

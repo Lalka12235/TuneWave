@@ -1,4 +1,4 @@
-from app.infrastracture.db.models.base import Base
+from app.infrastructure.db.models.base import Base
 from sqlalchemy import ForeignKey,DateTime,func
 from sqlalchemy.orm import Mapped,mapped_column,relationship
 from datetime import datetime
@@ -8,7 +8,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.infrastracture.db.models import Room,Track,User
+    from app.infrastructure.db.models import Room,Track,User
 
 class RoomTrackAssociationModel(Base):
     """

@@ -1,6 +1,6 @@
 from sqlalchemy import select,delete
 from sqlalchemy.orm import Session,joinedload
-from app.infrastracture.db.models import FavoriteTrack
+from app.infrastructure.db.models import FavoriteTrack
 import uuid
 from app.domain.entity import FavoriteTrackEntity
 from app.domain.interfaces.favorite_track_repo import FavoriteTrackRepository

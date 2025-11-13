@@ -18,7 +18,7 @@ from app.presentation.schemas.message_schemas import MessageCreate
 from app.application.services.chat_service import ChatService
 from app.application.services.dep import get_chat_service
 from app.presentation.auth.auth import get_user_by_token
-from app.infrastracture.ws.connection_manager import manager
+from app.infrastructure.ws.connection_manager import manager
 
 chat_ws = APIRouter(tags=["Chat WS"], prefix="/ws/chat")
 

@@ -1,8 +1,8 @@
 from sqlalchemy import select,delete,update
 from sqlalchemy.orm import Session,joinedload
-from app.infrastracture.db.models import Notification
+from app.infrastructure.db.models import Notification
 import uuid
-from app.domain.enum.enum import NotificationType
+from app.domain.enum import NotificationType
 from app.domain.entity import NotificationEntity
 from app.domain.interfaces.notification_repo import NotificationRepository
 

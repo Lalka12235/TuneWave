@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from app.infrastracture.ws.connection_manager import manager
+from app.infrastructure.ws.connection_manager import manager
 
 ws = APIRouter(
     tags=['WebSockets'],

@@ -4,7 +4,7 @@ import uuid
 from app.domain.interfaces.notification_repo import NotificationRepository
 from app.domain.interfaces.room_repo import RoomRepository
 from app.domain.interfaces.user_repo import UserRepository
-from app.domain.enum.enum import NotificationType  # Added Role for consistency
+from app.domain.enum import NotificationType  # Added Role for consistency
 from app.presentation.schemas.notification_schemas import NotificationResponse
 
 from app.application.mappers.notification_mapper import NotificationMapper

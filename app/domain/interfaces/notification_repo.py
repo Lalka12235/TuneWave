@@ -1,7 +1,7 @@
 from abc import abstractmethod,ABC
 import uuid
 from app.domain.entity.notification import NotificationEntity
-from app.domain.enum.enum import NotificationType
+from app.domain.enum import NotificationType
 
 
 class NotificationRepository(ABC):

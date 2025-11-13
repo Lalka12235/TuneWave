@@ -18,7 +18,7 @@ from app.presentation.schemas.user_schemas import GoogleOAuthData, SpotifyOAuthD
 from app.presentation.auth.dep import get_auth_service
 from app.presentation.auth.auth import AuthService
 from app.application.services.google_service import GoogleService
-from app.infrastracture.db.repositories.dep import get_user_repo
+from app.infrastructure.db.repositories.dep import get_user_repo
 from app.domain.interfaces.user_repo import UserRepository
 from app.application.services.spotify_service import SpotifyService
 

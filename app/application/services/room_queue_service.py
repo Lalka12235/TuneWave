@@ -5,13 +5,13 @@ from app.domain.entity import UserEntity,RoomTrackAssociationEntity
 from app.domain.interfaces.room_repo import RoomRepository
 from app.domain.interfaces.room_track_association_repo import RoomTrackAssociationRepository
 
-from app.domain.enum.enum import Role
+from app.domain.enum import Role
 from app.presentation.schemas.room_schemas import TrackInQueueResponse
 
 from app.application.mappers.mappers import TrackMapper
 from app.domain.interfaces.track_repo import TrackRepository
 
-from app.infrastracture.ws.connection_manager import manager
+from app.infrastructure.ws.connection_manager import manager
 from app.domain.interfaces.member_room_association import MemberRoomAssociationRepository
 
 from app.domain.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError,RoomPermissionDeniedError,TrackAlreadyInQueueError

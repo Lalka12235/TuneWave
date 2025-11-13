@@ -1,4 +1,4 @@
-from app.infrastracture.db.models.base import Base
+from app.infrastructure.db.models.base import Base
 from sqlalchemy import ForeignKey, DateTime,func,PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped,mapped_column,relationship
 from datetime import datetime
@@ -9,7 +9,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.infrastracture.db.models import User,Room
+    from app.infrastructure.db.models import User,Room
 
 class Member_room_association(Base):
     __tablename__ = 'member_room_association'

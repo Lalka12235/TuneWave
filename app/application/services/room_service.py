@@ -4,7 +4,7 @@ from app.domain.entity.user import UserEntity
 from app.domain.interfaces.member_room_association import MemberRoomAssociationRepository
 from app.domain.interfaces.room_repo import RoomRepository
 
-from app.domain.enum.enum import Role
+from app.domain.enum import Role
 from app.presentation.schemas.room_schemas import (
     RoomCreate,
     RoomResponse,
@@ -12,7 +12,7 @@ from app.presentation.schemas.room_schemas import (
 )
 
 from app.presentation.auth.hash import make_hash_pass
-from app.infrastracture.ws.connection_manager import manager
+from app.infrastructure.ws.connection_manager import manager
 from app.application.mappers.room_mapper import RoomMapper
 
 from app.domain.exceptions.exception import ServerError

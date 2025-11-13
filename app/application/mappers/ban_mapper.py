@@ -1,4 +1,4 @@
-from app.infrastracture.db.models import Ban
+from app.infrastructure.db.models import Ban
 from app.presentation.schemas.ban_schemas import BanResponse
 from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.user_mapper import UserMapper

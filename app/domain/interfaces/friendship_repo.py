@@ -2,7 +2,7 @@ from abc import ABC,abstractmethod
 import uuid
 from app.domain.entity.friendship import FriendshipEntity
 from datetime import datetime
-from app.domain.enum.enum import FriendshipStatus
+from app.domain.enum import FriendshipStatus
 
 
 
