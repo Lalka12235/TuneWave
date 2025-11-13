@@ -1,4 +1,4 @@
-from app.infrastructure.db.models import FavoriteTrack
+from app.domain.entity import FavoriteTrackEntity
 from app.presentation.schemas.favorite_track_schemas import FavoriteTrackResponse
 from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.track_mapper import TrackMapper
@@ -9,10 +9,7 @@ class FavoriteTrackMapper(BaseMapper):
         self._user_mapper = user_mapper
         self._track_mapper = track_mapper
 
-    def to_response(self, favorite_track: FavoriteTrack) -> FavoriteTrackResponse:
+    def to_response(self, favorite_track: FavoriteTrackEntity) -> FavoriteTrackResponse:
         return FavoriteTrackResponse(
-            id=favorite_track.id,
-            user=self._user_mapper.to_response(favorite_track.user),
-            track=self._track_mapper.to_response(favorite_track.track),
-            added_at=favorite_track.added_at
+
         )

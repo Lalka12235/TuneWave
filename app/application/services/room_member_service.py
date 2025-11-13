@@ -2,7 +2,7 @@ import json
 import uuid
 
 from app.config.log_config import logger
-from app.domain.entity.user import UserEntity
+from app.domain.entity import UserEntity,RoomEntity
 from app.domain.interfaces.ban_repo import BanRepository
 from app.domain.interfaces.member_room_association import MemberRoomAssociationRepository
 from app.domain.interfaces.room_repo import RoomRepository
@@ -86,7 +86,6 @@ class RoomMemberService:
         Пользователь присоединяется к комнате.
 
         Args:
-            self.db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): ID комнаты, к которой присоединяется пользователь.
             user (User): Объект текущего пользователя.
             password (Optional[str]): Пароль для приватной комнаты.
@@ -158,7 +157,6 @@ class RoomMemberService:
         Пользователь покидает комнату.
 
         Args:
-            self.db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): ID комнаты, которую покидает пользователь.
             user (User): Объект текущего пользователя.
 
@@ -175,8 +173,9 @@ class RoomMemberService:
             raise UserInRoomError(
                 detail="Вы не являетесь участником этой комнаты.",
             )
+        room = self.room_repo.get_room_by_id(room_id)
         try:
-            room_name_for_message = existing_association.room.name
+            room_name_for_message = room.name
             deleted_successfully = self.member_room_repo.remove_member(user.id, room_id)
 
             websocket_message_for_room = {
@@ -215,7 +214,6 @@ class RoomMemberService:
         Получает список участников комнаты.
 
         Args:
-            self.db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): ID комнаты.
 
         Returns:

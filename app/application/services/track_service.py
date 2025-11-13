@@ -2,7 +2,7 @@ import uuid
 
 from app.config.log_config import logger
 from app.domain.interfaces.track_repo import TrackRepository
-from app.presentation.schemas.track_schemas import TrackCreate, TrackResponse
+from app.presentation.schemas.track_schemas import TrackResponse
 
 from app.application.mappers.track_mapper import TrackMapper
 from app.domain.exceptions.track_exception import TrackNotFound
@@ -24,7 +24,7 @@ class TrackService:
             logger.warning(f"Сервис треков: Не удалось найти трек с ID '{track_id}'.")
             raise TrackNotFound()
 
-        return track
+        return self.track_mapper.to_response(track)
 
     def get_track_by_Spotify_id(self, spotify_id: str) -> TrackResponse:
         """Получает трек по его Spotify ID из базы данных."""
@@ -35,50 +35,50 @@ class TrackService:
             )
             raise TrackNotFound()
 
-        return track
+        return self.track_mapper.to_response(track)
 
-    def create_track(self, track_data: TrackCreate) -> TrackResponse:
+    def create_track(self, track_data: dict[str,str]) -> TrackResponse:
         """Создает новый трек в базе данных."""
         try:
             db_track = self.track_repo.create_track(track_data)
             logger.info(
-                f"Сервис треков: Новый трек '{track_data.title}' (Spotify ID: {track_data.spotify_id}) создан в базе данных."
+                f"Сервис треков: Новый трек '{track_data['title']}' (Spotify ID: {track_data['spotify_id']}) создан в базе данных."
             )
-            return db_track
+            return self.track_mapper.to_response(db_track)
         except Exception as e:
             logger.error(
-                f"Сервис треков: Ошибка при создании трека '{track_data.spotify_id}': {e}",
+                f"Сервис треков: Ошибка при создании трека '{track_data['spotify_id']}': {e}",
                 exc_info=True,
             )
             raise ServerError(detail="Ошибка при создании трека")
 
     async def get_or_create_track_from_spotify(
-        self, spotify_data: TrackCreate
+        self, spotify_data: dict[str,str]
     ) -> TrackResponse:
         """
         Пытается получить трек из кеша (БД) по Spotify ID. Если не найден,
         запрашивает его у Spotify API и сохраняет в кеше.
         Возвращает объект TrackResponse.
         """
-        local_track = self.track_repo.get_track_by_spotify_id(spotify_data.spotify_id)
+        local_track = self.track_repo.get_track_by_spotify_id(spotify_data['spotify_id'])
         if local_track:
             logger.debug(
-                f"Сервис треков: Трек '{spotify_data.spotify_id}' найден в локальном кеше."
+                f"Сервис треков: Трек '{spotify_data['spotify_id']}' найден в локальном кеше."
             )
-            return self.track_mapper.to_response(local_track)
+            return self.track_mapper.to_response_track(local_track)
 
         logger.info(
-            f"Сервис треков: Трек '{spotify_data.spotify_id}' не найден в кеше, запрашиваем у Spotify API."
+            f"Сервис треков: Трек '{spotify_data['spotify_id']}' не найден в кеше, запрашиваем у Spotify API."
         )
         try: # This should call self.create_track, not TrackService.create_track
             new_local_track_response = TrackService.create_track(spotify_data)
             logger.info(
-                f"Сервис треков: Трек '{spotify_data.spotify_id}' успешно получен от Spotify и кеширован в БД."
+                f"Сервис треков: Трек '{spotify_data['spotify_id']}' успешно получен от Spotify и кеширован в БД."
             )
             return self.track_mapper.to_response(new_local_track_response)
         except Exception as e:
             logger.error(
-                f"Сервис треков: Неизвестная ошибка при получении/сохранении трека '{spotify_data.spotify_id}': {e}",
+                f"Сервис треков: Неизвестная ошибка при получении/сохранении трека '{spotify_data['spotify_id']}': {e}",
                 exc_info=True,
             )
             raise ServerError(

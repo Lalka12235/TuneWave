@@ -4,6 +4,7 @@ from datetime import datetime
 
 from app.config.log_config import logger
 from app.domain.enum import NotificationType, FriendshipStatus  # Added Role for potential future use or consistency
+from app.domain.exceptions.user_exception import UserNotFound
 from app.domain.interfaces.friendship_repo import FriendshipRepository
 from app.domain.interfaces.user_repo import UserRepository
 from app.presentation.schemas.friendship_schemas import FriendshipResponse
@@ -67,7 +68,6 @@ class FriendshipService:
         которые находятся в статусе PENDING.
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя, который отправил запросы.
 
         Returns:
@@ -87,7 +87,6 @@ class FriendshipService:
         которые находятся в статусе PENDING.
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя, который получил запросы.
 
         Returns:
@@ -178,7 +177,6 @@ class FriendshipService:
         Принимает ожидающий запрос на дружбу.
 
         Args:
-            db (Session): Сессия базы данных.
             friendship_id (uuid.UUID): ID записи о дружбе.
             current_accepter_id (uuid.UUID): ID текущего пользователя, который принимает запрос.
 
@@ -201,6 +199,12 @@ class FriendshipService:
             raise FriendshipStateError(
                 detail='Запрос на дружбу не находится в статусе "ожидает" или уже обработан.',
             )
+        accepter = self.user_repo.get_user_by_id(current_accepter_id)
+        if not accepter:
+            raise UserNotFound()
+        requester = self.user_repo.get_user_by_id(friendship.requester_id)
+        if not requester:
+            raise UserNotFound()
 
         try:
             self.friend_repo.update_friendship_status(
@@ -210,20 +214,20 @@ class FriendshipService:
                 "action": "friend_request_accepted",
                 "friendship_id": str(friendship.id),
                 "accepter_id": str(current_accepter_id),
-                "accepter_username": friendship.accepter.username,
-                "detail": f"Ваш запрос на дружбу к {friendship.accepter.username} принят. Вы теперь друзья!",
+                "accepter_username": accepter.username,
+                "detail": f"Ваш запрос на дружбу к {accepter.username} принят. Вы теперь друзья!",
             }
             self.notify_repo.add_notification(
                 user_id=friendship.requester_id,
                 notification_type=NotificationType.FRIEND_ACCEPTED,
-                message=f"{friendship.accepter.username} принял(а) ваш запрос на дружбу.",
+                message=f"{accepter.username} принял(а) ваш запрос на дружбу.",
                 sender_id=current_accepter_id,  # Тот, кто принял
                 related_object_id=friendship.id,
             )
             self.notify_repo.add_notification(
                 user_id=current_accepter_id,
                 notification_type=NotificationType.FRIEND_ACCEPTED,
-                message=f"Вы приняли запрос на дружбу от {friendship.requester.username}. Теперь вы друзья!",
+                message=f"Вы приняли запрос на дружбу от {requester.username}. Теперь вы друзья!",
                 sender_id=friendship.requester_id,  # Тот, кто отправил
                 related_object_id=friendship.id,
             )
@@ -231,8 +235,8 @@ class FriendshipService:
                 "action": "friend_request_accepted",
                 "friendship_id": str(friendship.id),
                 "requester_id": str(friendship.requester_id),
-                "requester_username": friendship.requester.username,
-                "detail": f"Вы приняли запрос на дружбу от {friendship.requester.username}. Вы теперь друзья!",
+                "requester_username": requester.username,
+                "detail": f"Вы приняли запрос на дружбу от {requester.username}. Вы теперь друзья!",
             }
 
             await manager.send_personal_message(
@@ -260,15 +264,11 @@ class FriendshipService:
         Отклоняет ожидающий запрос на дружбу.
 
         Args:
-            db (Session): Сессия базы данных.
             friendship_id (uuid.UUID): ID записи о дружбе.
             current_accepter_id (uuid.UUID): ID текущего пользователя, который отклоняет запрос.
 
         Returns:
             FriendshipResponse: Объект FriendshipResponse, представляющий отклоненный запрос.
-
-        Raises:
-            HTTPException: Если запрос не найден, у пользователя нет прав, или запрос не в статусе PENDING.
         """
         friendship = self.friend_repo.get_friendship_by_id(friendship_id)
         if not friendship:
@@ -283,6 +283,12 @@ class FriendshipService:
             raise FriendshipStateError(
                 detail='Запрос на дружбу не находится в статусе "ожидает" или уже обработан.',
             )
+        accepter = self.user_repo.get_user_by_id(current_accepter_id)
+        if not accepter:
+            raise UserNotFound()
+        requester = self.user_repo.get_user_by_id(friendship.requester_id)
+        if not requester:
+            raise UserNotFound()
 
         try:
             self.friend_repo.update_friendship_status(
@@ -292,13 +298,13 @@ class FriendshipService:
                 "action": "friend_request_declined",
                 "friendship_id": str(friendship.id),
                 "accepter_id": str(current_accepter_id),
-                "accepter_username": friendship.accepter.username,
-                "detail": f"Ваш запрос на дружбу к {friendship.accepter.username} отклонен.",
+                "accepter_username": accepter.username,
+                "detail": f"Ваш запрос на дружбу к {accepter.username} отклонен.",
             }
             self.notify_repo.add_notification(
                 user_id=friendship.requester_id,  # Уведомление для отправителя запроса
                 notification_type=NotificationType.FRIEND_DECLINED,  # Тип уведомления
-                message=f"{friendship.accepter.username} отклонил(а) ваш запрос на дружбу.",
+                message=f"{accepter.username} отклонил(а) ваш запрос на дружбу.",
                 sender_id=current_accepter_id,  # Тот, кто отклонил
                 related_object_id=friendship.id,
             )
@@ -322,7 +328,6 @@ class FriendshipService:
         Отклоняет ожидающий запрос на дружбу.
 
         Args:
-            db (Session): Сессия базы данных.
             friendship_id (uuid.UUID): ID записи о дружбе.
             current_accepter_id (uuid.UUID): ID текущего пользователя, который отклоняет запрос.
 
@@ -340,7 +345,12 @@ class FriendshipService:
             raise FriendshipPermissionError(
                 detail="У вас нет прав для удаления этой записи о дружбе.",
             )
-
+        accepter = self.user_repo.get_user_by_id(friendship.accepter_id)
+        if not accepter:
+            raise UserNotFound()
+        requester = self.user_repo.get_user_by_id(friendship.requester_id)
+        if not requester:
+            raise UserNotFound()
         try:
             removed_successfully = self.friend_repo.delete_friendship(friendship_id)
             if not removed_successfully:
@@ -351,12 +361,12 @@ class FriendshipService:
             if friendship.requester_id == current_user_id:
                 other_user_id = friendship.accepter_id
                 notification_message = (
-                    f"{friendship.requester.username} удалил(а) запись о вашей дружбе."
+                    f"{requester.username} удалил(а) запись о вашей дружбе."
                 )
             else:
                 other_user_id = friendship.requester_id
                 notification_message = (
-                    f"{friendship.accepter.username} удалил(а) запись о вашей дружбе."
+                    f"{accepter.username} удалил(а) запись о вашей дружбе."
                 )
 
             if other_user_id:

@@ -48,14 +48,14 @@ async def update_profile(
     """_summary_
 
     Args:
-        db (db_dependencies): _description_
         user (user_dependencies): _description_
         update_data (UserUpdate): _description_
 
     Returns:
         UserResponse: _description_
     """
-    return user_service.update_user_profile(user.id,update_data)
+    user_data = update_data.model.dict(exclude_unset=True)
+    return await user_service.update_user_profile(user.id,user_data)
 
 
 @user.post('/me/avatar',response_model=UserResponse,dependencies=[Depends(RateLimiter(times=5, seconds=60))])
@@ -75,7 +75,7 @@ async def load_avatar(
     Returns:
         UserResponse: Обновленный профиль пользователя с новым URL аватарки.
     """
-    return await user_service.load_avatar(user,avatar_file) 
+    return await user_service.load_avatar(user,avatar_file,avatar_file.content_type,avatar_file.filename)
 
 
 @user.get(

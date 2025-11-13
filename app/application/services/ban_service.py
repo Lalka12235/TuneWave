@@ -24,7 +24,6 @@ class BanService:
         Получает список банов, выданных указанным пользователем (кто забанил).
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя, который выдал бан.
 
         Returns:
@@ -42,7 +41,6 @@ class BanService:
         Получает список банов, полученных указанным пользователем (кого забанили).
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя, который был забанен.
 
         Returns:
@@ -62,7 +60,6 @@ class BanService:
         Проверяет, не забанен ли пользователь уже.
 
         Args:
-            db (Session): Сессия базы данных.
             data_ban (BanCreate): Pydantic-схема, содержащая данные для бана (ID забаненного, room_id, причина).
             current_user (User): Текущий аутентифицированный пользователь, который выдает бан.
 
@@ -105,7 +102,6 @@ class BanService:
         Удаляет запись о бане пользователя.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             data_ban (BanRemove): Pydantic-схема, содержащая ID забаненного пользователя и room_id (опционально).
 
         Returns:
@@ -116,6 +112,7 @@ class BanService:
             HTTPException (500 INTERNAL SERVER ERROR): При внутренних ошибках сервера.
         """
         existing_ban_to_remove = None
+        existing_ban_to_remove_local = None
         if data_ban.room_id:
             existing_ban_to_remove_local = self.ban_repo.is_user_banned_local( data_ban.ban_user_id, data_ban.room_id)
             existing_ban_to_remove = True
@@ -145,4 +142,3 @@ class BanService:
             raise ServerError(
                 detail=f"Не удалось снять бан из-за внутренней ошибки сервера: {e}" 
             )
-

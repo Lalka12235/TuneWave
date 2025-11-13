@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Path
 from fastapi_limiter.depends import RateLimiter
 
 
-from app.presentation.schemas.track_schemas import TrackBase, TrackCreate
+from app.presentation.schemas.track_schemas import TrackBase, TrackCreate, TrackResponse
 from app.application.services.track_service import TrackService
 from app.application.services.dep import get_track_service
 
@@ -29,9 +29,10 @@ async def get_track_by_id(
 async def create_track_from_spotify_data(
     spotify_data: TrackCreate,
     track_service: Annotated[TrackService,Depends(get_track_service)],
-) -> TrackCreate:
+) -> TrackResponse:
     """
     Создает трек в базе данных на основе Spotify data
     """
-    return await track_service.get_or_create_track_from_spotify(spotify_data)
+    track_data = spotify_data.model_dump()
+    return await track_service.get_or_create_track_from_spotify(track_data)
 

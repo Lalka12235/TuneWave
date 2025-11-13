@@ -6,9 +6,7 @@ from app.domain.entity import UserEntity
 from app.domain.interfaces.ban_repo import BanRepository
 from app.domain.interfaces.user_repo import UserRepository
 from app.presentation.schemas.user_schemas import (
-    UserCreate,
     UserResponse,
-    UserUpdate,
 )
 from app.application.mappers.user_mapper import UserMapper
 
@@ -19,6 +17,7 @@ from app.domain.exceptions.user_exception import (
     FileExceedsSize,
 ) 
 from app.domain.exceptions.exception import ServerError
+from  typing import Any
 
 
 class UserService:
@@ -82,7 +81,6 @@ class UserService:
         Получает пользователя по его уникальному ID.
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): Уникальный идентификатор пользователя.
 
         Raises:
@@ -105,7 +103,6 @@ class UserService:
         Получает пользователя по его email.
 
         Args:
-            db (Session): Сессия базы данных.
             email (str): Email пользователя.
 
         Raises:
@@ -151,7 +148,6 @@ class UserService:
         Получает пользователя по его Google ID.
 
         Args:
-            db (Session): Сессия базы данных.
             google_id (str): Google ID пользователя.
 
         Raises:
@@ -169,41 +165,40 @@ class UserService:
 
         return self.user_mapper.to_response(user)
 
-    async def create_user(self, user_data: UserCreate) -> UserResponse:
+    async def create_user(self, user_data: dict[str,Any]) -> UserResponse:
         """Создание пользователя
 
         Args:
-            db (Session): Сессия базы данных.
             user_data (UserCreate): Данные для создания пользоателя
 
         Returns:
             UserResponse: Информация о создании
         """
         self._check_for_existing_user_and_raise_if_found(
-            user_data.email, user_data.google_id, user_data.spotify_id
+            user_data.get('email'), user_data.get('google_id'), user_data.get('spotify_id')
         )
         try:
-            new_user = self.user_repo.create_user(user_data.model_dump())
+            new_user = self.user_repo.create_user(user_data)
             logger.info(
-                f"Пользователь '{user_data.username}' ({new_user.id}) успешно зарегистрирован."
+                f"Пользователь '{user_data.get('username')}' ({new_user.id}) успешно зарегистрирован."
             )
-            subject = "Добро пожаловать в TuneWave!"
-            body = f"""
-            Привет, {user_data.username}!
-
-            Спасибо за регистрацию в TuneWave. Мы рады видеть тебя в нашем музыкальном сообществе.
-            Начни создавать комнаты и делиться музыкой с друзьями!
-
-            С уважением,
-            Команда TuneWave
-            """
-            email_sent = (user_data.email, subject, body)
-            if not email_sent:
-                logger.warning(f"Сообщение на почту не отправилось {email_sent}")
-                pass
+            #subject = "Добро пожаловать в TuneWave!"
+            #body = f"""
+            #Привет, {user_data.get('username')}!
+#
+            #Спасибо за регистрацию в TuneWave. Мы рады видеть тебя в нашем музыкальном сообществе.
+            #Начни создавать комнаты и делиться музыкой с друзьями!
+#
+            #С уважением,
+            #Команда TuneWave
+            #"""
+            #email_sent = (user_data.email, subject, body)
+            #if not email_sent:
+            #    logger.warning(f"Сообщение на почту не отправилось {email_sent}")
+            #    pass
         except Exception as e:
             logger.error(
-                f"Ошибка при создании пользователя '{user_data.email}': {e}",
+                f"Ошибка при создании пользователя '{user_data.get('email')}': {e}",
                 exc_info=True,
             )
             raise ServerError(detail="Ошибка при создании пользователя")
@@ -211,14 +206,13 @@ class UserService:
         return self.user_mapper.to_response(new_user)
 
     async def update_user_profile(
-        self, user_id: uuid.UUID, update_data: UserUpdate
+        self, user_id: uuid.UUID, update_data: dict[str,Any]
     ) -> UserResponse:
         """
         Обновляет профиль пользователя.
         Включает проверку на уникальность email, если он изменяется.
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя, чей профиль обновляется.
             update_data (UserUpdate): Pydantic-модель с данными для обновления.
 
@@ -234,10 +228,8 @@ class UserService:
                 f"Попытка обновить профиль несуществующего пользователя с ID '{user_id}'."
             )
             raise UserNotFound(detail="Пользователь не найден")
-
-        data_to_update = update_data.model_dump(exclude_unset=True)
         try:
-            updated_user = self.user_repo.update_user(user, data_to_update)
+            updated_user = self.user_repo.update_user(user, update_data)
             logger.info(f"Профиль пользователя '{user_id}' успешно обновлен.")
         except Exception as e:
             logger.error(
@@ -252,7 +244,6 @@ class UserService:
         """_summary_
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя для физического удаления.
 
         Raises:
@@ -331,7 +322,7 @@ class UserService:
 
             new_avatar_url = f"{settings.BASE_URL}/avatars/{unique_filename}"
             updated_user = await self.update_user_profile(
-                user.id, UserUpdate(avatar_url=new_avatar_url)
+                user.id, {'avatar_url': new_avatar_url}
             )
 
             logger.info(

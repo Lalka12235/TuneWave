@@ -1,15 +1,12 @@
 import uuid
+from typing import Any
 
 from app.domain.entity.user import UserEntity
 from app.domain.interfaces.member_room_association import MemberRoomAssociationRepository
 from app.domain.interfaces.room_repo import RoomRepository
 
 from app.domain.enum import Role
-from app.presentation.schemas.room_schemas import (
-    RoomCreate,
-    RoomResponse,
-    RoomUpdate,
-)
+from app.presentation.schemas.room_schemas import RoomResponse
 
 from app.presentation.auth.hash import make_hash_pass
 from app.infrastructure.ws.connection_manager import manager
@@ -68,32 +65,31 @@ class RoomService:
 
         return [self.room_mapper.to_response(room) for room in rooms_list]
 
-    async def create_room(self, room_data: RoomCreate, owner: UserEntity) -> RoomResponse:
+    async def create_room(self, room_data: dict[str,Any], owner: UserEntity) -> RoomResponse:
         """
         Создает новую комнату.
         Включает проверку уникальности имени и хэширование пароля.
         """
 
-        room = self.room_repo.get_room_by_name(room_data.name)
+        room = self.room_repo.get_room_by_name(room_data.get('name'))
         if room:
             raise RoomAlreadyExistsError(
-                detail=f"Комната с названием '{room_data.name}' уже существует."
+                detail=f"Комната с названием '{room_data.get('name')}' уже существует."
             )
 
-        room_data_dict = room_data.model_dump()
-        room_data_dict["owner_id"] = owner.id
+        room_data["owner_id"] = owner.id
 
-        if room_data.is_private:
-            if not room_data.password:
+        if room_data.get('is_private'):
+            if not room_data.get('password'):
                 raise PrivateRoomRequiresPasswordError()
-            room_data_dict["password"] = make_hash_pass(room_data.password)
-        room_data_dict["password_hash"] = None
-        if room_data.password:
+            room_data["password"] = make_hash_pass(room_data.get('password'))
+        room_data["password_hash"] = None
+        if room_data.get('password'):
             raise PublicRoomCannotHavePasswordError()
 
-        room_data_dict.pop("password", None)
+        room_data.pop("password", None)
         try:
-            new_room = self.room_repo.create_room(room_data_dict)
+            new_room = self.room_repo.create_room(room_data)
 
             self.member_room_repo.add_member(
                 owner.id, new_room.id, role=Role.OWNER.value
@@ -113,7 +109,7 @@ class RoomService:
             )
 
     def update_room(
-        self, room_id: uuid.UUID, update_data: RoomUpdate, current_user: UserEntity
+        self, room_id: uuid.UUID, update_data: dict[str,Any], current_user: UserEntity
     ) -> RoomResponse:
         """
         Обновляет существующую комнату.
@@ -128,31 +124,29 @@ class RoomService:
                 detail="У вас нет прав для обновления этой комнаты.",
             )
 
-        data_to_update = update_data.model_dump(exclude_unset=True)
-
-        if "is_private" in data_to_update:
-            if data_to_update["is_private"] and "password" not in data_to_update:
+        if "is_private" in update_data:
+            if update_data["is_private"] and "password" not in update_data:
                 raise PrivateRoomRequiresPasswordError(
                     detail="Для установки приватности комнаты требуется новый пароль.",
                 )
             elif (
-                not data_to_update["is_private"]
-                and "password" in data_to_update
-                and data_to_update["password"] is not None
+                not update_data["is_private"]
+                and "password" in update_data
+                and update_data["password"] is not None
             ):
                 raise PublicRoomCannotHavePasswordError(
                     detail="Пароль не может быть установлен для не приватной комнаты.",
                 )
 
-        if "password" in data_to_update and data_to_update["password"] is not None:
-            data_to_update["password_hash"] = make_hash_pass(
-                data_to_update.pop("password")
+        if "password" in update_data and update_data["password"] is not None:
+            update_data["password_hash"] = make_hash_pass(
+                update_data.pop("password")
             )
-        elif "password" in data_to_update and data_to_update["password"] is None:
-            data_to_update["password_hash"] = None
+        elif "password" in update_data and update_data["password"] is None:
+            update_data["password_hash"] = None
 
         try:
-            updated_room_db = self.room_repo.update_room(room, data_to_update)
+            updated_room_db = self.room_repo.update_room(room, update_data)
 
             return self.room_mapper.to_response(updated_room_db)
         except Exception as e:
@@ -201,7 +195,6 @@ class RoomService:
         Получает список всех комнат, в которых состоит данный пользователь.
 
         Args:
-            self.db (Session): Сессия базы данных SQLAlchemy.
             user (User): Объект текущего пользователя.
 
         Returns:

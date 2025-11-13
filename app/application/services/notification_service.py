@@ -72,7 +72,6 @@ class NotificationService:
         Создает новую запись об уведомлении. Этот метод будет вызываться из других сервисов.
 
         Args:
-            db (Session): Сессия базы данных.
             user_id (uuid.UUID): ID пользователя, который получит уведомление.
             notification_type (NotificationType): Тип уведомления (Enum).
             message (str): Текст уведомления.

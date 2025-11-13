@@ -27,7 +27,6 @@ class ChatService:
         Получает историю сообщений для указанной комнаты.
 
         Args:
-            db (Session): Сессия базы данных.
             room_id (uuid.UUID): Уникальный идентификатор комнаты.
             limit (int, optional): Максимальное количество сообщений для возврата. По умолчанию 50.
 
@@ -55,13 +54,9 @@ class ChatService:
         Создает новое сообщение в комнате.
 
         Args:
-            db (Session): Сессия базы данных.
             room_id (uuid.UUID): Уникальный идентификатор комнаты.
             user_id (uuid.UUID): ID пользователя, который отправляет сообщение.
             message (MessageCreate): Pydantic-схема с текстом сообщения.
-
-        Raises:
-            HTTPException: Если комната не найдена или пользователь не является её участником.
 
         Returns:
             MessageResponse: Pydantic-схема созданного сообщения.

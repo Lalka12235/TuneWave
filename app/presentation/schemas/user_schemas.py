@@ -1,9 +1,9 @@
-from pydantic import BaseModel,Field,EmailStr
+from pydantic import BaseModel,Field
 import uuid
 
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, description="Имя пользователя")
-    email: EmailStr = Field(..., description="Email пользователя")
+    email: str = Field(..., description="Email пользователя")
     is_email_verified: bool = Field(False, description="Подтвержден ли email")
 
 class UserResponse(UserBase):
@@ -37,7 +37,7 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     username: str | None = Field(None, min_length=3, max_length=50, description="Новое имя пользователя")
-    email: EmailStr | None = Field(None, description="Новый email пользователя")
+    email: str | None = Field(None, description="Новый email пользователя")
     is_email_verified: bool | None = Field(None, description="Новый статус подтверждения email")
     bio: str | None = Field(None,description='Описание профиля пользователя',max_length=1000)
     avatar_url: str | None = Field(None,description='Аватар пользователя в профиле')
@@ -51,7 +51,7 @@ class UserUpdate(BaseModel):
 
 # Схема для данных, полученных от Google OAuth (входные данные для сервиса)
 class GoogleOAuthData(BaseModel):
-    email: EmailStr = Field(..., description="Email пользователя от Google")
+    email: str = Field(..., description="Email пользователя от Google")
     username: str = Field(..., description="Имя пользователя от Google")
     google_id: str = Field(..., description="Google ID пользователя")
     google_image_url: str | None = Field(None, description="URL изображения профиля Google")
@@ -62,7 +62,7 @@ class GoogleOAuthData(BaseModel):
 
 # Схема для данных, полученных от Spotify OAuth (входные данные для сервиса)
 class SpotifyOAuthData(BaseModel):
-    email: EmailStr = Field(..., description="Email пользователя от Spotify")
+    email: str = Field(..., description="Email пользователя от Spotify")
     username: str = Field(..., description="Имя пользователя от Spotify")
     spotify_id: str = Field(..., description="Spotify ID пользователя")
     spotify_profile_url: str | None = Field(None, description="URL профиля Spotify")

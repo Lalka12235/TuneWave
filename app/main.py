@@ -20,13 +20,13 @@ async def lifespan(app: FastAPI):
     """
     Контекстный менеджер для управления жизненным циклом приложения.
     """
-    scheduler_service.start()
+    #scheduler_service.start()
     r = redis.from_url(settings.redis.REDIS_URL, encoding="utf-8", decode_responses=True)
     await FastAPILimiter.init(r)
     
     yield
 
-    scheduler_service.scheduler.shutdown()
+    #scheduler_service.scheduler.shutdown()
 
     await r.close()
 
@@ -58,7 +58,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-scheduler_service = SchedulerService()
+#scheduler_service = SchedulerService()
 app.add_middleware(ProxyHeadersMiddleware)
 
 
@@ -71,7 +71,6 @@ async def ping():
 #origins = [
 #    "http://localhost",  
 #    "http://localhost:8080",
-#    "http://12y7.0.0.1:5500",#test
 #]
 
 app.add_middleware(
