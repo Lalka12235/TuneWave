@@ -1,8 +1,7 @@
-from app.infrastructure.db.models import User
+from app.domain.entity import UserEntity
 from app.presentation.schemas.user_schemas import UserResponse
-from app.application.mappers.base_mapper import BaseMapper
 
 
-class UserMapper(BaseMapper):
-    def to_response(self, user: User) -> UserResponse:
+class UserMapper:
+    def to_response(self, user: UserEntity) -> UserResponse:
         return UserResponse.model_validate(user)

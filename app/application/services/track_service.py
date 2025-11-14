@@ -24,7 +24,7 @@ class TrackService:
             logger.warning(f"Сервис треков: Не удалось найти трек с ID '{track_id}'.")
             raise TrackNotFound()
 
-        return self.track_mapper.to_response(track)
+        return self.track_mapper.to_response_track(track)
 
     def get_track_by_Spotify_id(self, spotify_id: str) -> TrackResponse:
         """Получает трек по его Spotify ID из базы данных."""
@@ -35,7 +35,7 @@ class TrackService:
             )
             raise TrackNotFound()
 
-        return self.track_mapper.to_response(track)
+        return self.track_mapper.to_response_track(track)
 
     def create_track(self, track_data: dict[str,str]) -> TrackResponse:
         """Создает новый трек в базе данных."""
@@ -75,7 +75,7 @@ class TrackService:
             logger.info(
                 f"Сервис треков: Трек '{spotify_data['spotify_id']}' успешно получен от Spotify и кеширован в БД."
             )
-            return self.track_mapper.to_response(new_local_track_response)
+            return self.track_mapper.to_response_track(new_local_track_response)
         except Exception as e:
             logger.error(
                 f"Сервис треков: Неизвестная ошибка при получении/сохранении трека '{spotify_data['spotify_id']}': {e}",

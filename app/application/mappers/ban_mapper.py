@@ -1,9 +1,8 @@
 from app.domain.entity import BanEntity
 from app.presentation.schemas.ban_schemas import BanResponse
-from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.user_mapper import UserMapper
 
-class BanMapper(BaseMapper):
+class BanMapper:
     def __init__(self, user_mapper: UserMapper):
         self._user_mapper = user_mapper
 

@@ -1,9 +1,8 @@
 from app.domain.entity import TrackEntity,RoomTrackAssociationEntity
 from app.presentation.schemas.room_schemas import TrackInQueueResponse
-from app.application.mappers.base_mapper import BaseMapper
 from app.presentation.schemas.track_schemas import TrackCreate, TrackResponse
 
-class TrackMapper(BaseMapper):
+class TrackMapper:
 
     def to_response_track(self,track: TrackEntity)  -> TrackResponse:
         return TrackResponse(

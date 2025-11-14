@@ -1,15 +1,14 @@
-from app.infrastructure.db.models import Room
+from app.domain.entity import RoomEntity
 from app.presentation.schemas.room_schemas import RoomResponse, TrackInQueueResponse
-from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.user_mapper import UserMapper
 from app.application.mappers.track_mapper import TrackMapper
 
-class RoomMapper(BaseMapper):
+class RoomMapper:
     def __init__(self, user_mapper: UserMapper, track_mapper: TrackMapper):
         self._user_mapper = user_mapper
         self._track_mapper = track_mapper
 
-    def to_response(self, room: Room) -> RoomResponse:
+    def to_response(self, room: RoomEntity) -> RoomResponse:
         owner_response = self._user_mapper.to_response(room.owner) if room.owner_id else None
         members_response = [
             self._user_mapper.to_response(assoc.user)

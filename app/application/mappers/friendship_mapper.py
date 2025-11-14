@@ -1,13 +1,12 @@
-from app.infrastructure.db.models import Friendship
+from app.domain.entity import FriendshipEntity
 from app.presentation.schemas.friendship_schemas import FriendshipResponse
-from app.application.mappers.base_mapper import BaseMapper
 from app.application.mappers.user_mapper import UserMapper
 
-class FriendshipMapper(BaseMapper):
+class FriendshipMapper:
     def __init__(self, user_mapper: UserMapper):
         self._user_mapper = user_mapper
 
-    def to_response(self, friendship: Friendship) -> FriendshipResponse:
+    def to_response(self, friendship: FriendshipEntity) -> FriendshipResponse:
         return FriendshipResponse(
             id=friendship.id,
             requester=self._user_mapper.to_response(friendship.requester),
