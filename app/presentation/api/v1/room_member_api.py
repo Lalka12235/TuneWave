@@ -112,12 +112,12 @@ async def add_ban(
         room_id (uuid.UUID): ID комнаты.
         target_user_id (uuid.UUID): ID пользователя, которого нужно забанить.
         ban_data (BanCreate): Объект с данными бана (причина, room_id).
-        db (Session): Сессия базы данных.
         current_user (User): Текущий аутентифицированный пользователь.
 
     Returns:
         BanResponse: Детали созданной записи о бане.
     """
+    ban_data = ban_data.model_dump()
     return await room_member_service.ban_user_from_room(room_id, user_id, ban_data, user)
 
 

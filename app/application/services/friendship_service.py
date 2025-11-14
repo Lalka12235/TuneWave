@@ -105,16 +105,11 @@ class FriendshipService:
         Отправляет новый запрос на дружбу.
 
         Args:
-            db (Session): Сессия базы данных.
             requester_id (uuid.UUID): ID пользователя, который отправляет запрос.
             accepter_id (uuid.UUID): ID пользователя, которому отправляется запрос.
 
         Returns:
             FriendshipResponse: Объект FriendshipResponse, представляющий созданный запрос.
-
-        Raises:
-            HTTPException: Если пользователь пытается добавить себя, пользователь не найден,
-                           или запрос/дружба уже существует.
         """
         if requester_id == accepter_id:
             raise SelfFriendshipError()
@@ -183,8 +178,6 @@ class FriendshipService:
         Returns:
             FriendshipResponse: Объект FriendshipResponse, представляющий принятую дружбу.
 
-        Raises:
-            HTTPException: Если запрос не найден, у пользователя нет прав, или запрос не в статусе PENDING.
         """
         friendship = self.friend_repo.get_friendship_by_id(friendship_id)
         if not friendship:
@@ -333,9 +326,6 @@ class FriendshipService:
 
         Returns:
             FriendshipResponse: Объект FriendshipResponse, представляющий отклоненный запрос.
-
-        Raises:
-            HTTPException: Если запрос не найден, у пользователя нет прав, или запрос не в статусе PENDING.
         """
         friendship = self.friend_repo.get_friendship_by_id(friendship_id)
         if not friendship:

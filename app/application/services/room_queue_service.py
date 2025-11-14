@@ -51,7 +51,7 @@ class RoomQueueService:
         for assoc in room.room_track:
             if assoc.track:
                 res = TrackInQueueResponse(
-                    track=TrackMapper.to_response(assoc.track),
+                    track=TrackMapper.to_response_track(assoc.track),
                     order_in_queue=assoc.order_in_queue,
                     id=assoc.id,
                     added_at=assoc.added_at

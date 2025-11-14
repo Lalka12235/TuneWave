@@ -159,7 +159,6 @@ class RoomService:
         """_summary_
 
         Args:
-            self.db (Session): _description_
             room_id (uuid.UUID): _description_
             owner (User): _description_
 

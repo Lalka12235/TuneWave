@@ -1,8 +1,9 @@
 import uuid
+from typing import Any
 
 from app.config.log_config import logger
 from app.domain.interfaces.ban_repo import BanRepository
-from app.presentation.schemas.ban_schemas import BanCreate, BanRemove, BanResponse
+from app.presentation.schemas.ban_schemas import BanResponse
 from app.application.mappers.ban_mapper import BanMapper
 from app.domain.exceptions.ban_exception import UserBannedInRoom, UserBannedGlobal, UserNotExistingBan
 from app.domain.exceptions.exception import ServerError
@@ -54,39 +55,34 @@ class BanService:
     
 
     
-    def add_ban(self,data_ban: BanCreate,current_user: UserEntity) -> BanResponse:
+    def add_ban(self,data_ban: dict[str,Any],current_user: UserEntity) -> BanResponse:
         """
         Добавляет новый бан для пользователя в комнате или глобально.
         Проверяет, не забанен ли пользователь уже.
 
         Args:
-            data_ban (BanCreate): Pydantic-схема, содержащая данные для бана (ID забаненного, room_id, причина).
+            data_ban: данные для бана (ID забаненного, room_id, причина).
             current_user (User): Текущий аутентифицированный пользователь, который выдает бан.
 
         Returns:
             BanResponse: Объект BanResponse, представляющий созданный бан.
 
-        Raises:
-            HTTPException (400 BAD REQUEST): Если пользователь уже забанен.
-            HTTPException (404 NOT FOUND): Если комната или забаненный пользователь не найдены (если логика проверки будет добавлена).
-            HTTPException (403 FORBIDDEN): Если у текущего пользователя нет прав (если логика проверки прав будет добавлена).
-            HTTPException (500 INTERNAL SERVER ERROR): При внутренних ошибках сервера.
         """
-        if data_ban.room_id:
-                existing_local_ban = self.ban_repo.is_user_banned_local( data_ban.ban_user_id, data_ban.room_id)
+        if data_ban.get('room_id'):
+                existing_local_ban = self.ban_repo.is_user_banned_local( data_ban.get('ban_user_id'), data_ban.get('room_id'))
                 if existing_local_ban:
                     raise UserBannedInRoom()
             
 
-        existing_global_ban = self.ban_repo.is_user_banned_global( data_ban.ban_user_id)
+        existing_global_ban = self.ban_repo.is_user_banned_global( data_ban.get('ban_user_id'))
         if existing_global_ban:
             raise UserBannedGlobal()
 
         try:
             new_ban_entry = self.ban_repo.add_ban(
-                ban_user_id=data_ban.ban_user_id,
-                room_id=data_ban.room_id,
-                reason=data_ban.reason,
+                ban_user_id=data_ban.get('ban_user_id'),
+                room_id=data_ban.get('room_id'),
+                reason=data_ban.get('reason'),
                 by_ban_user_id=current_user.id
             )
 
@@ -97,37 +93,34 @@ class BanService:
             )
         
     
-    def remove_ban(self, data_ban: BanRemove) -> dict[str, str]:
+    def remove_ban(self, data_ban: dict[str,Any]) -> dict[str, str]:
         """
         Удаляет запись о бане пользователя.
 
         Args:
-            data_ban (BanRemove): Pydantic-схема, содержащая ID забаненного пользователя и room_id (опционально).
+            data_ban :ID забаненного пользователя и room_id (опционально).
 
         Returns:
             dict[str, Any]: Словарь с сообщением об успешном снятии бана.
 
-        Raises:
-            HTTPException (404 NOT FOUND): Если бан не найден.
-            HTTPException (500 INTERNAL SERVER ERROR): При внутренних ошибках сервера.
         """
         existing_ban_to_remove = None
         existing_ban_to_remove_local = None
-        if data_ban.room_id:
-            existing_ban_to_remove_local = self.ban_repo.is_user_banned_local( data_ban.ban_user_id, data_ban.room_id)
+        if data_ban.get('room_id'):
+            existing_ban_to_remove_local = self.ban_repo.is_user_banned_local( data_ban.get('ban_user_id'), data_ban.get('room_id'))
             existing_ban_to_remove = True
         else:
-            self.ban_repo.is_user_banned_global( data_ban.ban_user_id)
+            self.ban_repo.is_user_banned_global( data_ban.get('ban_user_id'))
         
         if not existing_ban_to_remove:
-                logger.warning(f"BanService: Попытка снять несуществующий бан для user_id={data_ban.ban_user_id}, room_id={data_ban.room_id}")
+                logger.warning(f"BanService: Попытка снять несуществующий бан для user_id={data_ban.get('ban_user_id')}, room_id={data_ban.get('room_id')}")
                 raise UserNotExistingBan()
         try:
             if existing_ban_to_remove_local:
-                self.ban_repo.remove_ban_local(data_ban.room_id,data_ban.ban_user_id)
+                self.ban_repo.remove_ban_local(data_ban.get('room_id'),data_ban.get('ban_user_id'))
             else:
-                self.ban_repo.remove_ban_global(data_ban.ban_user_id)
-            logger.info(f"BanService: Бан успешно снят для user_id={data_ban.ban_user_id}, room_id={data_ban.room_id}")
+                self.ban_repo.remove_ban_global(data_ban.get('ban_user_id'))
+            logger.info(f"BanService: Бан успешно снят для user_id={data_ban.get('ban_user_id')}, room_id={data_ban.get('room_id')}")
             
             return {
                 "status": "success",
@@ -135,8 +128,8 @@ class BanService:
             }
         except Exception as e:
             logger.error(
-                f"Внутренняя ошибка сервера при снятии бана. user_id: {data_ban.ban_user_id}, "
-                f"room_id: {data_ban.room_id if data_ban.room_id else 'глобальный'}. Ошибка: {e}",
+                f"Внутренняя ошибка сервера при снятии бана. user_id: {data_ban.get('ban_user_id')}, "
+                f"room_id: {data_ban.get('room_id') if data_ban.get('room_id') else 'глобальный'}. Ошибка: {e}",
                 exc_info=True
             )
             raise ServerError(

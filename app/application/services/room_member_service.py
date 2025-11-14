@@ -92,10 +92,6 @@ class RoomMemberService:
 
         Returns:
             RoomResponse: Объект комнаты, к которой присоединился пользователь.
-
-        Raises:
-            HTTPException: Если комната не найдена, пользователь уже является участником,
-                           неверный пароль, или комната переполнена.
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
@@ -162,9 +158,6 @@ class RoomMemberService:
 
         Returns:
             dict[str, Any]: Сообщение об успешном выходе.
-
-        Raises:
-            HTTPException: Если пользователь не является участником комнаты.
         """
         existing_association = self.member_room_repo.get_association_by_ids(
             user.id, room_id
@@ -218,9 +211,6 @@ class RoomMemberService:
 
         Returns:
             List[UserResponse]: Список объектов UserResponse, являющихся участниками комнаты.
-
-        Raises:
-            HTTPException: Если комната не найдена.
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
@@ -251,11 +241,6 @@ class RoomMemberService:
 
         Returns:
             RoomMemberResponse: Обновленная информация о члене комнаты.
-
-        Raises:
-            HTTPException: Если комната не найдена, пользователь не авторизован,
-                           целевой пользователь не является членом комнаты,
-                           или роль недействительна.
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
@@ -349,7 +334,6 @@ class RoomMemberService:
         Пользователь не может кикнуть самого себя.
 
         Args:
-            self.db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): Уникальный ID комнаты, из которой нужно удалить пользователя.
             user_id (uuid.UUID): Уникальный ID пользователя, которого нужно кикнуть.
             current_user (User): Объект текущего аутентифицированного пользователя,
@@ -357,14 +341,6 @@ class RoomMemberService:
 
         Returns:
             dict[str, Any]: Словарь с подтверждением успешного удаления пользователя.
-
-        Raises:
-            HTTPException (404 NOT FOUND): Если комната не найдена, или целевой пользователь не является членом комнаты.
-            HTTPException (403 FORBIDDEN): Если у текущего пользователя недостаточно прав (он не владелец/модератор),
-                                        или модератор пытается кикнуть владельца/другого модератора,
-                                        или пытаются кикнуть владельца комнаты.
-            HTTPException (400 BAD REQUEST): Если пользователь пытается кикнуть самого себя.
-            HTTPException (500 INTERNAL SERVER ERROR): При внутренних ошибках сервера во время операции.
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
@@ -448,7 +424,6 @@ class RoomMemberService:
         Модераторы НЕ могут банить.
 
         Args:
-            self.db (Session): Сессия базы данных.
             room_id (uuid.UUID): ID комнаты.
             target_user_id (uuid.UUID): ID пользователя, которого нужно забанить.
             ban_data (BanCreate): Данные для бана (причина, room_id).
@@ -457,11 +432,6 @@ class RoomMemberService:
 
         Returns:
             BanResponse: Объект BanResponse, представляющий созданный бан.
-
-        Raises:
-            HTTPException: Если комната не найдена, недостаточно прав,
-                           целевой пользователь не найден, пользователь уже забанен,
-                           или произошла внутренняя ошибка.
         """
         try:
             room = self.room_repo.get_room_by_id(room_id)
@@ -549,7 +519,6 @@ class RoomMemberService:
         Только владелец комнаты может снимать баны.
 
         Args:
-            self.db (Session): Сессия базы данных.
             room_id (uuid.UUID): ID комнаты.
             target_user_id (uuid.UUID): ID пользователя, с которого нужно снять бан.
             current_user (User): Текущий аутентифицированный пользователь, выполняющий действие.
@@ -557,10 +526,6 @@ class RoomMemberService:
 
         Returns:
             dict[str, Any]: Сообщение об успешном снятии бана.
-
-        Raises:
-            HTTPException: Если комната не найдена, недостаточно прав,
-                           пользователь не забанен, или произошла внутренняя ошибка.
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
@@ -634,17 +599,12 @@ class RoomMemberService:
         Отправляет приглашение в комнату указанному пользователю.
 
         Args:
-            self.db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): ID комнаты, куда приглашают.
             inviter_id (uuid.UUID): ID пользователя, который отправляет приглашение.
             invited_user_id (uuid.UUID): ID пользователя, которого приглашают.
 
         Returns:
             dict[str, str]: Сообщение об успешной отправке приглашения.
-
-        Raises:
-            HTTPException: Если комната/пользователи не найдены, права недостаточны,
-                           или приглашение невозможно отправить по другим причинам.
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
@@ -729,17 +689,12 @@ class RoomMemberService:
         Обрабатывает ответ пользователя на приглашение в комнату (принять или отклонить).
 
         Args:
-            self.db (Session): Сессия базы данных SQLAlchemy.
             notification_id (uuid.UUID): ID уведомления о приглашении.
             current_user_id (uuid.UUID): ID текущего пользователя, который отвечает на приглашение.
             action (str): Действие пользователя ("accept" для принятия, "decline" для отклонения).
 
         Returns:
             dict[str, str]: Сообщение о результате операции.
-
-        Raises:
-            HTTPException: Если уведомление не найдено, у пользователя нет прав,
-                           уведомление не является приглашением, или возникла другая ошибка.
         """
         notification = self.notify_repo.get_notification_by_id(notification_id)
         if not notification:
