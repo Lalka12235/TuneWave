@@ -15,7 +15,7 @@ done
 
 echo "Run migrations"
 # 🔥 Изменено: Используем полный путь к исполняемому файлу alembic
-/app/.venv/bin/alembic upgrade head
+.venv/bin/alembic upgrade head
 echo "Migrations applied"
 
 

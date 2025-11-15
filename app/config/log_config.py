@@ -4,12 +4,12 @@ import os
 from pathlib import Path
 from datetime import datetime
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 logger = logging.getLogger(__name__)
 
 
 def configure_logging(level=logging.INFO, log_file_prefix='app'):
-    os.makedirs(os.path.dirname(BASE_DIR / 'logs'), exist_ok=True)
+    os.makedirs(f'{BASE_DIR}/logs',exist_ok=True)
 
     watchfiles_logger = logging.getLogger('watchfiles.main')
     watchfiles_logger.setLevel(logging.WARNING)

@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config.loggingMiddleware import LogMiddleware
 from app.presentation.api.v1.all_route import V1_ROUTERS
 from app.config.log_config import configure_logging
-from app.application.services.scheduler_service import SchedulerService
+#from app.application.services.scheduler_service import SchedulerService
 from contextlib import asynccontextmanager
 from fastapi_limiter import FastAPILimiter
 import redis.asyncio as redis

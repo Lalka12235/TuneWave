@@ -1,4 +1,4 @@
-from app.models.base import Base
+from app.infrastructure.db.models.base import Base
 from sqlalchemy import ForeignKey, DateTime,func, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped,mapped_column, relationship
 
@@ -9,8 +9,8 @@ import uuid
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models.user import User
-    from app.models.track import Track
+    from app.infrastructure.db.models.user import User
+    from app.infrastructure.db.models.track import Track
 
 class FavoriteTrack(Base):
     __tablename__ = 'favorite_tracks'
