@@ -44,14 +44,14 @@ class BanRepository(ABC):
         raise NotImplementedError()
     
     @abstractmethod
-    def is_user_banned_global(self, user_id: uuid.UUID) -> BanEntity | None:
+    def is_user_banned_global(self, user_id: uuid.UUID) -> bool:
         """
         Проверяет, забанен ли пользователь ГЛОБАЛЬНО (то есть, во всех комнатах).
         """
         raise NotImplementedError()
     
     @abstractmethod
-    def is_user_banned_local(self, user_id: uuid.UUID,room_id: uuid.UUID) -> BanEntity | None:
+    def is_user_banned_local(self, user_id: uuid.UUID,room_id: uuid.UUID) -> bool:
         """
         Проверяет, забанен ли пользователь в КОНКРЕТНОЙ комнате.
         """

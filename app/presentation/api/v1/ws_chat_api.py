@@ -17,10 +17,13 @@ from app.domain.entity import UserEntity
 from app.presentation.schemas.message_schemas import MessageCreate
 from app.application.services.chat_service import ChatService
 from app.application.services.dep import get_chat_service
-from app.presentation.auth.auth import get_user_by_token
+from app.presentation.auth.auth import check_provider
 from app.infrastructure.ws.connection_manager import manager
+from app.infrastructure.db.repositories.dep import get_user_repo
+from app.infrastructure.db.repositories.user_repo import SQLalchemyUserRepository
 
 chat_ws = APIRouter(tags=["Chat WS"], prefix="/ws/chat")
+user_repoitory = Annotated[SQLalchemyUserRepository,Depends(get_user_repo())]
 
 
 async def get_websocket_user(
@@ -30,13 +33,22 @@ async def get_websocket_user(
             ...,
         ),
     ],
+    user_repo: user_repoitory
 ):
-    user = get_user_by_token(token)
-    if not user:
+    auth_data = check_provider(token)
+    if not auth_data:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверный токен аутентификации",
         )
+    external_id = auth_data["external_id"]
+    provider = auth_data['provider']
+    user = None
+    if provider == "google":
+        user = user_repo.get_user_by_google_id(external_id)
+
+    elif provider == "spotify":
+        user = user_repo.get_user_by_spotify_id(external_id)
     return user
 
 

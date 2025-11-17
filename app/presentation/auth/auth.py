@@ -1,7 +1,7 @@
+from app.infrastructure.db.repositories.user_repo import SQLalchemyUserRepository
 from app.presentation.auth.jwt import decode_access_token
 from fastapi import Depends
 from typing import Annotated
-from app.infrastructure.db.repositories.user_repo import SQLalchemyUserRepository
 from app.domain.interfaces.ban_repo import BanRepository
 from app.domain.interfaces.user_repo import UserRepository 
 from app.application.mappers.mappers import UserMapper 
@@ -15,6 +15,7 @@ from app.presentation.schemas.user_schemas import (
     Token,
     UserResponse
 )
+from app.infrastructure.celery.tasks import send_email_task
 from jwt import exceptions
 from app.infrastructure.db.repositories.dep import get_user_repo
 
@@ -25,7 +26,8 @@ from app.domain.exceptions.auth_exception import (
     UserBannedError,
 )
 from app.domain.exceptions.user_exception import UserNotFound,UserNotAuthorized 
-from app.application.services.redis_service import RedisService 
+from app.application.services.redis_service import RedisService
+import httpx
 
 
 oauth2_scheme = HTTPBearer(description="Введите ваш JWT-токен (Bearer <TOKEN>)")
@@ -128,7 +130,7 @@ class AuthService:
                 logger.info(
                     f"Новый пользователь '{user.id}' зарегистрирован через Google OAuth."
                 )
-                # send_email_task.delay(google_data.email,google_data.username)
+                send_email_task.delay(google_data.email,google_data.username)
             except Exception as e:
                 logger.error(
                     f"Ошибка при создании пользователя через Google OAuth '{google_data.email}': {e}",
@@ -211,7 +213,7 @@ class AuthService:
                 logger.info(
                     f"Новый пользователь '{user.id}' зарегистрирован через Spotify OAuth."
                 )
-                # send_email_task.delay(spotify_data.email,spotify_data.username)
+                send_email_task.delay(spotify_data.email,spotify_data.username)
             except Exception as e:
                 logger.error(
                     f"Ошибка при создании пользователя через Spotify OAuth '{spotify_data.email}': {e}",
@@ -225,89 +227,63 @@ class AuthService:
             access_token=spotify_data.spotify_access_token, token_type="bearer"
         )
 
+async def check_provider(token: str) -> dict[str, str]:
+    google_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+    spotify_url = "https://api.spotify.com/v1/me"
+
+    async with httpx.AsyncClient() as client:
+
+        google_resp = await client.get(
+            google_url,
+            headers={"Authorization": f"Bearer {token}"}
+        )
+
+        if google_resp.status_code == 200:
+            data = google_resp.json()
+            return {
+                "provider": "google",
+                "external_id": data["sub"],
+            }
+
+        spotify_resp = await client.get(
+            spotify_url,
+            headers={"Authorization": f"Bearer {token}"}
+        )
+
+        if spotify_resp.status_code == 200:
+            data = spotify_resp.json()
+            return {
+                "provider": "spotify",
+                "external_id": data["id"],
+            }
+
+        raise InvalidTokenError("Invalid access token (not Google or Spotify).")
 
 
-
-def get_user_by_token(token: str) -> UserEntity:
-        """_summary_
-        Args:
-            db (Session): _description_
-            token (str): _description_
-        Returns:
-            User: _description_
-        """
-        try:
-            payload = decode_access_token(token)
-            user_id = payload.get("sub")
-            if not user_id:
-                logger.warning(
-                    "Ошибка декодирования токена: отсутствует 'sub' (ID пользователя)."
-                )
-                raise UserNotAuthorized(
-                    detail="Невалидный токен: отсутствует ID пользователя",
-                )
-            # This function needs a user_repo instance to fetch the user
-            # It should be passed as a dependency or the function should be part of a class
-            # For now, assuming it will be passed as a dependency in FastAPI
-            raise NotImplementedError("UserRepository dependency not provided to get_user_by_token")
-        except exceptions.DecodeError:
-            logger.warning("Невалидный JWT-токен: ошибка декодирования.")
-            raise TokenDecodeError()
-        
-    
-def get_current_user_id(credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]) -> uuid.UUID:
-    """
-    Зависимость FastAPI, которая извлекает ID пользователя из JWT-токена.
-    
-    Args:
-        token (str): JWT-токен, извлеченный из заголовка Authorization.
-                    Предоставляется FastAPI благодаря OAuth2PasswordBearer.
-                    
-    Returns:
-        uuid.UUID: ID пользователя, извлеченный из токена.
-        
-    Raises:
-        HTTPException: Если токен недействителен, истек или не содержит ID пользователя.
-    """
+async def get_current_user_id(credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]) -> dict[str,str]:
     token = credentials.credentials
-    try: 
-        data = decode_access_token(token)
-        user_id = data.get('sub')
-        if user_id is None:
-            logger.warning("JWT-токен не содержит идентификатор пользователя (поле 'sub').")
-            raise InvalidTokenError()
-        
-        try:
-            user_id = uuid.UUID(user_id)
-        except ValueError:
-            logger.warning(f"Недействительный JWT-токен: 'sub' поле '{user_id}' не является валидным UUID.")
-            raise InvalidTokenError(detail="Недействительный токен: некорректный формат идентификатора пользователя.")
-        return user_id
-    except exceptions.DecodeError:
-        raise TokenDecodeError()
-    except Exception as e:
-        logger.error(f'Ошибка проверки JWT: {e}', exc_info=True)
-        raise TokenDecodeError("Ошибка проверки токена")
-    
-    
-def get_current_user(
-        user_id:Annotated[uuid.UUID,Depends(get_current_user_id)],
-        user_repo: Annotated[SQLalchemyUserRepository, Depends(get_user_repo)] # Added user_repo dependency
+    provider_data = await check_provider(token)
+
+    return provider_data
+
+
+async def get_current_user(
+        auth_data: Annotated[dict, Depends(get_current_user_id)],
+        user_repo: Annotated[SQLalchemyUserRepository, Depends(get_user_repo)]
 ) -> UserEntity:
-    """
-    Зависимость FastAPI, которая возвращает объект User для текущего аутентифицированного пользователя.
-    
-    Args:
-        user_id (uuid.UUID): ID пользователя (предоставляется get_current_user_id).
-        
-    Returns:
-        User: Объект User из базы данных.
-        
-    Raises:
-        HTTPException: Если пользователь не найден в БД или неактивен (401 Unauthorized).
-    """
-    user = user_repo.get_user_by_id(user_id)
+    provider = auth_data["provider"]
+    external_id = auth_data["external_id"]
+
+    if provider == "google":
+        user = user_repo.get_user_by_google_id(external_id)
+
+    elif provider == "spotify":
+        user = user_repo.get_user_by_spotify_id(external_id)
+
+    else:
+        raise UserNotAuthorized()
+
     if not user:
-        logger.warning(f"Пользователь с ID {user_id} не найден в базе данных или неактивен.")
         raise UserNotFound()
+
     return user
