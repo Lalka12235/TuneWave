@@ -227,6 +227,7 @@ class AuthService:
             access_token=spotify_data.spotify_access_token, token_type="bearer"
         )
 
+
 async def check_provider(token: str) -> dict[str, str]:
     google_url = "https://www.googleapis.com/oauth2/v3/userinfo"
     spotify_url = "https://api.spotify.com/v1/me"
