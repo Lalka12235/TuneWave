@@ -34,13 +34,14 @@ room_service = Annotated[RoomService,Depends(get_room_service)]
 async def create_room(
     room_data: RoomCreate,
     current_user: user_dependencies,
-    room_service: room_service,
+    room_serv: room_service,
 ) -> RoomResponse:
     """
     Создает новую комнату.
     Требуется аутентификация. Владелец комнаты будет текущим аутентифицированным пользователем.
     """
-    return await room_service.create_room(room_data, current_user)
+    room_data = room_data.model_dump()
+    return await room_serv.create_room(room_data, current_user)
 
 
 @room.put(
@@ -52,13 +53,14 @@ def update_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для обновления")],
     update_data: RoomUpdate,
     current_user: user_dependencies,
-    room_service: room_service,
+    room_serv: room_service,
 ) -> RoomResponse:
     """
     Обновляет информацию о комнате по ее ID.
     Требуется аутентификация. Только владелец комнаты может ее обновить.
     """
-    return room_service.update_room(room_id, update_data, current_user)
+    update_data = update_data.model_dump(exclude_unset=True)
+    return room_serv.update_room(room_id, update_data, current_user)
 
 
 @room.delete(
@@ -69,13 +71,13 @@ def update_room(
 def delete_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для удаления")],
     current_user: user_dependencies,
-    room_service: room_service,
+    room_serv: room_service,
 ) -> dict:
     """
     Удаляет комнату по ее ID.
     Требуется аутентификация. Только владелец комнаты может ее удалить.
     """
-    return room_service.delete_room(room_id, current_user)
+    return room_serv.delete_room(room_id, current_user)
 
 
 @room.post(
@@ -93,7 +95,7 @@ def delete_room(
 )
 async def get_room_by_name(
     name: Annotated[str, Query(..., description="Название комнаты")],
-    room_service: room_service,
+    room_serv: room_service,
     redis_client: redis_service,
 ) -> RoomResponse:
     """
@@ -102,7 +104,7 @@ async def get_room_by_name(
     """
     key = f'rooms:get_room_by_name:{name}'
     async def fetch():
-        return await room_service.get_room_by_name(name)
+        return await room_serv.get_room_by_name(name)
     return await redis_client.get_or_set(key,fetch,300)
 
 
@@ -112,7 +114,7 @@ async def get_room_by_name(
     dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def get_my_rooms(
-    current_user: user_dependencies,room_service: room_service, redis_client: redis_service
+    current_user: user_dependencies,room_serv: room_service, redis_client: redis_service
 ) -> list[RoomResponse]:
     """
     Получает список всех комнат, в которых состоит текущий аутентифицированный пользователь.
@@ -120,7 +122,7 @@ async def get_my_rooms(
     """
     key = f'rooms:get_my_rooms:{current_user.id}'
     async def fetch():
-        return await room_service.get_user_rooms(current_user)
+        return await room_serv.get_user_rooms(current_user)
     return await redis_client.get_or_set(key,fetch,300)
 
 @room.get(
@@ -129,13 +131,13 @@ async def get_my_rooms(
     dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def get_all_rooms(
-    room_service: room_service,
+    room_serv: room_service,
 ) -> list[RoomResponse]:
     """
     Получает список всех доступных комнат.
     Не требует аутентификации.
     """
-    return await room_service.get_all_rooms()
+    return await room_serv.get_all_rooms()
 
 
 @room.get(
@@ -145,7 +147,7 @@ async def get_all_rooms(
 )
 async def get_room_by_id(
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],
-    room_service: room_service,
+    room_serv: room_service,
     redis_client: redis_service,
 ) -> RoomResponse:
     """
@@ -154,5 +156,5 @@ async def get_room_by_id(
     """
     key = f'rooms:get_room_by_id:{room_id}'
     async def fetch():
-        return await room_service.get_room_by_id(room_id)
+        return await room_serv.get_room_by_id(room_id)
     return await redis_client.get_or_set(key,fetch,300)

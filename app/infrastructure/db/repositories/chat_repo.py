@@ -34,7 +34,7 @@ class SQLalchemyChatRepository(ChatRepository):
         stmt = (
             select(Message)
             .where(Message.room_id == room_id)
-            .order_by((Message.created_at).desc())
+            .order_by(Message.created_at.desc())
             .limit(limit)
             .options(joinedload(Message.user))
         )
@@ -43,8 +43,7 @@ class SQLalchemyChatRepository(ChatRepository):
             stmt = stmt.where(Message.created_at < before_timestamp)
 
         result = self._db.execute(stmt)
-        result = result.scalars().all()
-        return result
+        return result.scalars().all()
     
 
     

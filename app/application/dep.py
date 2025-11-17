@@ -1,3 +1,5 @@
+from redis.asyncio import Redis
+
 from app.infrastructure.db.repositories.dep import (
     get_user_repo,
     get_ban_repo,
@@ -168,8 +170,8 @@ def get_room_member_service(
         room_repo,
         user_repo,
         member_room_repo,
-        notification_repo,
         ban_repo,
+        notification_repo,
         room_mapper,
         user_mapper,
         ban_mapper,
@@ -203,6 +205,6 @@ def get_room_queue_service(
     )
 
 def get_redis_service(
-        redis_client: Annotated[RedisService,Depends(get_redis_client)],
+        redis_client: Annotated[Redis,Depends(get_redis_client)],
 ) -> RedisService:
     return RedisService(redis_client)

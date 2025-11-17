@@ -1,5 +1,4 @@
 from app.infrastructure.db.repositories.user_repo import SQLalchemyUserRepository
-from app.presentation.auth.jwt import decode_access_token
 from fastapi import Depends
 from typing import Annotated
 from app.domain.interfaces.ban_repo import BanRepository
@@ -16,13 +15,11 @@ from app.presentation.schemas.user_schemas import (
     UserResponse
 )
 from app.infrastructure.celery.tasks import send_email_task
-from jwt import exceptions
 from app.infrastructure.db.repositories.dep import get_user_repo
 
 from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.auth_exception import ( 
     InvalidTokenError,
-    TokenDecodeError,
     UserBannedError,
 )
 from app.domain.exceptions.user_exception import UserNotFound,UserNotAuthorized 
@@ -68,7 +65,7 @@ class AuthService:
             
     async def authenticate_user_with_google(
         self, google_data: GoogleOAuthData
-    ) -> tuple[UserResponse, Token]:
+    ) -> tuple[UserResponse, Token] | None:
         """
         Аутентифицирует пользователя через Google OAuth.
         Создает или обновляет пользователя в БД и возвращает JWT-токен вашего приложения.

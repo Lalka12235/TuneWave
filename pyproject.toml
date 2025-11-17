@@ -13,6 +13,7 @@ dependencies = [
     "celery>=5.4.0",
     "click==8.1.8",
     "colorama==0.4.6",
+    "dishka>=1.7.2",
     "dnspython==2.7.0",
     "email-validator==2.2.0",
     "fastapi==0.115.11",
