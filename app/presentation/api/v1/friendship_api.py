@@ -4,23 +4,22 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, status
 from fastapi_limiter.depends import RateLimiter
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 from app.presentation.schemas.friendship_schemas import FriendshipRequestCreate, FriendshipResponse
 from app.application.services.friendship_service import FriendshipService
-from app.application.dep import get_friendship_service
 
 from app.application.services.redis_service import RedisService
-from app.application.services.dep import get_redis_client
+
+from dishka import FromDishka
 
 friendship = APIRouter(
     tags=['Friendship'],
     prefix='/friendships'
 )
 
-user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
-redis_service = Annotated[RedisService,Depends(get_redis_client)]
-friendship_service = Annotated[FriendshipService,Depends(get_friendship_service)]
+user_dependencies = FromDishka[UserEntity]
+redis_service = FromDishka[RedisService]
+friendship_service = FromDishka[FriendshipService]
 
 
 

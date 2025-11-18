@@ -3,7 +3,8 @@ from fastapi import Depends
 from typing import Annotated
 from app.domain.interfaces.ban_repo import BanRepository
 from app.domain.interfaces.user_repo import UserRepository 
-from app.application.mappers.mappers import UserMapper 
+from app.application.mappers.mappers import UserMapper
+from fastapi import Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 
 import uuid
 from app.domain.entity.user import UserEntity
@@ -257,16 +258,19 @@ async def check_provider(token: str) -> dict[str, str]:
         raise InvalidTokenError("Invalid access token (not Google or Spotify).")
 
 
-async def get_current_user_id(credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]) -> dict[str,str]:
-    token = credentials.credentials
-    provider_data = await check_provider(token)
+async def get_current_user_id(request: Request) -> dict:
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise InvalidTokenError()
 
+    token = auth.replace("Bearer ", "")
+    provider_data = await check_provider(token)
     return provider_data
 
 
 async def get_current_user(
-        auth_data: Annotated[dict, Depends(get_current_user_id)],
-        user_repo: Annotated[SQLalchemyUserRepository, Depends(get_user_repo)]
+        auth_data: dict,
+        user_repo: UserRepository,
 ) -> UserEntity:
     provider = auth_data["provider"]
     external_id = auth_data["external_id"]

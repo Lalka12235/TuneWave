@@ -4,7 +4,6 @@ from typing import Annotated, Any
 from fastapi import APIRouter,Depends, Path,status
 from fastapi_limiter.depends import RateLimiter
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 from app.presentation.schemas.ban_schemas import BanCreate, BanResponse
 from app.presentation.schemas.room_member_schemas import JoinRoomRequest,RoomMemberResponse,RoomMemberRoleUpdate
@@ -14,16 +13,16 @@ from app.presentation.schemas.room_schemas import (
 )
 from app.presentation.schemas.user_schemas import UserResponse
 from app.application.services.room_member_service import RoomMemberService
-from app.application.services.dep import get_room_member_service
 
 from app.application.services.redis_service import RedisService
-from app.application.services.dep import get_redis_client
+
+from dishka import FromDishka
 
 room_member = APIRouter(tags=["Room"], prefix="/rooms")
 
-user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
-room_member_service = Annotated[RoomMemberService,Depends(get_room_member_service)]
-redis_service = Annotated[RedisService,Depends(get_redis_client)]
+user_dependencies = FromDishka[UserEntity]
+room_member_service = FromDishka[RoomMemberService]
+redis_service = FromDishka[RedisService]
 
 
 async def join_room(

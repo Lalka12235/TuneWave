@@ -1,17 +1,18 @@
 from typing import Annotated, Any
 
 from app.application.services.spotify_service import SpotifyService
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter,Query
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
+
+from dishka import FromDishka
 
 spotify = APIRouter(
     tags=['Spotify'],
     prefix='/spotify'
 )
 
-user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
+user_dependencies = FromDishka[UserEntity]
 
 
 @spotify.get('/search/tracks',response_model=dict[str,Any])

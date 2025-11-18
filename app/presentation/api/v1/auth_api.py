@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 
 import httpx
 import jwt
+from dishka import FromDishka
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from fastapi_limiter.depends import RateLimiter
@@ -15,12 +16,11 @@ from app.domain.entity import UserEntity
 from app.config.settings import settings
 from app.presentation.schemas.config_schemas import FrontendConfig
 from app.presentation.schemas.user_schemas import GoogleOAuthData, SpotifyOAuthData
-from app.presentation.auth.dep import get_auth_service
 from app.presentation.auth.auth import AuthService
 from app.application.services.google_service import GoogleService
-from app.infrastructure.db.repositories.dep import get_user_repo
-from app.domain.interfaces.user_repo import UserRepository
 from app.application.services.spotify_service import SpotifyService
+
+
 
 user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 
@@ -61,7 +61,7 @@ async def google_login():
 @auth.get('/google/callback')
 async def google_callback(
     code: Annotated[str,Query(..., description="Код авторизации от Google")],
-    auth_service: Annotated[AuthService,Depends(get_auth_service)],
+    auth_service: FromDishka[AuthService],
     state: str | None = Query(None, description="Параметр состояния для защиты от CSRF"),
 ) -> RedirectResponse: 
     """
@@ -164,7 +164,7 @@ async def google_callback(
 @auth.get('/spotify/callback')
 async def spotify_callback(
     code: Annotated[str, Query(..., description="Код авторизации от Spotify")],
-    auth_service: Annotated[AuthService,Depends(get_auth_service)],
+    auth_service: FromDishka[AuthService],
     state: str | None = Query(None,description="Параметр состояния для защиты от CSRF"),
 ) -> RedirectResponse:
     """
@@ -290,10 +290,9 @@ async def spotify_callback(
 )
 async def google_refresh_token(
     user: user_dependencies,
+    google_service: FromDishka[GoogleService],
 ):
-    user_repo = Annotated[UserRepository,Depends(get_user_repo)]
-    google_service = GoogleService(user,user_repo)
-
+    google_service.user = user
     return google_service._refresh_access_token()
 
 

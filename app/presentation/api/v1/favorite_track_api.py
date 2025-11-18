@@ -4,22 +4,21 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Path, status
 from fastapi_limiter.depends import RateLimiter
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 from app.presentation.schemas.favorite_track_schemas import FavoriteTrackAdd, FavoriteTrackResponse
 from app.application.services.favorite_track_service import FavoriteTrackService
-from app.application.services.dep import get_favorite_track_service
 from app.application.services.redis_service import RedisService
-from app.application.services.dep import get_redis_client
+
+from dishka import FromDishka
 
 ft = APIRouter(
     tags=['Favorite Track'],
     prefix='/favorites'
 )
 
-user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
-favorite_track_service = Annotated[FavoriteTrackService,Depends(get_favorite_track_service)]
-redis_service = Annotated[RedisService,Depends(get_redis_client)]
+user_dependencies = FromDishka[UserEntity]
+favorite_track_service = FromDishka[FavoriteTrackService]
+redis_service =FromDishka[RedisService]
 
 
 @ft.get('/me',response_model=list[FavoriteTrackResponse],dependencies=[Depends(RateLimiter(times=15, seconds=60))])

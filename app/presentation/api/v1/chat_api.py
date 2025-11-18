@@ -5,19 +5,19 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query
 from fastapi_limiter.depends import RateLimiter
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 from app.presentation.schemas.message_schemas import MessageCreate, MessageResponse
 from app.application.services.chat_service import ChatService
-from app.application.services.dep import get_chat_service
+
+from dishka import FromDishka
 
 chat = APIRouter(
     tags=['Chat'],
     prefix='/chat'
 )
 
-user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
-chat_service = Annotated[ChatService,Depends(get_chat_service)]
+user_dependencies = FromDishka[UserEntity]
+chat_service = FromDishka[ChatService]
 
 
 @chat.get('/{room_id}',response_model=list[MessageResponse],dependencies=[Depends(RateLimiter(times=10, seconds=60))])

@@ -4,19 +4,19 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, status
 from fastapi_limiter.depends import RateLimiter
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 from app.presentation.schemas.notification_schemas import NotificationResponse
 from app.application.services.notification_service import NotificationService
-from app.application.services.dep import get_notification_service
+
+from dishka import FromDishka
 
 notification = APIRouter(
     tags=['Notifications'],
     prefix='/notifications'
 )
 
-user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
-notify_service = Annotated[NotificationService,Depends(get_notification_service)]
+user_dependencies = FromDishka[UserEntity]
+notify_service = FromDishka[NotificationService]
 
 
 @notification.get(

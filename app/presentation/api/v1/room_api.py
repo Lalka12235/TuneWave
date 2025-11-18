@@ -5,7 +5,6 @@ from fastapi import APIRouter,Depends, Path, Query, status
 from fastapi_limiter.depends import RateLimiter
 
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 from app.presentation.schemas.room_schemas import (
     RoomCreate,
@@ -13,16 +12,16 @@ from app.presentation.schemas.room_schemas import (
     RoomUpdate,
 )
 from app.application.services.room_service import RoomService
-from app.application.services.dep import get_room_service
 
 from app.application.services.redis_service import RedisService
-from app.application.services.dep import get_redis_client
+
+from dishka import FromDishka
 
 room = APIRouter(tags=["Room"], prefix="/rooms")
 
-user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
-redis_service = Annotated[RedisService,Depends(get_redis_client)]
-room_service = Annotated[RoomService,Depends(get_room_service)]
+user_dependencies = FromDishka[UserEntity]
+redis_service = FromDishka[RedisService]
+room_service = FromDishka[RoomService]
 
 
 @room.post(

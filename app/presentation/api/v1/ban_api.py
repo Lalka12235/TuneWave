@@ -1,21 +1,19 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status, Depends
 from fastapi_limiter.depends import RateLimiter
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 from app.presentation.schemas.ban_schemas import BanResponse
 from app.application.services.ban_service import BanService
-from app.application.services.dep import get_ban_service
+
+from dishka import FromDishka
 
 ban = APIRouter(
     tags=['Ban'],
     prefix='/ban'
 )
 
-user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
-ban_service = Annotated[BanService,Depends(get_ban_service)]
+user_dependencies = FromDishka[UserEntity]
+ban_service = FromDishka[BanService]
 
 
 @ban.get(

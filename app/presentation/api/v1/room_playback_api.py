@@ -1,20 +1,18 @@
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, status
+from fastapi import APIRouter, Body,status
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 from app.application.services.room_playback_service import RoomPlaybackService
-from app.application.services.dep import get_room_playback_service
+
+from dishka import FromDishka
 
 room_playback = APIRouter(tags=["Room"], prefix="/rooms")
 
-user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
-room_playback_service = Annotated[
-    RoomPlaybackService,
-    Depends(get_room_playback_service)
-]
+user_dependencies = FromDishka[UserEntity]
+room_playback_service = FromDishka[RoomPlaybackService]
+
 
 
 @room_playback.put(

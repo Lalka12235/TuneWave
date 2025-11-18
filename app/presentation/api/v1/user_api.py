@@ -4,22 +4,21 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, UploadFile
 from fastapi_limiter.depends import RateLimiter
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 from app.presentation.schemas.user_schemas import UserResponse, UserUpdate
-from app.application.services.dep import get_user_service
 from app.application.services.user_service import UserService
 from app.application.services.redis_service import RedisService
-from app.application.services.dep import get_redis_client
+
+from dishka import FromDishka
 
 user = APIRouter(
     tags=['User'],
     prefix='/users'
 )
 
-user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
-redis_service = Annotated[RedisService,Depends(get_redis_client)]
-user_service = Annotated[UserService,Depends(get_user_service)]
+user_dependencies = FromDishka[UserEntity]
+redis_service = FromDishka[RedisService]
+user_service = FromDishka[UserService]
 
 @user.get('/me',response_model=UserResponse,dependencies=[Depends(RateLimiter(times=10, seconds=60))])
 async def get_me(

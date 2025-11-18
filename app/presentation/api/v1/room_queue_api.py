@@ -4,22 +4,21 @@ from typing import Annotated
 from fastapi import APIRouter,Depends, Path,status
 from fastapi_limiter.depends import RateLimiter
 
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 from app.presentation.schemas.room_schemas import (
     AddTrackToQueueRequest,
     TrackInQueueResponse,
 )
 from app.application.services.room_queue_service import RoomQueueService
-from app.application.services.dep import get_room_queue_service
 from app.application.services.redis_service import RedisService
-from app.application.services.dep import get_redis_client
+
+from dishka import FromDishka
 
 room_queue = APIRouter(tags=["Room"], prefix="/rooms")
 
-user_dependencies = Annotated[UserEntity, Depends(get_current_user)]
-redis_service = Annotated[RedisService,Depends(get_redis_client)]
-room_queue_service = Annotated[RoomQueueService,Depends(get_room_queue_service)]
+user_dependencies = FromDishka[UserEntity]
+redis_service = FromDishka[RedisService]
+room_queue_service = FromDishka[RoomQueueService]
 
 @room_queue.post(
     "/{room_id}/queue",

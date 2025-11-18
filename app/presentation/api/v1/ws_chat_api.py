@@ -16,14 +16,14 @@ from fastapi import (
 from app.domain.entity import UserEntity
 from app.presentation.schemas.message_schemas import MessageCreate
 from app.application.services.chat_service import ChatService
-from app.application.services.dep import get_chat_service
 from app.presentation.auth.auth import check_provider
 from app.infrastructure.ws.connection_manager import manager
-from app.infrastructure.db.repositories.dep import get_user_repo
 from app.infrastructure.db.repositories.user_repo import SQLalchemyUserRepository
 
+from dishka import FromDishka
+
 chat_ws = APIRouter(tags=["Chat WS"], prefix="/ws/chat")
-user_repoitory = Annotated[SQLalchemyUserRepository,Depends(get_user_repo())]
+user_repoitory = FromDishka[SQLalchemyUserRepository]
 
 
 async def get_websocket_user(
@@ -57,7 +57,7 @@ async def send_message(
     websocket: WebSocket,
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],
     user: Annotated[UserEntity, Depends(get_websocket_user)],
-    chat_service: Annotated[ChatService,Depends(get_chat_service)],
+    chat_service: FromDishka[ChatService],
 ):
     """
     Эндпоинт WebSocket для чата в комнате.
