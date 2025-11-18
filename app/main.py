@@ -13,6 +13,9 @@ import os
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from app.presentation.api.v1.error_handler import register_errors_handlers
 
+from dishka.integrations.fastapi import setup_dishka
+from app.config.di.container import get_container
+
 configure_logging()
 
 @asynccontextmanager
@@ -61,6 +64,8 @@ app = FastAPI(
 #scheduler_service = SchedulerService()
 app.add_middleware(ProxyHeadersMiddleware)
 
+container = get_container()
+setup_dishka(container,app)
 
 
 @app.get('/ping')

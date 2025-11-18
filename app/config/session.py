@@ -1,39 +1,22 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine,Engine
 from sqlalchemy.orm import Session, sessionmaker
-from typing import Generator
-from app.config.settings import settings 
-from app.config.log_config import logger
-
-class DBSessionManager:
-    """Инкапсулирует создание Engine и SessionLocal."""
-    
-    def __init__(self, db_url: str):
-        self.engine = create_engine(
-            url=db_url,
-            echo=False,
-            pool_pre_ping=True 
-        )
-        
-        self.SessionLocal = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self.engine
-        )
-
-db_manager = DBSessionManager(settings.database.sync_db_url)
+from typing import Iterator
+from app.config.settings import settings
 
 
-def get_db() -> Generator[Session, None, None]:
-    """
-    Предоставляет сессию БД и закрывает её после запроса.
-    """
-    db = db_manager.SessionLocal()
-    try:
-        yield db
-        db.commit()
-    except Exception as e:
-        logger.error("Database error occurred. %r",e, exc_info=True)
-        db.rollback()
-        raise
-    finally:
-        db.close()
+def get_engine() -> Engine:
+    return create_engine(
+        url=settings.database.sync_db_url,
+        echo=False,
+        pool_pre_ping=True
+    )
+
+def get_sessionmaker(engine: Engine) -> sessionmaker[Session]:
+    session_factory = sessionmaker(
+        bind=engine
+    )
+    return session_factory
+
+def get_session(session_factory: sessionmaker[Session]) -> Iterator[Session]:
+    with session_factory() as session:
+        yield session
