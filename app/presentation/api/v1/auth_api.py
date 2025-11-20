@@ -5,11 +5,8 @@ from urllib.parse import urlencode
 
 import httpx
 import jwt
-from dishka import FromDishka
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
-from fastapi_limiter.depends import RateLimiter
-from app.presentation.auth.auth import get_current_user
 from app.domain.entity import UserEntity
 
 
@@ -20,16 +17,18 @@ from app.presentation.auth.auth import AuthService
 from app.application.services.google_service import GoogleService
 from app.application.services.spotify_service import SpotifyService
 
+from dishka import FromDishka
 
 
-user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
+
+user_dependencies = FromDishka[UserEntity]
 
 auth = APIRouter(
     tags=['auth'],
     prefix='/auth'
 )
 
-@auth.get('/config', response_model=FrontendConfig,dependencies=[Depends(RateLimiter(times=15, seconds=60))])
+@auth.get('/config', response_model=FrontendConfig)
 def get_frontend_config(
 ) -> FrontendConfig:
     """

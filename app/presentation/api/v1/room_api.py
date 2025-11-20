@@ -1,8 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter,Depends, Path, Query, status
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter, Path, Query, status
 
 
 from app.domain.entity import UserEntity
@@ -28,7 +27,6 @@ room_service = FromDishka[RoomService]
     "/",
     response_model=RoomResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 )
 async def create_room(
     room_data: RoomCreate,
@@ -46,7 +44,6 @@ async def create_room(
 @room.put(
     "/{room_id}",
     response_model=RoomResponse,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 def update_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для обновления")],
@@ -65,7 +62,6 @@ def update_room(
 @room.delete(
     "/{room_id}",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 def delete_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для удаления")],
@@ -83,14 +79,12 @@ def delete_room(
     "/{room_id}/join",
     response_model=RoomResponse,
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 
 
 @room.get(
     "/by-name/",
     response_model=RoomResponse,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def get_room_by_name(
     name: Annotated[str, Query(..., description="Название комнаты")],
@@ -110,7 +104,6 @@ async def get_room_by_name(
 @room.get(
     "/my-rooms",
     response_model=list[RoomResponse],
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def get_my_rooms(
     current_user: user_dependencies,room_serv: room_service, redis_client: redis_service
@@ -127,7 +120,6 @@ async def get_my_rooms(
 @room.get(
     "/",
     response_model=list[RoomResponse],
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def get_all_rooms(
     room_serv: room_service,
@@ -142,7 +134,6 @@ async def get_all_rooms(
 @room.get(
     "/{room_id}",
     response_model=RoomResponse,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def get_room_by_id(
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],

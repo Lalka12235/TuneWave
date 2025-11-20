@@ -162,5 +162,4 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
-print(BASE_DIR)
 settings = Settings()

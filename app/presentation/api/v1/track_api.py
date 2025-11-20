@@ -1,8 +1,7 @@
 from typing import Annotated
 
 from dishka import FromDishka
-from fastapi import APIRouter, Depends, Path
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter,Path
 
 
 from app.presentation.schemas.track_schemas import TrackBase, TrackCreate, TrackResponse
@@ -16,7 +15,7 @@ track = APIRouter(
 )
 
 
-@track.get('/{spotify_id}',response_model=TrackBase,dependencies=[Depends(RateLimiter(times=15, seconds=60))])
+@track.get('/{spotify_id}',response_model=TrackBase)
 async def get_track_by_id(
     spotify_id: Annotated[str,Path(...,description='Уникальный ID трека')],
     track_serv: track_service
@@ -27,7 +26,7 @@ async def get_track_by_id(
     return track_serv.get_track_by_Spotify_id(spotify_id)
 
 
-@track.post('/',response_model=TrackCreate,dependencies=[Depends(RateLimiter(times=10, seconds=60))])
+@track.post('/',response_model=TrackCreate)
 async def create_track_from_spotify_data(
     spotify_data: TrackCreate,
     track_serv: track_service

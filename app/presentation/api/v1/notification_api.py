@@ -1,8 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query, status
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter, Path, Query, status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.notification_schemas import NotificationResponse
@@ -23,7 +22,6 @@ notify_service = FromDishka[NotificationService]
     '/my',
     response_model=list[NotificationResponse],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 )
 async def get_my_notifications(
     user:user_dependencies,
@@ -35,9 +33,7 @@ async def get_my_notifications(
     Получает список уведомлений для текущего аутентифицированного пользователя.
 
     Args:
-        db (Session): Сессия базы данных.
         current_user (User): Текущий аутентифицированный пользователь.
-        is_read (Optional[bool]): Фильтр по статусу прочитанности (True - только прочитанные, False - только непрочитанные, None - все).
         limit (int): Максимальное количество уведомлений для возврата.
         offset (int): Смещение для пагинации.
 
@@ -53,7 +49,6 @@ async def get_my_notifications(
     '/{notification_id}/mark-read',
     response_model=NotificationResponse,
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def mark_notification_as_read(
     notify_service: notify_service,
@@ -65,7 +60,6 @@ async def mark_notification_as_read(
 
     Args:
         notification_id (uuid.UUID): ID уведомления.
-        db (Session): Сессия базы данных.
         current_user (User): Текущий аутентифицированный пользователь (владелец уведомления).
 
     Returns:
@@ -79,7 +73,6 @@ async def mark_notification_as_read(
 @notification.delete(
     '/{notification_id}',
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def delete_notifications(
     notify_service: notify_service,
@@ -91,7 +84,6 @@ async def delete_notifications(
 
     Args:
         notification_id (uuid.UUID): ID уведомления.
-        db (Session): Сессия базы данных.
         current_user (User): Текущий аутентифицированный пользователь (владелец уведомления).
 
     Returns:

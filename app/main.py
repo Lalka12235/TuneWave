@@ -6,8 +6,6 @@ from app.presentation.api.v1.all_route import V1_ROUTERS
 from app.config.log_config import configure_logging
 #from app.application.services.scheduler_service import SchedulerService
 from contextlib import asynccontextmanager
-from fastapi_limiter import FastAPILimiter
-import redis.asyncio as redis
 from app.config.settings import settings
 import os
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
@@ -24,14 +22,9 @@ async def lifespan(app: FastAPI):
     Контекстный менеджер для управления жизненным циклом приложения.
     """
     #scheduler_service.start()
-    r = redis.from_url(settings.redis.REDIS_URL, encoding="utf-8", decode_responses=True)
-    await FastAPILimiter.init(r)
-    
     yield
 
     #scheduler_service.scheduler.shutdown()
-
-    await r.close()
 
 app = FastAPI(
     title="TuneWave",

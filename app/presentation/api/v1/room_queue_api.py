@@ -1,8 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter,Depends, Path,status
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter, Path,status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.room_schemas import (
@@ -24,7 +23,6 @@ room_queue_service = FromDishka[RoomQueueService]
     "/{room_id}/queue",
     response_model=TrackInQueueResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def add_track_to_queue(
     current_user: user_dependencies,
@@ -44,7 +42,6 @@ async def add_track_to_queue(
 @room_queue.get(
     "/{room_id}/queue/{association_id}",
     response_model=list[TrackInQueueResponse],
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def get_room_queue(
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],
@@ -62,7 +59,6 @@ async def get_room_queue(
 
 @room_queue.delete(
     "/{room_id}/queue/{association_id}",
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def remove_track_from_queue(
     current_user: user_dependencies,

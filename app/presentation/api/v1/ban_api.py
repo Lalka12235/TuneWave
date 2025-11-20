@@ -1,5 +1,4 @@
-from fastapi import APIRouter, status, Depends
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter, status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.ban_schemas import BanResponse
@@ -20,7 +19,6 @@ ban_service = FromDishka[BanService]
     '/my-issued',
     response_model=list[BanResponse],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=15, seconds=60))],
 )
 async def get_bans_by_admin(
     ban_service: ban_service,
@@ -43,7 +41,6 @@ async def get_bans_by_admin(
     '/my-received',
     response_model=list[BanResponse],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=15, seconds=60))],
 )
 async def get_bans_on_user(
     ban_service: ban_service,

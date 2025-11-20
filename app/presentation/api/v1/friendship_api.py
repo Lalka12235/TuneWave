@@ -1,8 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, status
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter, Path, status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.friendship_schemas import FriendshipRequestCreate, FriendshipResponse
@@ -27,7 +26,6 @@ friendship_service = FromDishka[FriendshipService]
     '/send-request',
     response_model=FriendshipResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def send_friend_request(
     friend_service: friendship_service,
@@ -39,7 +37,6 @@ async def send_friend_request(
 
     Args:
         request_data (FriendshipRequestCreate): Данные запроса, содержащие ID пользователя-получателя.
-        db (Session): Сессия базы данных.
         current_user (User): Текущий аутентифицированный пользователь (отправитель запроса).
 
     Returns:
@@ -52,7 +49,6 @@ async def send_friend_request(
     '/{friendship_id}/accept',
     response_model=FriendshipResponse,
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def accept_friend_request(
     friend_service: friendship_service,
@@ -64,7 +60,6 @@ async def accept_friend_request(
 
     Args:
         friendship_id (uuid.UUID): ID записи о дружбе.
-        db (Session): Сессия базы данных.
         current_user (User): Текущий аутентифицированный пользователь (получатель запроса).
 
     Returns:
@@ -77,7 +72,6 @@ async def accept_friend_request(
     '/{friendship_id}/decline',
     response_model=FriendshipResponse,
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def decline_friend_request(
     friend_service: friendship_service,
@@ -89,7 +83,6 @@ async def decline_friend_request(
 
     Args:
         friendship_id (uuid.UUID): ID записи о дружбе.
-        db (Session): Сессия базы данных.
         current_user (User): Текущий аутентифицированный пользователь (получатель запроса).
 
     Returns:
@@ -101,7 +94,6 @@ async def decline_friend_request(
 @friendship.delete(
     "/{friendship_id}",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def delete_friendship(
     friend_service: friendship_service,
@@ -127,7 +119,6 @@ async def delete_friendship(
     '/my-friends',
     response_model=list[FriendshipResponse],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=15, seconds=60))]
 )
 async def get_my_friend(
     friend_service: friendship_service,
@@ -153,7 +144,6 @@ async def get_my_friend(
     '/my-send-requests',
     response_model=list[FriendshipResponse],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=15, seconds=60))]
 )
 async def get_my_sent_requests(
     friend_service: friendship_service,
@@ -181,7 +171,6 @@ async def get_my_sent_requests(
     '/my-received-requests',
     response_model=list[FriendshipResponse],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=15, seconds=60))]
 )
 async def get_my_received_requests(
     friend_service: friendship_service,
@@ -202,4 +191,4 @@ async def get_my_received_requests(
     key = f'friendship:get_my_received_requests:{current_user.id}'
     async def fetch():
         return await friend_service.get_my_received_requests(current_user.id)
-    return redis_client.get_or_set(key,fetch,300)
+    return await redis_client.get_or_set(key,fetch,300)

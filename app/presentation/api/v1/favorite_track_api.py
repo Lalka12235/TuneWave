@@ -1,8 +1,7 @@
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Path, status
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter, Path, status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.favorite_track_schemas import FavoriteTrackAdd, FavoriteTrackResponse
@@ -21,7 +20,7 @@ favorite_track_service = FromDishka[FavoriteTrackService]
 redis_service =FromDishka[RedisService]
 
 
-@ft.get('/me',response_model=list[FavoriteTrackResponse],dependencies=[Depends(RateLimiter(times=15, seconds=60))])
+@ft.get('/me',response_model=list[FavoriteTrackResponse])
 async def get_user_favorite_tracks(
     favorite_track_service: favorite_track_service,
     user: user_dependencies,
@@ -42,7 +41,7 @@ async def get_user_favorite_tracks(
     return await redis_client.get_or_set(key,fetch,300)
 
 
-@ft.post('/me',response_model=FavoriteTrackResponse,status_code=status.HTTP_201_CREATED,dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+@ft.post('/me',response_model=FavoriteTrackResponse,status_code=status.HTTP_201_CREATED)
 async def add_favorite_track(
     favorite_track_service: favorite_track_service,
     user: user_dependencies,
@@ -61,7 +60,7 @@ async def add_favorite_track(
     return await favorite_track_service.add_favorite_track(user.id,add_data.spotify_id)
 
 
-@ft.delete('/me{spotify_id}', response_model=dict[str,Any],dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+@ft.delete('/me{spotify_id}', response_model=dict[str,Any])
 async def remvoe_favorite_track(
     favorite_track_service: favorite_track_service,
     user: user_dependencies,
@@ -80,8 +79,7 @@ async def remvoe_favorite_track(
     return favorite_track_service.remove_favorite_track(user.id,spotify_id)
 
 
-@ft.get('/{user_id}', response_model=list[FavoriteTrackResponse],
-        dependencies=[Depends(RateLimiter(times=10, seconds=60))])
+@ft.get('/{user_id}', response_model=list[FavoriteTrackResponse])
 async def get_user_favorite_tracks_public(
     favorite_track_service: favorite_track_service,
     user_id: Annotated[uuid.UUID, Path(..., description="ID пользователя, чьи любимые треки нужно получить")],

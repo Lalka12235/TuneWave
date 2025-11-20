@@ -1,8 +1,7 @@
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter,Depends, Path,status
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter, Path,status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.ban_schemas import BanCreate, BanResponse
@@ -60,7 +59,6 @@ async def leave_room(
 @room_member.get(
     "/{room_id}/members",
     response_model=list[UserResponse],
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def get_room_members(
     room_id: Annotated[
@@ -84,7 +82,6 @@ async def get_room_members(
     "/{room_id}/members/{user_id}/ban",
     response_model=BanResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 )
 async def add_ban(
     room_id: Annotated[
@@ -124,7 +121,6 @@ async def add_ban(
     "/{room_id}/members/{user_id}/ban",
     response_model=dict[str, Any],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 )
 async def unban_user(
     room_id: Annotated[
@@ -161,7 +157,6 @@ async def unban_user(
 @room_member.post(
     "/{room_id}/invite/{invited_user_id}",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 )
 async def send_room_invite(
     room_id: Annotated[
@@ -192,7 +187,6 @@ async def send_room_invite(
 @room_member.put(
     "/{notification_id}/respond-to-invite",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 )
 async def respond_to_room_invite(
     notification_id: Annotated[
@@ -209,7 +203,6 @@ async def respond_to_room_invite(
     Args:
         notification_id (uuid.UUID): ID уведомления о приглашении.
         response_data (InviteResponse): Данные ответа, содержащие 'action' ("accept" или "decline").
-        db (Session): Сессия базы данных.
         current_user (User): Текущий аутентифицированный пользователь (который отвечает на приглашение).
 
     Returns:
@@ -222,7 +215,6 @@ async def respond_to_room_invite(
 @room_member.put(
     "/{room_id}/members/{target_user_id}/role",
     response_model=RoomMemberResponse,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
 )
 async def update_member_role(
     room_id: Annotated[
@@ -243,7 +235,6 @@ async def update_member_role(
         room_id (uuid.UUID): Уникальный ID комнаты.
         target_user_id (uuid.UUID): Уникальный ID пользователя, чью роль нужно изменить.
         new_role_data (RoomMemberRoleUpdate): Pydantic-модель, содержащая новую роль ('member', 'moderator', 'owner').
-        db (Session): Сессия базы данных.
         current_user (User): Текущий аутентифицированный пользователь, который пытается изменить роль.
 
     Returns:
