@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, BaseModel
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -130,9 +130,39 @@ class RedisConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
 
+class ExchangeDetail(BaseModel):
+    name: str
+    type: str = 'direct' # Значение по умолчанию
+    durable: bool = True
+
+class QueueDetail(BaseModel):
+    name: str
+    routing_key: str
+    exchange_name: str # К какому Exchange привязывать
+    durable: bool = True
+
+
 class RabbitConfig(BaseSettings):
     """Конфигурация для RabbitMQ."""
     RABBITMQ_BROKER_URL: str
+
+    DLX_MAIN: ExchangeDetail = ExchangeDetail(name='dlx-main', type='fanout')
+    DLQ_MAIN: QueueDetail = QueueDetail(name='dlq-main', routing_key='')
+
+    # 2. Список всех основных Exchange
+    EXCHANGES: list[ExchangeDetail] = [
+        ExchangeDetail(name='exc-email', type='direct'),
+        ExchangeDetail(name='exc-spotify', type='direct'),
+        ExchangeDetail(name='exc-google', type='direct'),
+    ]
+
+    # 3. Список всех основных Queues
+    QUEUES: list[QueueDetail] = [
+        QueueDetail(name='q-email', routing_key='email', exchange_name='exc-email'),
+        QueueDetail(name='q-spotify-token', routing_key='spotify-token', exchange_name='exc-spotify'),
+        QueueDetail(name='q-google-token', routing_key='google-token', exchange_name='exc-google'),
+    ]
+
 
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
