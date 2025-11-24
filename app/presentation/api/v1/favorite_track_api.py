@@ -8,11 +8,12 @@ from app.presentation.schemas.favorite_track_schemas import FavoriteTrackAdd, Fa
 from app.application.services.favorite_track_service import FavoriteTrackService
 from app.application.services.redis_service import RedisService
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
 ft = APIRouter(
     tags=['Favorite Track'],
-    prefix='/favorites'
+    prefix='/favorites',
+    route_class=DishkaRoute
 )
 
 user_dependencies = FromDishka[UserEntity]
@@ -21,6 +22,7 @@ redis_service =FromDishka[RedisService]
 
 
 @ft.get('/me',response_model=list[FavoriteTrackResponse])
+@inject
 async def get_user_favorite_tracks(
     favorite_track_service: favorite_track_service,
     user: user_dependencies,
@@ -42,6 +44,7 @@ async def get_user_favorite_tracks(
 
 
 @ft.post('/me',response_model=FavoriteTrackResponse,status_code=status.HTTP_201_CREATED)
+@inject
 async def add_favorite_track(
     favorite_track_service: favorite_track_service,
     user: user_dependencies,
@@ -61,6 +64,7 @@ async def add_favorite_track(
 
 
 @ft.delete('/me{spotify_id}', response_model=dict[str,Any])
+@inject
 async def remvoe_favorite_track(
     favorite_track_service: favorite_track_service,
     user: user_dependencies,
@@ -80,6 +84,7 @@ async def remvoe_favorite_track(
 
 
 @ft.get('/{user_id}', response_model=list[FavoriteTrackResponse])
+@inject
 async def get_user_favorite_tracks_public(
     favorite_track_service: favorite_track_service,
     user_id: Annotated[uuid.UUID, Path(..., description="ID пользователя, чьи любимые треки нужно получить")],

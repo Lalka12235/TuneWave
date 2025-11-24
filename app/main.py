@@ -5,7 +5,7 @@ from app.config.loggingMiddleware import LogMiddleware
 from app.presentation.api.v1.all_route import V1_ROUTERS
 from app.config.log_config import configure_logging
 #from app.application.services.scheduler_service import SchedulerService
-from contextlib import asynccontextmanager
+#from contextlib import asynccontextmanager
 from app.config.settings import settings
 import os
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
@@ -16,15 +16,15 @@ from app.config.di.container import get_container
 
 configure_logging()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Контекстный менеджер для управления жизненным циклом приложения.
-    """
-    #scheduler_service.start()
-    yield
-
-    #scheduler_service.scheduler.shutdown()
+#@asynccontextmanager
+#async def lifespan(app: FastAPI):
+#    """
+#    Контекстный менеджер для управления жизненным циклом приложения.
+#    """
+#    #scheduler_service.start()
+#    yield
+#
+#    #scheduler_service.scheduler.shutdown()
 
 app = FastAPI(
     title="TuneWave",
@@ -51,7 +51,7 @@ app = FastAPI(
         "name": "music",
         "description": "Операции с музыкальными треками"
     }],
-    lifespan=lifespan
+    #lifespan=lifespan
 )
 
 #scheduler_service = SchedulerService()

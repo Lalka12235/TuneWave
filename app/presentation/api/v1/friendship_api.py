@@ -9,11 +9,14 @@ from app.application.services.friendship_service import FriendshipService
 
 from app.application.services.redis_service import RedisService
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
+from fastapi import Depends
+from app.presentation.auth.auth import get_current_user
 
 friendship = APIRouter(
     tags=['Friendship'],
-    prefix='/friendships'
+    prefix='/friendships',
+    route_class=DishkaRoute
 )
 
 user_dependencies = FromDishka[UserEntity]
@@ -27,6 +30,7 @@ friendship_service = FromDishka[FriendshipService]
     response_model=FriendshipResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@inject
 async def send_friend_request(
     friend_service: friendship_service,
     request_data: FriendshipRequestCreate,
@@ -50,6 +54,7 @@ async def send_friend_request(
     response_model=FriendshipResponse,
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def accept_friend_request(
     friend_service: friendship_service,
     friendship_id: Annotated[uuid.UUID,Path(..., description="ID запроса на дружбу для принятия.")],
@@ -73,6 +78,7 @@ async def accept_friend_request(
     response_model=FriendshipResponse,
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def decline_friend_request(
     friend_service: friendship_service,
     friendship_id: Annotated[uuid.UUID,Path(..., description="ID запроса на дружбу для отклонения.")],
@@ -95,6 +101,7 @@ async def decline_friend_request(
     "/{friendship_id}",
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def delete_friendship(
     friend_service: friendship_service,
     friendship_id: Annotated[uuid.UUID, Path(..., description="ID записи о дружбе для удаления.")],
@@ -120,6 +127,7 @@ async def delete_friendship(
     response_model=list[FriendshipResponse],
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def get_my_friend(
     friend_service: friendship_service,
     user: user_dependencies,
@@ -145,6 +153,7 @@ async def get_my_friend(
     response_model=list[FriendshipResponse],
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def get_my_sent_requests(
     friend_service: friendship_service,
     current_user: user_dependencies,
@@ -172,6 +181,7 @@ async def get_my_sent_requests(
     response_model=list[FriendshipResponse],
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def get_my_received_requests(
     friend_service: friendship_service,
     current_user: user_dependencies,

@@ -4,11 +4,12 @@ from app.domain.entity import UserEntity
 from app.presentation.schemas.ban_schemas import BanResponse
 from app.application.services.ban_service import BanService
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
 ban = APIRouter(
     tags=['Ban'],
-    prefix='/ban'
+    prefix='/ban',
+    route_class=DishkaRoute
 )
 
 user_dependencies = FromDishka[UserEntity]
@@ -20,6 +21,7 @@ ban_service = FromDishka[BanService]
     response_model=list[BanResponse],
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def get_bans_by_admin(
     ban_service: ban_service,
     user: user_dependencies,
@@ -42,6 +44,7 @@ async def get_bans_by_admin(
     response_model=list[BanResponse],
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def get_bans_on_user(
     ban_service: ban_service,
     user: user_dependencies,

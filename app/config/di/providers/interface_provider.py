@@ -27,7 +27,3 @@ class InterfaceProvider(Provider):
         FavoriteTrackRepository,
         FriendshipRepository
     )
-
-
-def interface_provider() -> InterfaceProvider:
-    return InterfaceProvider()

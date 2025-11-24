@@ -15,15 +15,21 @@ from app.application.services.room_member_service import RoomMemberService
 
 from app.application.services.redis_service import RedisService
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
-room_member = APIRouter(tags=["Room"], prefix="/rooms")
+room_member = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 
 user_dependencies = FromDishka[UserEntity]
 room_member_service = FromDishka[RoomMemberService]
 redis_service = FromDishka[RedisService]
 
 
+@room_member.post(
+    "/{room_id}/join",
+    response_model=RoomResponse,
+    status_code=status.HTTP_200_OK,
+)
+@inject
 async def join_room(
     room_id: Annotated[
         uuid.UUID,
@@ -42,6 +48,7 @@ async def join_room(
 
 
 @room_member.post("/{room_id}/leave", status_code=status.HTTP_200_OK)
+@inject
 async def leave_room(
     room_id: Annotated[
         uuid.UUID, Path(..., description="ID комнаты, которую покидает пользователь")
@@ -60,6 +67,7 @@ async def leave_room(
     "/{room_id}/members",
     response_model=list[UserResponse],
 )
+@inject
 async def get_room_members(
     room_id: Annotated[
         uuid.UUID, Path(..., description="ID комнаты для получения списка участников")
@@ -83,6 +91,7 @@ async def get_room_members(
     response_model=BanResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@inject
 async def add_ban(
     room_id: Annotated[
         uuid.UUID,
@@ -122,6 +131,7 @@ async def add_ban(
     response_model=dict[str, Any],
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def unban_user(
     room_id: Annotated[
         uuid.UUID,
@@ -158,6 +168,7 @@ async def unban_user(
     "/{room_id}/invite/{invited_user_id}",
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def send_room_invite(
     room_id: Annotated[
         uuid.UUID, Path(..., description="ID комнаты, куда нужно пригласить.")
@@ -188,6 +199,7 @@ async def send_room_invite(
     "/{notification_id}/respond-to-invite",
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def respond_to_room_invite(
     notification_id: Annotated[
         uuid.UUID,
@@ -216,6 +228,7 @@ async def respond_to_room_invite(
     "/{room_id}/members/{target_user_id}/role",
     response_model=RoomMemberResponse,
 )
+@inject
 async def update_member_role(
     room_id: Annotated[
         uuid.UUID,

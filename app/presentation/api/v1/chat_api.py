@@ -8,11 +8,13 @@ from app.domain.entity import UserEntity
 from app.presentation.schemas.message_schemas import MessageCreate, MessageResponse
 from app.application.services.chat_service import ChatService
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
+
 
 chat = APIRouter(
     tags=['Chat'],
-    prefix='/chat'
+    prefix='/chat',
+    route_class=DishkaRoute
 )
 
 user_dependencies = FromDishka[UserEntity]
@@ -20,6 +22,7 @@ chat_service = FromDishka[ChatService]
 
 
 @chat.get('/{room_id}',response_model=list[MessageResponse])
+@inject
 async def get_message_for_room(
     chat_service: chat_service,
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
@@ -48,6 +51,7 @@ async def get_message_for_room(
 
 
 @chat.post('/{room_id}',response_model=MessageResponse, status_code=201)
+@inject
 async def create_message(
     chat_service: chat_service,
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],

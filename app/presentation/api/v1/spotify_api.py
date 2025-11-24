@@ -5,11 +5,12 @@ from fastapi import APIRouter,Query
 
 from app.domain.entity import UserEntity
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka
 
 spotify = APIRouter(
     tags=['Spotify'],
-    prefix='/spotify'
+    prefix='/spotify',
+    route_class=DishkaRoute
 )
 
 user_dependencies = FromDishka[UserEntity]
@@ -27,4 +28,4 @@ async def search_spotify_tracks(
     """
     spotify_service = SpotifyService(user=current_user)
 
-    return spotify_service.search_track(query,limit)
+    return await spotify_service.search_track(query,limit)

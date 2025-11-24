@@ -1,11 +1,10 @@
-from app.infrastructure.db.repositories.user_repo import SQLalchemyUserRepository
-from fastapi import Depends
-from typing import Annotated
+from typing import NewType
+
 from app.domain.interfaces.ban_repo import BanRepository
-from app.domain.interfaces.user_repo import UserRepository 
+from app.domain.interfaces.user_repo import UserRepository
 from app.application.mappers.mappers import UserMapper
 from fastapi import Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 
+from fastapi.security import HTTPBearer
 import uuid
 from app.domain.entity.user import UserEntity
 from app.config.log_config import logger
@@ -16,19 +15,18 @@ from app.presentation.schemas.user_schemas import (
     UserResponse
 )
 from app.infrastructure.celery.tasks import send_email_task
-from app.infrastructure.db.repositories.dep import get_user_repo
-
 from app.domain.exceptions.exception import ServerError
-from app.domain.exceptions.auth_exception import ( 
+from app.domain.exceptions.auth_exception import (
     InvalidTokenError,
     UserBannedError,
 )
-from app.domain.exceptions.user_exception import UserNotFound,UserNotAuthorized 
+from app.domain.exceptions.user_exception import UserNotFound,UserNotAuthorized
 from app.application.services.redis_service import RedisService
 import httpx
 
-
 oauth2_scheme = HTTPBearer(description="Введите ваш JWT-токен (Bearer <TOKEN>)")
+
+AuthData = NewType("AuthData", dict)
 
 
 class AuthService:
@@ -258,18 +256,18 @@ async def check_provider(token: str) -> dict[str, str]:
         raise InvalidTokenError("Invalid access token (not Google or Spotify).")
 
 
-async def get_current_user_id(request: Request) -> dict:
+async def get_current_user_id(request: Request) -> AuthData:
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise InvalidTokenError()
 
     token = auth.replace("Bearer ", "")
     provider_data = await check_provider(token)
-    return provider_data
+    return AuthData(provider_data)
 
 
 async def get_current_user(
-        auth_data: dict,
+        auth_data: AuthData,
         user_repo: UserRepository,
 ) -> UserEntity:
     provider = auth_data["provider"]

@@ -14,9 +14,9 @@ from app.application.services.room_service import RoomService
 
 from app.application.services.redis_service import RedisService
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
-room = APIRouter(tags=["Room"], prefix="/rooms")
+room = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 
 user_dependencies = FromDishka[UserEntity]
 redis_service = FromDishka[RedisService]
@@ -28,6 +28,7 @@ room_service = FromDishka[RoomService]
     response_model=RoomResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@inject
 async def create_room(
     room_data: RoomCreate,
     current_user: user_dependencies,
@@ -45,6 +46,7 @@ async def create_room(
     "/{room_id}",
     response_model=RoomResponse,
 )
+@inject
 def update_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для обновления")],
     update_data: RoomUpdate,
@@ -63,6 +65,7 @@ def update_room(
     "/{room_id}",
     status_code=status.HTTP_200_OK,
 )
+@inject
 def delete_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для удаления")],
     current_user: user_dependencies,
@@ -75,17 +78,13 @@ def delete_room(
     return room_serv.delete_room(room_id, current_user)
 
 
-@room.post(
-    "/{room_id}/join",
-    response_model=RoomResponse,
-    status_code=status.HTTP_200_OK,
-)
 
 
 @room.get(
     "/by-name/",
     response_model=RoomResponse,
 )
+@inject
 async def get_room_by_name(
     name: Annotated[str, Query(..., description="Название комнаты")],
     room_serv: room_service,
@@ -105,6 +104,7 @@ async def get_room_by_name(
     "/my-rooms",
     response_model=list[RoomResponse],
 )
+@inject
 async def get_my_rooms(
     current_user: user_dependencies,room_serv: room_service, redis_client: redis_service
 ) -> list[RoomResponse]:
@@ -121,6 +121,7 @@ async def get_my_rooms(
     "/",
     response_model=list[RoomResponse],
 )
+@inject
 async def get_all_rooms(
     room_serv: room_service,
 ) -> list[RoomResponse]:
@@ -135,6 +136,7 @@ async def get_all_rooms(
     "/{room_id}",
     response_model=RoomResponse,
 )
+@inject
 async def get_room_by_id(
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],
     room_serv: room_service,

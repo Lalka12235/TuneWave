@@ -11,9 +11,9 @@ from app.presentation.schemas.room_schemas import (
 from app.application.services.room_queue_service import RoomQueueService
 from app.application.services.redis_service import RedisService
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
-room_queue = APIRouter(tags=["Room"], prefix="/rooms")
+room_queue = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 
 user_dependencies = FromDishka[UserEntity]
 redis_service = FromDishka[RedisService]
@@ -24,6 +24,7 @@ room_queue_service = FromDishka[RoomQueueService]
     response_model=TrackInQueueResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@inject
 async def add_track_to_queue(
     current_user: user_dependencies,
     request: AddTrackToQueueRequest,
@@ -43,6 +44,7 @@ async def add_track_to_queue(
     "/{room_id}/queue/{association_id}",
     response_model=list[TrackInQueueResponse],
 )
+@inject
 async def get_room_queue(
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],
     room_queue_service: room_queue_service,
@@ -60,6 +62,7 @@ async def get_room_queue(
 @room_queue.delete(
     "/{room_id}/queue/{association_id}",
 )
+@inject
 async def remove_track_from_queue(
     current_user: user_dependencies,
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],

@@ -6,9 +6,10 @@ from fastapi import APIRouter, Body,status
 from app.domain.entity import UserEntity
 from app.application.services.room_playback_service import RoomPlaybackService
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
-room_playback = APIRouter(tags=["Room"], prefix="/rooms")
+
+room_playback = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 
 user_dependencies = FromDishka[UserEntity]
 room_playback_service = FromDishka[RoomPlaybackService]
@@ -20,6 +21,7 @@ room_playback_service = FromDishka[RoomPlaybackService]
     status_code=status.HTTP_200_OK,
     response_model=dict[str, Any],
 )
+@inject
 async def set_room_playback_host(
     room_id: uuid.UUID,
     room_playback_service: room_playback_service,
@@ -37,6 +39,7 @@ async def set_room_playback_host(
 
 
 @room_playback.put("/{room_id}/player/play", status_code=status.HTTP_204_NO_CONTENT)
+@inject
 async def player_play_command(
     room_id: uuid.UUID,
     current_user: user_dependencies,
@@ -53,6 +56,7 @@ async def player_play_command(
 
 
 @room_playback.put("/{room_id}/player/pause", status_code=status.HTTP_204_NO_CONTENT)
+@inject
 async def player_pause_command(
     room_id: uuid.UUID,
     current_user: user_dependencies,
@@ -65,6 +69,7 @@ async def player_pause_command(
 
 
 @room_playback.post("/{room_id}/player/next", status_code=status.HTTP_204_NO_CONTENT)
+@inject
 async def player_skip_next_command(
     room_id: uuid.UUID,
     current_user: user_dependencies,
@@ -79,6 +84,7 @@ async def player_skip_next_command(
 @room_playback.post(
     "/{room_id}/player/previous", status_code=status.HTTP_204_NO_CONTENT
 )
+@inject
 async def player_skip_previous_command(
     room_id: uuid.UUID,
     current_user: user_dependencies,
@@ -93,6 +99,7 @@ async def player_skip_previous_command(
 
 
 @room_playback.get("/{room_id}/player/state", response_model=dict[str, Any])
+@inject
 async def get_room_player_state(
     room_id: uuid.UUID,
     current_user: user_dependencies,

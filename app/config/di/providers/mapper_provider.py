@@ -25,7 +25,3 @@ class MapperProvider(Provider):
         TrackMapper,
         RoomMemberMapper,
     )
-
-
-def mapper_provider() -> MapperProvider:
-    return MapperProvider()

@@ -7,11 +7,12 @@ from app.domain.entity import UserEntity
 from app.presentation.schemas.notification_schemas import NotificationResponse
 from app.application.services.notification_service import NotificationService
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
 notification = APIRouter(
     tags=['Notifications'],
-    prefix='/notifications'
+    prefix='/notifications',
+    route_class=DishkaRoute
 )
 
 user_dependencies = FromDishka[UserEntity]
@@ -23,6 +24,7 @@ notify_service = FromDishka[NotificationService]
     response_model=list[NotificationResponse],
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def get_my_notifications(
     user:user_dependencies,
     notify_service: notify_service,
@@ -50,6 +52,7 @@ async def get_my_notifications(
     response_model=NotificationResponse,
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def mark_notification_as_read(
     notify_service: notify_service,
     notification_id: Annotated[uuid.UUID,Path(...,description="ID уведомления, которое нужно отметить как прочитанное.")],
@@ -74,6 +77,7 @@ async def mark_notification_as_read(
     '/{notification_id}',
     status_code=status.HTTP_200_OK,
 )
+@inject
 async def delete_notifications(
     notify_service: notify_service,
     notification_id: Annotated[uuid.UUID,Path(...,description="ID уведомления, которое нужно отметить как прочитанное.")],

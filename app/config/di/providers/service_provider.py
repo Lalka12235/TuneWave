@@ -1,4 +1,4 @@
-from dishka import Provider,Scope,provide_all
+from dishka import Provider,Scope,provide_all,provide
 
 from app.application.services.user_service import UserService
 from app.application.services.ban_service import BanService
@@ -12,10 +12,27 @@ from app.application.services.room_member_service import RoomMemberService
 from app.application.services.room_playback_service import RoomPlaybackService
 from app.application.services.room_queue_service import RoomQueueService
 from app.application.services.redis_service import RedisService
+from app.application.services.google_service import GoogleService
+from app.application.services.spotify_service import SpotifyService
+from redis.asyncio import Redis
+
+from app.domain.entity import UserEntity
 
 
 class ServiceProvider(Provider):
-    scope = Scope.APP
+    scope = Scope.REQUEST
+
+    @provide(scope=Scope.APP)
+    def redis_service(self,client: Redis) -> RedisService:
+        return RedisService(client)
+
+    @provide
+    def google_service(self,user: UserEntity,redis: RedisService) -> GoogleService:
+        return GoogleService(user,redis)
+
+    @provide
+    def spotify_service(self,user: UserEntity,redis: RedisService) -> SpotifyService:
+        return SpotifyService(user,redis)
 
     services = provide_all(
         UserService,
@@ -29,9 +46,4 @@ class ServiceProvider(Provider):
         RoomMemberService,
         RoomPlaybackService,
         RoomQueueService,
-        RedisService
     )
-
-
-def service_provider() -> ServiceProvider:
-    return ServiceProvider()

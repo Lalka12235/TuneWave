@@ -8,11 +8,12 @@ from app.presentation.schemas.user_schemas import UserResponse, UserUpdate
 from app.application.services.user_service import UserService
 from app.application.services.redis_service import RedisService
 
-from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
 user = APIRouter(
     tags=['User'],
-    prefix='/users'
+    prefix='/users',
+    route_class=DishkaRoute
 )
 
 user_dependencies = FromDishka[UserEntity]
@@ -20,6 +21,7 @@ redis_service = FromDishka[RedisService]
 user_service = FromDishka[UserService]
 
 @user.get('/me',response_model=UserResponse)
+@inject
 async def get_me(
     user: user_dependencies,
     redis_client: redis_service,
@@ -38,6 +40,7 @@ async def get_me(
     return await redis_client.get_or_set(cache_key,fetch,300)
 
 @user.put('/{user_id}',response_model=UserResponse)
+@inject
 async def update_profile(
     user: user_dependencies,
     update_data: UserUpdate,
@@ -57,6 +60,7 @@ async def update_profile(
 
 
 @user.post('/me/avatar',response_model=UserResponse)
+@inject
 async def load_avatar(
     user: user_dependencies,
     avatar_file: UploadFile,
@@ -80,6 +84,7 @@ async def load_avatar(
     "/{user_id}",
     response_model=UserResponse,
 )
+@inject
 async def get_user_by_id(
     user_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID пользователя")],
     user_service: user_service,
