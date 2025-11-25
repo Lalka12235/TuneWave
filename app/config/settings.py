@@ -1,184 +1,84 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, BaseModel
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+from dataclasses import dataclass
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(f'{BASE_DIR}/.env')
 
 
-class DataBaseConfig(BaseSettings):
-    """Конфигурация базы данных PostgreSQL."""
-
-    APP_CONFIG_DB_URL: str = Field(
-        ...,
-        env="APP_CONFIG_DB_URL",
-        description="Полный URL для подключения к базе данных",
-    )
-    DB_HOST: str = Field(..., description="Хост базы данных PostgreSQL")
-    DB_PORT: int = Field(..., description="Порт базы данных PostgreSQL")
-    DB_USER: str = Field(..., description="Имя пользователя базы данных PostgreSQL")
-    DB_PASS: str = Field(..., description="Пароль пользователя базы данных PostgreSQL")
-    DB_NAME: str = Field(..., description="Имя базы данных PostgreSQL")
+@dataclass(slots=True, frozen=True)
+class DataBaseConfig:
+    APP_CONFIG_DB_URL: str = os.getenv('APP_CONFIG_DB_URL')
+    DB_HOST: str = os.getenv('DB_HOST')
+    DB_PORT: int = os.getenv('DB_PORT')
+    DB_USER: str = os.getenv('DB_USER')
+    DB_PASS: str = os.getenv('DB_PASS')
+    DB_NAME: str = os.getenv('DB_NAME')
 
     @property
     def sync_db_url(self) -> str:
-        """
-        Возвращает синхронный URL для подключения к базе данных.
-        Используется, например, для Alembic.
-        """
         return f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @property
     def async_db_url(self) -> str:
-        """
-        Возвращает асинхронный URL для подключения к базе данных.
-        Используется, например, для FastAPI с AsyncSession.
-        """
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
+
+@dataclass(slots=True, frozen=True)
+class GoogleConfig:
+    GOOGLE_CLIENT_ID: str = os.getenv('GOOGLE_CLIENT_ID')
+    GOOGLE_CLIENT_SECRET: str = os.getenv('GOOGLE_CLIENT_SECRET')
+    GOOGLE_REDIRECT_URI: str = os.getenv('GOOGLE_REDIRECT_URI')
+    GOOGLE_SCOPES: str = os.getenv('GOOGLE_SCOPES')
 
 
-class GoogleConfig(BaseSettings):
-    """Конфигурация для Google OAuth."""
-    GOOGLE_CLIENT_ID: str = Field(
-        ..., env="GOOGLE_CLIENT_ID", description="Client ID Google OAuth"
-    )
-    GOOGLE_CLIENT_SECRET: str = Field(
-        ..., env="GOOGLE_CLIENT_SECRET", description="Client Secret Google OAuth"
-    )
-    GOOGLE_REDIRECT_URI: str = Field(
-        ..., env="GOOGLE_REDIRECT_URI", description="Redirect URI для Google OAuth"
-    )
-    # GOOGLE_SCOPES: Области доступа (scopes), которые вы запрашиваете у пользователя Google.
-    # openid: Обязательно для OpenID Connect.
-    # email: Для получения email пользователя.
-    # profile: Для получения базовой информации профиля (имя, изображение).
-    GOOGLE_SCOPES: str = "openid email profile"
-
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
+@dataclass(slots=True, frozen=True)
+class SpotifyConfig:
+    SPOTIFY_CLIENT_ID: str = os.getenv('SPOTIFY_CLIENT_ID')
+    SPOTIFY_CLIENT_SECRET: str = os.getenv('SPOTIFY_CLIENT_SECRET')
+    SPOTIFY_REDIRECT_URI: str = os.getenv('SPOTIFY_REDIRECT_URI')
+    SPOTIFY_SCOPES: str = os.getenv('SPOTIFY_SCOPES')
 
 
-class SpotifyConfig(BaseSettings):
-    """Конфигурация для Spotify API."""
-
-    SPOTIFY_CLIENT_ID: str = Field(
-        ..., env="SPOTIFY_CLIENT_ID", description="Client ID Spotify API"
-    )
-
-    SPOTIFY_CLIENT_SECRET: str = Field(
-        ..., env="SPOTIFY_CLIENT_SECRET", description="Client Secret Spotify API"
-    )
-
-    SPOTIFY_REDIRECT_URI: str = Field(
-        ..., env="SPOTIFY_REDIRECT_URI", description="Redirect URI для Spotify API"
-    )
-
-    # SPOTIFY_SCOPES: Области доступа (scopes), которые вы запрашиваете у пользователя Spotify.
-    # Эти скоупы позволят вашему приложению управлять воспроизведением и читать данные пользователя.
-    SPOTIFY_SCOPES: str = (
-        "user-read-private user-read-email "
-        "user-top-read user-read-playback-state user-modify-playback-state "
-        "playlist-read-private playlist-read-collaborative user-library-read "
-        "streaming app-remote-control user-read-currently-playing"
-    )
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
+@dataclass(slots=True, frozen=True)
+class JWTConfig:
+    JWT_SECRET_KEY: str = os.getenv('JWT_SECRET_KEY')
+    ALGORITHM: str = os.getenv('ALGORITHM')
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES')
 
 
-class JWTConfig(BaseSettings):
-    """Конфигурация для JWT-токенов."""
-    JWT_SECRET_KEY: str = Field(
-        ..., env="JWT_SECRET_KEY", description="Секретный ключ для подписи JWT-токенов"
-    )
-    ALGORITHM: str = Field("HS256", description="Алгоритм шифрования для JWT")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        15, description="Время жизни токена доступа JWT в минутах"
-    )
-
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
+@dataclass(slots=True, frozen=True)
+class SMTPConfig:
+    SMTP_HOST: str = os.getenv('SMTP_HOST')
+    SMTP_PORT: int = os.getenv('SMTP_PORT')
+    SMTP_USER: str = os.getenv('SMTP_USER')
+    SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD')
+    SMTP_FROM_EMAIL: str = os.getenv('SMTP_FROM_EMAIL')
+    SMTP_USE_TLS: bool = os.getenv('SMTP_USE_TLS')
 
 
-class SMTPConfig(BaseSettings):
-    """Конфигурация для SMTP-сервера."""
-    SMTP_HOST: str = Field(
-        "smtp.example.com", env="SMTP_HOST", description="SMTP хост для отправки email"
-    )
-    SMTP_PORT: int = Field(
-        587, env="SMTP_PORT", description="SMTP порт для отправки email"
-    )
-    SMTP_USER: str = Field(
-        "user@example.com", env="SMTP_USER", description="Имя пользователя SMTP"
-    )
-    SMTP_PASSWORD: str = Field(
-        "password", env="SMTP_PASSWORD", description="Пароль SMTP"
-    )
-    SMTP_FROM_EMAIL: str = Field(
-        "noreply@example.com", env="SMTP_FROM_EMAIL", description="Email отправителя"
-    )
-    SMTP_USE_TLS: bool = Field(
-        True, env="SMTP_USE_TLS", description="Использовать TLS для SMTP"
-    )
-
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
+@dataclass(slots=True, frozen=True)
+class RedisConfig:
+    REDIS_HOST: str = os.getenv('REDIS_HOST')
+    REDIS_PORT: int = os.getenv('REDIS_PORT')
+    REDIS_URL: str = os.getenv('REDIS_URL')
 
 
-class RedisConfig(BaseSettings):
-    """Конфигурация для Redis."""
-    REDIS_HOST: str = Field(..., description="Хост Redis")
-    REDIS_PORT: int = Field(6379, description="Порт Redis")
-    REDIS_URL: str
-
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
+@dataclass(slots=True, frozen=True)
+class RabbitConfig:
+    RABBITMQ_BROKER_URL: str = os.getenv('RABBITMQ_BROKER_URL')
 
 
-#class ExchangeDetail(BaseModel):
-#    name: str
-#    type: str = 'direct'
-#    durable: bool = True
-#
-#class QueueDetail(BaseModel):
-#    name: str
-#    routing_key: str
-#    exchange_name: str # К какому Exchange привязывать
-#    durable: bool = True
-
-
-class RabbitConfig(BaseSettings):
-    """Конфигурация для RabbitMQ."""
-    RABBITMQ_BROKER_URL: str
-
-    #DLX_MAIN: ExchangeDetail = ExchangeDetail(name='dlx-main', type='fanout')
-    #DLQ_MAIN: QueueDetail = QueueDetail(name='dlq-main', routing_key='')
-#
-    ## 2. Список всех основных Exchange
-    #EXCHANGES: list[ExchangeDetail] = [
-    #    ExchangeDetail(name='exc-email', type='direct'),
-    #    ExchangeDetail(name='exc-spotify', type='direct'),
-    #    ExchangeDetail(name='exc-google', type='direct'),
-    #]
-#
-    ## 3. Список всех основных Queues
-    #QUEUES: list[QueueDetail] = [
-    #    QueueDetail(name='q-email', routing_key='email', exchange_name='exc-email'),
-    #    QueueDetail(name='q-spotify-token', routing_key='spotify-token', exchange_name='exc-spotify'),
-    #    QueueDetail(name='q-google-token', routing_key='google-token', exchange_name='exc-google'),
-    #]
-
-
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
-
-
-class AvatarConfig(BaseSettings):
-    """Конфигурация для хранения аватаров."""
-    MAX_AVATAR_SIZE_BYTES: int = 5 * 1024 * 1024
+@dataclass(slots=True, frozen=True)
+class AvatarConfig:
+    AX_AVATAR_SIZE_BYTES: int = 5 * 1024 * 1024
     BACKEND_ROOT: Path = Path(__file__).resolve().parent.parent.parent
     AVATARS_STORAGE_DIR: Path = BACKEND_ROOT / "avatars"
 
 
-class Settings(BaseSettings):
-    """
-    Класс настроек приложения, загружающий переменные из окружения.
-    Использует Pydantic-Settings для безопасной и удобной работы с конфигурацией.
-    """
+@dataclass(slots=True, frozen=True)
+class Settings:
     database: DataBaseConfig = DataBaseConfig()
     google: GoogleConfig = GoogleConfig()
     spotify: SpotifyConfig = SpotifyConfig()
@@ -190,6 +90,5 @@ class Settings(BaseSettings):
 
     BASE_URL: str = "http://127.0.0.1:8000"
 
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
 settings = Settings()
