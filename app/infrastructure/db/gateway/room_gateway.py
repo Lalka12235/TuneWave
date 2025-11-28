@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session,joinedload
 import uuid
 from typing import Any
 from app.domain.entity import RoomEntity
-from app.domain.interfaces.room_repo import RoomRepository
+from app.domain.interfaces.room_gateway import RoomGateway
 
 
-class SQLalchemyRoomRepository(RoomRepository):
+class SARoomGateway(RoomGateway):
     """
     Репозиторий для выполнения операций CRUD (Create, Read, Update, Delete)
     над моделью Room в базе данных.

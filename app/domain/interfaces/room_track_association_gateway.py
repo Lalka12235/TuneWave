@@ -3,7 +3,7 @@ import uuid
 from app.domain.entity.room_track_association import RoomTrackAssociationEntity
 
 
-class RoomTrackAssociationRepository(ABC):
+class RoomTrackAssociationGateway(ABC):
     """
     Абстрактный репозиторий для работы с треками комнаты.
     """

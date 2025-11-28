@@ -1,7 +1,7 @@
 from typing import NewType
 
-from app.domain.interfaces.ban_repo import BanRepository
-from app.domain.interfaces.user_repo import UserRepository
+from app.domain.interfaces.ban_gateway import BanRepository
+from app.domain.interfaces.user_gateway import UserRepository
 from app.application.mappers.mappers import UserMapper
 from fastapi import Request
 from fastapi.security import HTTPBearer

@@ -3,7 +3,7 @@ import uuid
 from app.domain.entity import BanEntity
 
 
-class BanRepository(ABC):
+class BanGateway(ABC):
     """
     Абстрактный репозиторий для работы с банами пользователей.
     """

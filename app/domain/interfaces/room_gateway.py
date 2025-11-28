@@ -4,7 +4,7 @@ from app.domain.entity import RoomEntity
 from typing import Any
 
 
-class RoomRepository(ABC):
+class RoomGateway(ABC):
     """
     Абстрактный репозиторий для работы с комнатами.
     """
@@ -15,7 +15,6 @@ class RoomRepository(ABC):
         Получает комнату по ее уникальному идентификатору (ID).
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): ID комнаты для поиска.
 
         Returns:
@@ -29,7 +28,6 @@ class RoomRepository(ABC):
         Получает комнату по ее названию.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             name (str): Название комнаты для поиска.
 
         Returns:
@@ -42,9 +40,6 @@ class RoomRepository(ABC):
         """
         Получает список всех комнат из базы данных.
 
-        Args:
-            db (Session): Сессия базы данных SQLAlchemy.
-
         Returns:
             List[Room]: Список объектов Room.
         """
@@ -56,7 +51,6 @@ class RoomRepository(ABC):
         Создает новую комнату в базе данных.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             room_data (Dict[str, Any]): Словарь с данными для создания комнаты.
                                         Должен содержать поля, соответствующие модели Room.
 
@@ -71,7 +65,6 @@ class RoomRepository(ABC):
         Обновляет существующую комнату в базе данных.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             room (Room): Объект комнаты, который нужно обновить.
             update_data (Dict[str, Any]): Словарь с данными для обновления.
 
@@ -86,7 +79,6 @@ class RoomRepository(ABC):
         Удаляет комнату из базы данных по ее ID.
 
         Args:
-            db (Session): Сессия базы данных SQLAlchemy.
             room_id (uuid.UUID): ID комнаты для удаления.
 
         Returns:
@@ -107,7 +99,6 @@ class RoomRepository(ABC):
         """_summary_
 
         Args:
-            db (Session): _description_
             room_id (uuid.UUID): _description_
 
         Returns:

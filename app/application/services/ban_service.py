@@ -2,7 +2,7 @@ import uuid
 from typing import Any
 
 from app.config.log_config import logger
-from app.domain.interfaces.ban_repo import BanRepository
+from app.domain.interfaces.ban_gateway import BanGateway
 from app.presentation.schemas.ban_schemas import BanResponse
 from app.application.mappers.ban_mapper import BanMapper
 from app.domain.exceptions.ban_exception import UserBannedInRoom, UserBannedGlobal, UserNotExistingBan
@@ -15,7 +15,7 @@ class BanService:
     Реализует бизнес логику для работы с баном пользователей
     """
 
-    def __init__(self,ban_repo: BanRepository,ban_mapper: BanMapper):
+    def __init__(self,ban_repo: BanGateway,ban_mapper: BanMapper):
         self.ban_repo = ban_repo
         self.ban_mapper = ban_mapper
 

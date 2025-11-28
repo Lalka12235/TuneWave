@@ -4,10 +4,10 @@ from app.infrastructure.db.models import Notification
 import uuid
 from app.domain.enum import NotificationType
 from app.domain.entity import NotificationEntity
-from app.domain.interfaces.notification_repo import NotificationRepository
+from app.domain.interfaces.notification_gateway import NotificationGateway
 
 
-class SQLalchemyNotificationRepository(NotificationRepository):
+class SANotificationGateway(NotificationGateway):
     """
     Репозиторий для выполнения операций CRUD над моделью Notification.
     Отвечает за управление записями уведомлений.

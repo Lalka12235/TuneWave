@@ -3,7 +3,7 @@ import uuid
 from app.domain.entity.track import TrackEntity
 
 
-class TrackRepository(ABC):
+class TrackGateway(ABC):
     """
     Абстрактный репозиторий для работы с треками.
     """

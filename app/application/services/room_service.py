@@ -2,8 +2,8 @@ import uuid
 from typing import Any
 
 from app.domain.entity.user import UserEntity
-from app.domain.interfaces.member_room_association import MemberRoomAssociationRepository
-from app.domain.interfaces.room_repo import RoomRepository
+from app.domain.interfaces.member_room_association import MemberRoomAssociationGateway
+from app.domain.interfaces.room_gateway import RoomGateway
 
 from app.domain.enum import Role
 from app.presentation.schemas.room_schemas import RoomResponse
@@ -29,8 +29,8 @@ class RoomService:
 
     def __init__(
         self,
-        room_repo: RoomRepository,
-        member_room_repo: MemberRoomAssociationRepository,
+        room_repo: RoomGateway,
+        member_room_repo: MemberRoomAssociationGateway,
         room_mapper: RoomMapper,
     ):
         self.room_repo = room_repo

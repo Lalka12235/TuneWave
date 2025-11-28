@@ -1,10 +1,9 @@
 import uuid
 
 from app.domain.entity import UserEntity,TrackEntity
-from app.domain.interfaces.favorite_track_repo import FavoriteTrackRepository
-from app.domain.interfaces.track_repo import TrackRepository
+from app.domain.interfaces.favorite_track_gateway import FavoriteTrackGateway
+from app.domain.interfaces.track_gateway import TrackGateway
 from app.presentation.schemas.favorite_track_schemas import FavoriteTrackResponse
-from app.presentation.schemas.track_schemas import TrackCreate
 from app.application.services.spotify_public_service import SpotifyPublicService
 from app.application.services.spotify_service import SpotifyService
 
@@ -19,7 +18,7 @@ class FavoriteTrackService:
     Реализует бизнес логику для работы с любимыми треками
     """
 
-    def __init__(self,ft_repo: FavoriteTrackRepository,track_repo: TrackRepository,favorite_track_mapper: FavoriteTrackMapper):
+    def __init__(self,ft_repo: FavoriteTrackGateway,track_repo: TrackGateway,favorite_track_mapper: FavoriteTrackMapper):
         self.ft_repo = ft_repo
         self.track_repo = track_repo
         self.favorite_track_mapper = favorite_track_mapper

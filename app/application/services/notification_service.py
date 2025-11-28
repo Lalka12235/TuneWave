@@ -1,10 +1,10 @@
 import uuid
 
 
-from app.domain.interfaces.notification_repo import NotificationRepository
-from app.domain.interfaces.room_repo import RoomRepository
-from app.domain.interfaces.user_repo import UserRepository
-from app.domain.enum import NotificationType  # Added Role for consistency
+from app.domain.interfaces.notification_gateway import NotificationGateway
+from app.domain.interfaces.room_gateway import RoomGateway
+from app.domain.interfaces.user_gateway import UserGateway
+from app.domain.enum import NotificationType
 from app.presentation.schemas.notification_schemas import NotificationResponse
 
 from app.application.mappers.notification_mapper import NotificationMapper
@@ -20,7 +20,7 @@ class NotificationService:
     Реализует бизнес логику для работы с уведомлениями
     """
 
-    def __init__(self,notify_repo: NotificationRepository,user_repo: UserRepository,room_repo: RoomRepository,notify_mapper: NotificationMapper):
+    def __init__(self,notify_repo: NotificationGateway,user_repo: UserGateway,room_repo: RoomGateway,notify_mapper: NotificationMapper):
         self.notify_repo = notify_repo
         self.user_repo = user_repo
         self.room_repo = room_repo

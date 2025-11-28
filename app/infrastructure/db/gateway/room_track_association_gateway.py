@@ -3,11 +3,10 @@ from sqlalchemy.orm import Session,joinedload
 from app.infrastructure.db.models.room_track_association import RoomTrackAssociationModel
 import uuid
 from app.domain.entity import RoomTrackAssociationEntity
-from app.domain.interfaces.room_track_association_repo import RoomTrackAssociationRepository
+from app.domain.interfaces.room_track_association_gateway import RoomTrackAssociationGateway
 
 
-
-class SQLalchemyRoomTrackAssociationRepository(RoomTrackAssociationRepository):
+class SARoomTrackAssociationGateway(RoomTrackAssociationGateway):
 
     def __init__(self, db: Session):
         self._db = db

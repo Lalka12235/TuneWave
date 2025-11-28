@@ -2,11 +2,11 @@ from sqlalchemy import select,delete
 from app.infrastructure.db.models import User
 from sqlalchemy.orm import Session
 import uuid
-from app.domain.interfaces.user_repo import UserRepository
+from app.domain.interfaces.user_gateway import UserGateway
 from app.domain.entity import UserEntity
 
 
-class SQLalchemyUserRepository(UserRepository):
+class SAUserGateway(UserGateway):
     """
     Реализация User Репозитория 
     """

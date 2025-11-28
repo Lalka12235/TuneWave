@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from app.infrastructure.db.models import Ban
 import uuid
 from app.domain.entity import BanEntity
-from app.domain.interfaces.ban_repo import BanRepository
+from app.domain.interfaces.ban_gateway import BanGateway
 
-class SQLalchemyBanRepository(BanRepository):
+class SABanGateway(BanGateway):
     """
     Репозиторий для выполнения операций CRUD над моделью Ban.
     Отвечает за управление записями о банах пользователей.

@@ -2,17 +2,17 @@ import json
 import uuid
 
 from app.domain.entity import UserEntity,RoomTrackAssociationEntity
-from app.domain.interfaces.room_repo import RoomRepository
-from app.domain.interfaces.room_track_association_repo import RoomTrackAssociationRepository
+from app.domain.interfaces.room_gateway import RoomGateway
+from app.domain.interfaces.room_track_association_gateway import RoomTrackAssociationGateway
 
 from app.domain.enum import Role
 from app.presentation.schemas.room_schemas import TrackInQueueResponse
 
 from app.application.mappers.mappers import TrackMapper
-from app.domain.interfaces.track_repo import TrackRepository
+from app.domain.interfaces.track_gateway import TrackGateway
 
 from app.infrastructure.ws.connection_manager import manager
-from app.domain.interfaces.member_room_association import MemberRoomAssociationRepository
+from app.domain.interfaces.member_room_association import MemberRoomAssociationGateway
 
 from app.domain.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError,RoomPermissionDeniedError,TrackAlreadyInQueueError
 from app.domain.exceptions.track_exception import TrackNotFound
@@ -25,10 +25,10 @@ class RoomQueueService:
     
     def __init__(
         self,
-        room_repo: RoomRepository,
-        room_track_repo: RoomTrackAssociationRepository,
-        track_repo: TrackRepository,
-        member_room_repo: MemberRoomAssociationRepository,
+        room_repo: RoomGateway,
+        room_track_repo: RoomTrackAssociationGateway,
+        track_repo: TrackGateway,
+        member_room_repo: MemberRoomAssociationGateway,
     ):
         self.room_repo = room_repo
         self.room_track_repo = room_track_repo

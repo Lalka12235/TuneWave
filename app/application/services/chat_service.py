@@ -2,9 +2,9 @@ import uuid
 from datetime import datetime
 
 from app.config.log_config import logger
-from app.domain.interfaces.chat_repo import ChatRepository
+from app.domain.interfaces.chat_gateway import ChatGateway
 from app.presentation.schemas.message_schemas import MessageCreate, MessageResponse
-from app.domain.interfaces.room_repo import RoomRepository
+from app.domain.interfaces.room_gateway import RoomGateway
 from app.application.mappers.message_mapper import MessageMapper
 
 from app.domain.exceptions.exception import ServerError
@@ -16,7 +16,7 @@ class ChatService:
     Реализует бизнес логику для работы с чатом комнаты
     """
 
-    def __init__(self,chat_repo: ChatRepository,room_repo: RoomRepository,message_mapper: MessageMapper):
+    def __init__(self,chat_repo: ChatGateway,room_repo: RoomGateway,message_mapper: MessageMapper):
         self.chat_repo = chat_repo
         self.room_repo = room_repo
         self.message_mapper = message_mapper

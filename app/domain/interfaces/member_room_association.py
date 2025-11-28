@@ -4,7 +4,7 @@ from app.domain.entity.member_room_association import MemberRoomEntity
 from app.domain.entity.room import RoomEntity
 
 
-class MemberRoomAssociationRepository(ABC):
+class MemberRoomAssociationGateway(ABC):
     """
     Абстрактный репозиторий для работы с участниками комнаты.
     """

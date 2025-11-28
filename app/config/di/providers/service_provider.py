@@ -18,8 +18,8 @@ from app.application.services.spotify_service import SpotifyService
 from redis.asyncio import Redis
 
 from app.domain.entity import UserEntity
-from app.domain.interfaces.ban_repo import BanRepository
-from app.domain.interfaces.user_repo import UserRepository
+from app.domain.interfaces.ban_gateway import BanGateway
+from app.domain.interfaces.user_gateway import UserGateway
 
 
 class ServiceProvider(Provider):
@@ -38,7 +38,7 @@ class ServiceProvider(Provider):
         return SpotifyService(user,redis)
 
     @provide
-    def user_service(self, user_repo: UserRepository, ban_repo: BanRepository, user_mapper: UserMapper) -> UserService:
+    def user_service(self, user_repo: UserGateway, ban_repo: BanGateway, user_mapper: UserMapper) -> UserService:
         return UserService(user_repo, ban_repo, user_mapper)
 
     services = provide_all(

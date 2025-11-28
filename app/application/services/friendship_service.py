@@ -3,12 +3,12 @@ import uuid
 from datetime import datetime
 
 from app.config.log_config import logger
-from app.domain.enum import NotificationType, FriendshipStatus  # Added Role for potential future use or consistency
+from app.domain.enum import NotificationType, FriendshipStatus
 from app.domain.exceptions.user_exception import UserNotFound
-from app.domain.interfaces.friendship_repo import FriendshipRepository
-from app.domain.interfaces.user_repo import UserRepository
+from app.domain.interfaces.friendship_gateway import FriendshipGateway
+from app.domain.interfaces.user_gateway import UserGateway
 from app.presentation.schemas.friendship_schemas import FriendshipResponse
-from app.domain.interfaces.notification_repo import NotificationRepository
+from app.domain.interfaces.notification_gateway import NotificationGateway
 from app.infrastructure.ws.connection_manager import manager
 from app.application.mappers.friendship_mapper import FriendshipMapper
 
@@ -32,9 +32,9 @@ class FriendshipService:
 
     def __init__(
         self,
-        friend_repo: FriendshipRepository,
-        notify_repo: NotificationRepository,
-        user_repo: UserRepository,
+        friend_repo: FriendshipGateway,
+        notify_repo: NotificationGateway,
+        user_repo: UserGateway,
         friendship_mapper: FriendshipMapper,
     ):
         self.friend_repo = friend_repo

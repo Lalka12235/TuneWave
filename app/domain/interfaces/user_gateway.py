@@ -2,7 +2,7 @@ from abc import ABC,abstractmethod
 import uuid
 from app.domain.entity import UserEntity
 
-class UserRepository(ABC):
+class UserGateway(ABC):
     """
     Абстрактный репозиторий для работы с пользователем.
     """

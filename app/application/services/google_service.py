@@ -1,10 +1,8 @@
 from app.config.settings import settings
 from app.domain.entity import UserEntity
 
-from app.domain.exceptions.exception import ServerError
-from app.domain.exceptions.user_exception import UserNotAuthorized,UserNotFound
-from app.config.log_config import logger
-from app.domain.interfaces.user_repo import UserRepository
+from app.domain.exceptions.user_exception import UserNotAuthorized
+#from app.domain.interfaces.user_gateway import UserGateway
 from app.application.services.redis_service import RedisService
 from app.application.services.base_oauth_service import _generic_refresh_token
 

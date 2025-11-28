@@ -3,8 +3,8 @@ import uuid
 from app.config.settings import settings
 from app.config.log_config import logger
 from app.domain.entity import UserEntity
-from app.domain.interfaces.ban_repo import BanRepository
-from app.domain.interfaces.user_repo import UserRepository
+from app.domain.interfaces.ban_gateway import BanGateway
+from app.domain.interfaces.user_gateway import UserGateway
 from app.presentation.schemas.user_schemas import (
     UserResponse,
 )
@@ -27,8 +27,8 @@ class UserService:
 
     def __init__(
         self,
-        user_repo: UserRepository,
-        ban_repo: BanRepository,
+        user_repo: UserGateway,
+        ban_repo: BanGateway,
         user_mapper: UserMapper,
     ):
         self.user_repo = user_repo

@@ -4,7 +4,7 @@ from app.domain.entity import MessageEntity
 from datetime import datetime
 
 
-class ChatRepository(ABC):
+class ChatGateway(ABC):
     """
     Абстрактный репозиторий для работы с чатом комнаты.
     """

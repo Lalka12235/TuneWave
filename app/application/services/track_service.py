@@ -1,7 +1,7 @@
 import uuid
 
 from app.config.log_config import logger
-from app.domain.interfaces.track_repo import TrackRepository
+from app.domain.interfaces.track_gateway import TrackGateway
 from app.presentation.schemas.track_schemas import TrackResponse
 
 from app.application.mappers.track_mapper import TrackMapper
@@ -13,7 +13,7 @@ class TrackService:
     Реализует бизнес логику для работы с треками
     """
 
-    def __init__(self, track_repo: TrackRepository, track_mapper: TrackMapper):
+    def __init__(self, track_repo: TrackGateway, track_mapper: TrackMapper):
         self.track_repo = track_repo
         self.track_mapper = track_mapper
 

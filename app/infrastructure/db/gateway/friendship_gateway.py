@@ -5,10 +5,10 @@ import uuid
 from app.domain.enum import FriendshipStatus
 from datetime import datetime
 from app.domain.entity import FriendshipEntity
-from app.domain.interfaces.friendship_repo import FriendshipRepository
+from app.domain.interfaces.friendship_gateway import FriendshipGateway
 
 
-class SQLalchemyFriendshipRepository(FriendshipRepository):
+class SAFriendshipGateway(FriendshipGateway):
     """
     Репозиторий для выполнения операций CRUD над моделью Friendship.
     Отвечает за управление записями о дружбе и запросах на дружбу.

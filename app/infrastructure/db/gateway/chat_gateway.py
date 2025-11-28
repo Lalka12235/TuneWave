@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session,joinedload
 from app.infrastructure.db.models import Message
 from datetime import datetime
 import uuid
-from app.domain.interfaces.chat_repo import ChatRepository
+from app.domain.interfaces.chat_gateway import ChatGateway
 from app.domain.entity import MessageEntity
 
 
-class SQLalchemyChatRepository(ChatRepository):
+class SAChatGateway(ChatGateway):
 
     def __init__(self, db: Session):
         self._db: Session = db

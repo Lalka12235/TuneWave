@@ -4,7 +4,7 @@ from app.domain.entity.notification import NotificationEntity
 from app.domain.enum import NotificationType
 
 
-class NotificationRepository(ABC):
+class NotificationGateway(ABC):
     """
     Абстрактный репозиторий для работы с уведомлениями.
     """

@@ -6,7 +6,7 @@ from app.domain.enum import FriendshipStatus
 
 
 
-class FriendshipRepository(ABC):
+class FriendshipGateway(ABC):
     """
     Абстрактный репозиторий для работы с дружбой.
     """
