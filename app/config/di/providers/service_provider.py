@@ -1,5 +1,6 @@
 from dishka import Provider,Scope,provide_all,provide
 
+from app.application.mappers.user_mapper import UserMapper
 from app.application.services.user_service import UserService
 from app.application.services.ban_service import BanService
 from app.application.services.chat_service import ChatService
@@ -17,6 +18,8 @@ from app.application.services.spotify_service import SpotifyService
 from redis.asyncio import Redis
 
 from app.domain.entity import UserEntity
+from app.domain.interfaces.ban_repo import BanRepository
+from app.domain.interfaces.user_repo import UserRepository
 
 
 class ServiceProvider(Provider):
@@ -34,8 +37,11 @@ class ServiceProvider(Provider):
     def spotify_service(self,user: UserEntity,redis: RedisService) -> SpotifyService:
         return SpotifyService(user,redis)
 
+    @provide
+    def user_service(self, user_repo: UserRepository, ban_repo: BanRepository, user_mapper: UserMapper) -> UserService:
+        return UserService(user_repo, ban_repo, user_mapper)
+
     services = provide_all(
-        UserService,
         BanService,
         ChatService,
         FavoriteTrackService,

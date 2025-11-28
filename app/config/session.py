@@ -8,7 +8,9 @@ def get_engine() -> Engine:
     return create_engine(
         url=settings.database.sync_db_url,
         echo=False,
-        pool_pre_ping=True
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20
     )
 
 def get_sessionmaker(engine: Engine) -> sessionmaker[Session]:

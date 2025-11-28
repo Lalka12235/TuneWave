@@ -31,7 +31,7 @@ auth = APIRouter(
 
 @auth.get('/config', response_model=FrontendConfig)
 @inject
-def get_frontend_config(
+async def get_frontend_config(
 ) -> FrontendConfig:
     """
     Возвращает публичные конфигурационные данные, необходимые фронтенду.

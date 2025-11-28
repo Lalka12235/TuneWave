@@ -42,10 +42,6 @@ class UserService:
         spotify_id: str | None = None,
         exclude_user_id: uuid.UUID | None = None,
     ):
-        """
-        Вспомогательный метод для проверки существования пользователя по различным идентификаторам.
-        Если пользователь найден (и его ID не совпадает с exclude_user_id), выбрасывает (409 Conflict).
-        """
         if email:
             user = self.user_repo.get_user_by_email(email)
             if user and (exclude_user_id is None or user.id != exclude_user_id):
@@ -125,7 +121,6 @@ class UserService:
         Получает пользователя по его Spotify ID.
 
         Args:
-            db (Session): Сессия базы данных.
             spotify_id (str): Spotify ID пользователя.
 
         Raises:
