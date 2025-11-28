@@ -13,18 +13,6 @@ class SABanGateway(BanGateway):
     def __init__(self, db: Session):
         self._db: Session = db
     
-
-    def from_model_to_entity(self,model: Ban) -> BanEntity:
-        return BanEntity(
-            id=model.id,
-            ban_user_id=model.ban_user_id,
-            room_id=model.room_id,
-            reason=model.reason,
-            ban_date=model.ban_date,
-            by_ban_user_id=model.by_ban_user_id,
-        )
-    
-    
     def get_bans_by_admin(self,user_id: uuid.UUID) -> list[BanEntity]:
         """
         Получает список банов, выданных указанным пользователем (кто забанил).
@@ -83,7 +71,7 @@ class SABanGateway(BanGateway):
         self._db.add(new_ban_user)
         self._db.flush()
         self._db.refresh(new_ban_user)
-        return self.from_model_to_entity(new_ban_user)
+        return new_ban_user
     
 
     
@@ -142,7 +130,7 @@ class SABanGateway(BanGateway):
         )
         result = self._db.execute(stmt)
         result = result.scalar_one_or_none()
-        return self.from_model_to_entity(result)
+        return result
     
     
     
@@ -163,4 +151,4 @@ class SABanGateway(BanGateway):
         )
         result = self._db.execute(stmt)
         result = result.scalar_one_or_none()
-        return self.from_model_to_entity(result)
+        return result

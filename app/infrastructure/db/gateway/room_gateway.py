@@ -15,25 +15,6 @@ class SARoomGateway(RoomGateway):
 
     def __init__(self, db: Session):
         self._db = db
-
-    
-    def from_model_to_entity(self,model: Room) -> RoomEntity:
-        return RoomEntity(
-            id=model.id,
-            name=model.name,
-            max_members=model.max_members,
-            owner_id=model.owner_id,
-            is_private=model.is_private,
-            password_hash=model.password_hash,
-            current_track_id=model.current_track_id,
-            current_track_position_ms=model.current_track_position_ms,
-            is_playing=model.is_playing,
-            created_at=model.created_at,
-            playback_host_id=model.playback_host_id,
-            active_spotify_device_id=model.active_spotify_device_id,
-            current_playing_track_association_id=model.current_playing_track_association_id
-        )
-
     
     def get_room_by_id(self, room_id: uuid.UUID) -> RoomEntity | None:
         """
@@ -51,7 +32,7 @@ class SARoomGateway(RoomGateway):
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         ).filter(Room.id == room_id)
         result = self._db.execute(stmt).unique().scalar_one_or_none()
-        return self.from_model_to_entity(result)
+        return result
     
     
     def get_room_by_name(self, name: str) -> RoomEntity | None:
@@ -70,7 +51,7 @@ class SARoomGateway(RoomGateway):
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         ).filter(Room.name == name)
         result = self._db.execute(stmt).unique().scalar_one_or_none()
-        return self.from_model_to_entity(result)
+        return result
 
     
     def get_all_rooms(self) -> list[RoomEntity]:
@@ -86,7 +67,7 @@ class SARoomGateway(RoomGateway):
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         )
         result = self._db.execute(stmt).unique().scalars().all()
-        return self.from_model_to_entity(result)
+        return result
     
 
 
@@ -106,7 +87,7 @@ class SARoomGateway(RoomGateway):
         self._db.add(new_room)
         self._db.flush()
         self._db.refresh(new_room)
-        return self.from_model_to_entity(new_room)
+        return new_room
     
     
     def update_room(self,room: RoomEntity, update_data: dict[str,Any]) -> RoomEntity:
@@ -122,7 +103,7 @@ class SARoomGateway(RoomGateway):
         """
         for key,value in update_data.items():
             setattr(room,key,value)
-        return self.from_model_to_entity(room)
+        return room
 
 
     
@@ -153,7 +134,7 @@ class SARoomGateway(RoomGateway):
             joinedload(Room.room_track),
         )
         result = self._db.execute(stmt).scalars().all()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -172,4 +153,4 @@ class SARoomGateway(RoomGateway):
             joinedload(Room.owner),
         )
         result = self._db.execute(stmt).scalar_one_or_none()
-        return self.from_model_to_entity(result)
+        return result

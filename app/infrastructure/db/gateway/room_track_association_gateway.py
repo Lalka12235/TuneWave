@@ -10,18 +10,6 @@ class SARoomTrackAssociationGateway(RoomTrackAssociationGateway):
 
     def __init__(self, db: Session):
         self._db = db
-
-    
-    def from_model_to_entity(self,model: RoomTrackAssociationModel) -> RoomTrackAssociationEntity:
-        return RoomTrackAssociationEntity(
-            id=model.id,
-            room_id=model.room_id,
-            track_id=model.track_id,
-            order_in_queue=model.order_in_queue,
-            added_at=model.added_at,
-            added_by_user_id=model.added_by_user_id
-        )
-
     
     def add_track_to_queue(
         self,
@@ -40,7 +28,7 @@ class SARoomTrackAssociationGateway(RoomTrackAssociationGateway):
         self._db.add(new_room_track)
         self._db.flush()
         self._db.refresh(new_room_track)
-        return self.from_model_to_entity(new_room_track)
+        return new_room_track
     
 
     
@@ -87,7 +75,7 @@ class SARoomTrackAssociationGateway(RoomTrackAssociationGateway):
                 joinedload(RoomTrackAssociationModel.user)
             )
         result = self._db.execute(stmt).scalars().first()
-        return self.from_model_to_entity(result)
+        return result
 
 
     
@@ -111,7 +99,7 @@ class SARoomTrackAssociationGateway(RoomTrackAssociationGateway):
                 joinedload(RoomTrackAssociationModel.user)
             )
         result = self._db.execute(stmt).scalars().first()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -131,4 +119,4 @@ class SARoomTrackAssociationGateway(RoomTrackAssociationGateway):
                 joinedload(RoomTrackAssociationModel.user)
             ).limit(1)
         result = self._db.execute(stmt).scalars().first()
-        return self.from_model_to_entity(result)
+        return result

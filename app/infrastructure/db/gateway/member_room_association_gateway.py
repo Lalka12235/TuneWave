@@ -14,36 +14,7 @@ class SAMemberRoomAssociationGateway(MemberRoomAssociationGateway):
 
     def __init__(self, db: Session):
         self._db = db
-    
 
-    def from_model_to_entity(self,model: Member_room_association | Room) -> MemberRoomEntity | RoomEntity:
-        if isinstance(model,Member_room_association):
-            return MemberRoomEntity(
-                user_id=model.user_id,
-                room_id=model.user_id,
-                role=model.role,
-                joined_at=model.joined_at,
-            )
-        else:
-            return RoomEntity(
-                id=model.id,
-                name=model.name,
-                max_members=model.max_members,
-                owner_id=model.owner_id,
-                is_private=model.is_private,
-                password_hash=model.password_hash,
-                current_track_id=model.current_track_id,
-                current_track_position_ms=model.current_track_position_ms,
-                is_playing=model.is_playing,
-                created_at=model.created_at,
-                playback_host_id=model.playback_host_id,
-                active_spotify_device_id=model.active_spotify_device_id,
-                current_playing_track_association_id=model.current_playing_track_association_id
-        )
-    
-
-
-    
     def add_member(self,user_id: uuid.UUID,room_id: uuid.UUID,role: str) -> MemberRoomEntity:
         """
         Добавляет пользователя в комнату (создает запись о членстве).
@@ -63,7 +34,7 @@ class SAMemberRoomAssociationGateway(MemberRoomAssociationGateway):
         self._db.add(new_member_room)
         self._db.flush()
         self._db.refresh(new_member_room)
-        return self.from_model_to_entity(new_member_room)
+        return new_member_room
     
 
     
@@ -104,7 +75,7 @@ class SAMemberRoomAssociationGateway(MemberRoomAssociationGateway):
             Member_room_association.user_id==user_id,
         )
         result = self._db.execute(stmt).scalar_one_or_none()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -169,7 +140,7 @@ class SAMemberRoomAssociationGateway(MemberRoomAssociationGateway):
                 Member_room_association.room_id == room_id,
             ).values(role=role).returning(Member_room_association)
         result = self._db.execute(stmt).scalar_one_or_none()
-        return self.from_model_to_entity(result)
+        return result
     
 
     
@@ -196,4 +167,4 @@ class SAMemberRoomAssociationGateway(MemberRoomAssociationGateway):
            )
         )
         result = self._db.execute(stmt).scalars().first()
-        return self.from_model_to_entity(result)
+        return result

@@ -12,16 +12,6 @@ class SAChatGateway(ChatGateway):
     def __init__(self, db: Session):
         self._db: Session = db
 
-    
-    def from_model_to_entity(self,model: Message) -> MessageEntity | None:
-        return MessageEntity(
-            id=model.id,
-            text=model.text,
-            user_id=model.user_id,
-            room_id=model.room_id,
-            created_at=model.created_at,
-        )
-
     def get_message_for_room(self,room_id: uuid.UUID,limit: int = 50,before_timestamp: datetime | None = None) -> list[MessageEntity]:
         """Возвращает все сообщения в комнате
 
@@ -65,4 +55,4 @@ class SAChatGateway(ChatGateway):
         )
         self._db.add(new_message)
         self._db.flush()
-        return self.from_model_to_entity(new_message)
+        return new_message

@@ -10,15 +10,6 @@ class SAFavoriteTrackGateway(FavoriteTrackGateway):
 
     def __init__(self, db: Session):
         self._db = db
-
-    
-    def from_model_to_entity(self,model: FavoriteTrack) -> FavoriteTrackEntity:
-        return FavoriteTrackEntity(
-            user_id=model.user_id,
-            track_id=model.track_id,
-            added_at=model.added_at
-        )
-
     
     def get_favorite_tracks(self, user_id: uuid.UUID) -> list[FavoriteTrackEntity]:
         """
@@ -62,7 +53,7 @@ class SAFavoriteTrackGateway(FavoriteTrackGateway):
         self._db.add(new_favorite_track)
         self._db.flush()
         self._db.refresh(new_favorite_track)
-        return self.from_model_to_entity(new_favorite_track)
+        return new_favorite_track
     
 
     
