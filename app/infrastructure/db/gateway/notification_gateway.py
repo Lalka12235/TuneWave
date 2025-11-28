@@ -16,6 +16,21 @@ class SANotificationGateway(NotificationGateway):
     def __init__(self, db: Session):
         self._db = db
 
+
+    def from_model_to_entity(self,model: Notification) -> NotificationEntity:
+        return NotificationEntity(
+            id=model.id,
+            user_id=model.user_id,
+            sender_id=model.sender_id,
+            room_id=model.room_id,
+            notification_type=model.notification_type,
+            message=model.message,
+            is_read=model.is_read,
+            related_object_id=model.related_object_id,
+            created_at=model.created_at
+        )
+
+    
     def get_notification_by_id(self,notification_id: uuid.UUID) -> NotificationEntity | None:
         """
         Получает запись об уведомлении по её ID.
@@ -33,7 +48,7 @@ class SANotificationGateway(NotificationGateway):
                 joinedload(Notification.room)
         ).where(Notification.id == notification_id)
         result = self._db.execute(stmt).scalar_one_or_none()
-        return result
+        return self.from_model_to_entity(result)
     
 
     
@@ -98,7 +113,7 @@ class SANotificationGateway(NotificationGateway):
         self._db.add(new_notification)
         self._db.flush()
         self._db.refresh(new_notification)
-        return new_notification
+        return self.from_model_to_entity(new_notification)
     
 
     

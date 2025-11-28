@@ -16,6 +16,18 @@ class SAFriendshipGateway(FriendshipGateway):
 
     def __init__(self, db: Session):
         self._db = db
+
+    
+    def from_model_to_entity(self,model: Friendship) -> FriendshipEntity:
+        return FriendshipEntity(
+            id=model.id,
+            requester_id=model.requester_id,
+            accepter_id=model.accepter_id,
+            status=model.status,
+            created_at=model.created_at,
+            accepted_at=model.accepted_at,
+        )
+
     
     def get_friendship_by_id(self,friendship_id: uuid.UUID) -> FriendshipEntity | None:
         """
@@ -35,7 +47,7 @@ class SAFriendshipGateway(FriendshipGateway):
             joinedload(Friendship.accepter),
         )
         result = self._db.execute(stmt).scalar_one_or_none()
-        return result
+        return self.from_model_to_entity(result)
     
 
     
@@ -62,7 +74,7 @@ class SAFriendshipGateway(FriendshipGateway):
             joinedload(Friendship.accepter),
         )
         result = self._db.execute(stmt).scalar_one_or_none()
-        return result
+        return self.from_model_to_entity(result)
     
 
     
@@ -156,7 +168,7 @@ class SAFriendshipGateway(FriendshipGateway):
         )
         self._db.add(new_friendship)
         self._db.flush()
-        return new_friendship
+        return self.from_model_to_entity(new_friendship)
     
     
     

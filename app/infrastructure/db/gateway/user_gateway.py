@@ -14,6 +14,22 @@ class SAUserGateway(UserGateway):
     def __init__(self,db : Session):
         self._db = db
     
+    def from_model_to_entity(self,model: User) -> UserEntity | None:
+        return UserEntity(
+            id=model.id,
+            username=model.username,
+            email=model.email,
+            is_email_verified=model.is_email_verified,
+            avatar_url=model.avatar_url,
+            bio=model.bio,
+            google_id=model.google_id,
+            google_image_url=model.google_image_url,
+            spotify_id=model.spotify_id,
+            spotify_profile_url=model.spotify_profile_url,
+            spotify_image_url=model.spotify_image_url,
+        )
+
+    
     def get_user_by_id(self, user_id: uuid.UUID) -> UserEntity | None:
         """
         Получает пользователя по его уникальному ID.
@@ -29,7 +45,7 @@ class SAUserGateway(UserGateway):
         )
         result = self._db.execute(stmt)
         result = result.scalar_one_or_none()
-        return result
+        return self.from_model_to_entity(result)
 
     
     def get_user_by_email(self, email: str) -> UserEntity | None:
@@ -45,7 +61,7 @@ class SAUserGateway(UserGateway):
         stmt = select(User).where(User.email == email)
         result = self._db.execute(stmt)
         result =  result.scalar_one_or_none()
-        return result
+        return self.from_model_to_entity(result)
 
     
     def get_user_by_google_id(self, google_id: str) -> UserEntity | None:
@@ -61,7 +77,7 @@ class SAUserGateway(UserGateway):
         stmt = select(User).where(User.google_id == google_id)
         result = self._db.execute(stmt)
         result =  result.scalar_one_or_none()
-        return result
+        return self.from_model_to_entity(result)
 
     
     def get_user_by_spotify_id(self, spotify_id: str) -> UserEntity | None:
@@ -77,7 +93,7 @@ class SAUserGateway(UserGateway):
         stmt = select(User).where(User.spotify_id == spotify_id)
         result = self._db.execute(stmt)
         result =  result.scalar_one_or_none()
-        return result
+        return self.from_model_to_entity(result)
     
     def create_user(self, user_data: dict[str, str]) -> UserEntity:
         """
@@ -105,7 +121,7 @@ class SAUserGateway(UserGateway):
         self._db.add(new_user)
         self._db.flush()
         self._db.refresh(new_user)
-        return new_user
+        return self.from_model_to_entity(new_user)
     
     
     def update_user(self, user_entity: UserEntity, update_data: dict[str, str]) -> UserEntity:
@@ -127,7 +143,7 @@ class SAUserGateway(UserGateway):
         self._db.add(user)
         self._db.flush()
         self._db.refresh(user)
-        return user
+        return self.from_model_to_entity(user)
     
     def hard_delete_user(self, user_id: uuid.UUID) -> bool:
         """
