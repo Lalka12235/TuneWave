@@ -1,7 +1,7 @@
 from typing import NewType
 
-from app.domain.interfaces.ban_gateway import BanRepository
-from app.domain.interfaces.user_gateway import UserRepository
+from app.domain.interfaces.ban_gateway import BanGateway
+from app.domain.interfaces.user_gateway import UserGateway
 from app.application.mappers.mappers import UserMapper
 from fastapi import Request
 from fastapi.security import HTTPBearer
@@ -31,7 +31,7 @@ AuthData = NewType("AuthData", dict)
 
 class AuthService:
 
-    def __init__(self,user_repo: UserRepository,ban_repo: BanRepository,user_mapper: UserMapper,redis_service: RedisService):
+    def __init__(self,user_repo: UserGateway,ban_repo: BanGateway,user_mapper: UserMapper,redis_service: RedisService):
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         self.user_mapper = user_mapper
@@ -268,7 +268,7 @@ async def get_current_user_id(request: Request) -> AuthData:
 
 async def get_current_user(
         auth_data: AuthData,
-        user_repo: UserRepository,
+        user_repo: UserGateway,
 ) -> UserEntity:
     provider = auth_data["provider"]
     external_id = auth_data["external_id"]

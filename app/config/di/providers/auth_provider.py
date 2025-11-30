@@ -3,8 +3,8 @@ from dishka import Provider,provide,Scope
 from app.application.mappers.user_mapper import UserMapper
 from app.application.services.redis_service import RedisService
 from app.domain.entity import UserEntity
-from app.domain.interfaces.ban_gateway import BanRepository
-from app.domain.interfaces.user_gateway import UserRepository
+from app.domain.interfaces.ban_gateway import BanGateway
+from app.domain.interfaces.user_gateway import UserGateway
 from app.presentation.auth.auth import AuthService, get_current_user, get_current_user_id, AuthData
 
 
@@ -17,8 +17,8 @@ class AuthProvider(Provider):
     @provide
     def auth_service(
             self,
-            user_repo: UserRepository,
-            ban_repo: BanRepository,
+            user_repo: UserGateway,
+            ban_repo: BanGateway,
             user_mapper: UserMapper,
             redis_service: RedisService,
     ) -> AuthService:
