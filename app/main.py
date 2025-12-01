@@ -6,14 +6,12 @@ import os
 
 from dishka.integrations.fastapi import setup_dishka
 
-from app.config.loggingMiddleware import LogMiddleware
+from app.presentation.middleware.loggingMiddleware import LogMiddleware
 from app.presentation.api.v1.all_route import V1_ROUTERS
 from app.config.log_config import configure_logging
 from app.config.settings import settings
 from app.presentation.api.v1.error_handler import register_errors_handlers
 from app.config.di.container import get_container
-import uvicorn
-import multiprocessing
 
 configure_logging()
 
