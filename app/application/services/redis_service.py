@@ -19,10 +19,6 @@ class RedisService:
             logger.error('RedisService: ошибка при получение кэша %r',e,exc_info=True)
 
     async def set(self,key: str,value: str,expiration: int) -> bool:
-        """
-        Сохраняет значение в кэш. Значение сериализуется в JSON (default=str для дат/UUID).
-        expiration — TTL в секундах.
-        """
         try:
             payload = json.dumps(value, default=str, ensure_ascii=False)
             await self._client.set(key, payload, ex=expiration)

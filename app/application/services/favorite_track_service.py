@@ -93,7 +93,6 @@ class FavoriteTrackService:
 
         Returns:
             FavoriteTrackResponse: Pydantic-модель добавленного любимого трека.
-
         """
         track = await self._get_or_create_track(spotify_id)
 
@@ -119,7 +118,6 @@ class FavoriteTrackService:
 
         Returns:
             dict[str, Any]: Сообщение об успешном удалении.
-
         """
 
         track = self.track_repo.get_track_by_spotify_id( spotify_id)

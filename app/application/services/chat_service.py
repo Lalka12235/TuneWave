@@ -3,6 +3,7 @@ from datetime import datetime
 
 from app.config.log_config import logger
 from app.domain.interfaces.chat_gateway import ChatGateway
+from app.domain.interfaces.member_room_association import MemberRoomAssociationGateway
 from app.presentation.schemas.message_schemas import MessageCreate, MessageResponse
 from app.domain.interfaces.room_gateway import RoomGateway
 from app.application.mappers.message_mapper import MessageMapper
@@ -16,10 +17,11 @@ class ChatService:
     Реализует бизнес логику для работы с чатом комнаты
     """
 
-    def __init__(self,chat_repo: ChatGateway,room_repo: RoomGateway,message_mapper: MessageMapper):
+    def __init__(self,chat_repo: ChatGateway,room_repo: RoomGateway,message_mapper: MessageMapper,member_room: MemberRoomAssociationGateway):
         self.chat_repo = chat_repo
         self.room_repo = room_repo
         self.message_mapper = message_mapper
+        self.member_room = member_room
 
     
     def get_message_for_room(self,room_id: uuid.UUID,limit:int = 50,before_timestamp: datetime | None = None) -> list[MessageResponse]:
@@ -49,7 +51,7 @@ class ChatService:
     
 
     
-    def create_message(self,room_id: uuid.UUID,user_id: uuid.UUID,message: MessageCreate) -> MessageResponse:
+    def create_message(self,room_id: uuid.UUID,user_id: uuid.UUID,message: MessageCreate) -> MessageResponse | list:
         """
         Создает новое сообщение в комнате.
 
@@ -59,17 +61,17 @@ class ChatService:
             message (MessageCreate): Pydantic-схема с текстом сообщения.
 
         Returns:
-            MessageResponse: Pydantic-схема созданного сообщения.
+            MessageResponse
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise RoomNotFoundError()
         
-        members = room.member_room
+        members = self.member_room.get_members_by_room_id(room_id)
         if not members:
             return []
 
-        if user_id not in [member.id for member in members]:
+        if user_id not in [member.user_id for member in members]:
             raise UserNotInRoomError()
         try:
             new_message = self.chat_repo.create_message(room_id,user_id,message.text)

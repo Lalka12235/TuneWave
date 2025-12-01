@@ -49,7 +49,7 @@ class NotificationService:
         """
         Получает список уведомлений для указанного пользователя.
         """
-        self._check_user_exists( user_id, "Пользователь для получения уведомлений не найден.")
+        self._check_user_exists(user_id)
         notifications = self.notify_repo.get_user_notification(user_id,limit,offset)
         if not notifications:
             return []
@@ -82,13 +82,13 @@ class NotificationService:
         Returns:
             NotificationResponse: Детали созданного уведомления.
         """
-        self._check_user_exists( user_id, "Пользователь-получатель уведомления не найден.")
+        self._check_user_exists(user_id)
 
         if sender_id:
-            self._check_user_exists( sender_id, "Отправитель уведомления не найден.")
+            self._check_user_exists(sender_id,)
 
         if room_id:
-            self._check_room_exists( room_id, "Комната, связанная с уведомлением, не найдена.")
+            self._check_room_exists(room_id)
 
         
         try:
@@ -121,8 +121,8 @@ class NotificationService:
             return self.notify_mapper.to_response(notification)
         
         try:
-            notification_update = self.notify_repo.mark_notification_as_read(notification_id)
-            return self.notify_mapper.to_response(notification_update)
+            self.notify_repo.mark_notification_as_read(notification_id)
+            return self.notify_mapper.to_response(notification)
         except Exception:
             raise ServerError(
                 detail="Не удалось отметить уведомление как прочитанное из-за внутренней ошибки сервера."

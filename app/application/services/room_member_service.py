@@ -1,6 +1,7 @@
 import json
 import uuid
 
+from app.application.mappers.notification_mapper import NotificationMapper
 from app.config.log_config import logger
 from app.domain.entity import UserEntity,RoomEntity
 from app.domain.interfaces.ban_gateway import BanGateway
@@ -59,6 +60,7 @@ class RoomMemberService:
         user_mapper: UserMapper,
         ban_mapper: BanMapper,
         room_member_mapper: RoomMemberMapper,
+        notify_mapper: NotificationMapper
     ):
         self.room_repo = room_repo
         self.user_repo = user_repo
@@ -69,6 +71,7 @@ class RoomMemberService:
         self.user_mapper = user_mapper
         self.ban_mapper = ban_mapper
         self.room_member_mapper = room_member_mapper
+        self.notify_mapper = notify_mapper
 
     def verify_room_password(room: RoomEntity, password: str) -> bool:
         """
@@ -148,7 +151,7 @@ class RoomMemberService:
 
             raise ServerError(detail=f"Не удалось присоединиться к комнате. {e}")
 
-    async def leave_room(self, room_id: uuid.UUID, user: UserEntity) -> dict[str, str]:
+    async def leave_room(self, room_id: uuid.UUID, user: UserEntity) -> dict[str, str] | None:
         """
         Пользователь покидает комнату.
 
@@ -216,11 +219,11 @@ class RoomMemberService:
         if not room:
             raise RoomNotFoundError()
 
-        members = room.member_room
+        members = self.member_room_repo.get_members_by_room_id(room_id)
         if not members:
             return []
 
-        return [self.user_mapper.to_response(member.user) for member in members]
+        return [self.user_mapper.to_response(self.user_repo.get_user_by_id(member.user_id)) for member in members]
 
     async def update_member_role(
         self,
@@ -233,7 +236,6 @@ class RoomMemberService:
         Изменяет роль члена комнаты. Только владелец комнаты может это делать.
 
         Args:
-            self.db (Session): Сессия базы данных.
             room_id (uuid.UUID): ID комнаты.
             target_user_id (uuid.UUID): ID пользователя, чью роль нужно изменить.
             new_role (str): Новая роль для пользователя.
@@ -260,6 +262,8 @@ class RoomMemberService:
         target_user_association = self.member_room_repo.get_association_by_ids(
             target_user_id, room_id
         )
+
+        target_user = self.user_repo.get_user_by_id(target_user_id)
         if not target_user_association:
             raise UserNotInRoomError(
                 detail="Целевой пользователь не является членом этой комнаты.",
@@ -300,15 +304,15 @@ class RoomMemberService:
 
             role_message_for_room = {
                 "room_id": str(room_id),
-                "username": target_user_association.user.username,
+                "username": target_user.username,
                 "new_role": target_user_association.role,
                 "moderator_id": str(current_user.id),
                 "moderator_username": current_user.username,
-                "detail": f"У пользователя {target_user_association.user.username} была обновлена роль до {target_user_association.role}",
+                "detail": f"У пользователя {target_user.username} была обновлена роль до {target_user_association.role}",
             }
             role_message_for_user = {
                 "room_id": str(room_id),
-                "username": target_user_association.user.username,
+                "username": target_user.username,
                 "new_role": target_user_association.role,
                 "moderator_id": str(current_user.id),
                 "moderator_username": current_user.username,
@@ -360,6 +364,7 @@ class RoomMemberService:
         target_user_association = self.member_room_repo.get_association_by_ids(
             user_id, room_id
         )
+        target_user = self.user_repo.get_user_by_id(user_id)
         if not target_user_association:
             raise UserNotInRoomError(
                 detail="Пользователь, которого вы пытаетесь кикнуть, не найден в этой комнате.",
@@ -381,15 +386,15 @@ class RoomMemberService:
             kick_message_for_room = {
                 "action": "you_weke_kicked",
                 "kicked_user_id": user_id,
-                "kicked_username": target_user_association.user.username,
+                "kicked_username": target_user.username,
                 "room_id": room_id,
                 "moderator_id": current_user.id,
-                "detail": f"Пользователь {target_user_association.user.username} был кикнут из комнаты.",
+                "detail": f"Пользователь {target_user.username} был кикнут из комнаты.",
             }
             kick_message_for_user = {
                 "action": "user_kicked_from_room",
                 "kicked_user_id": user_id,
-                "kicked_username": target_user_association.user.username,
+                "kicked_username": target_user.username,
                 "room_id": room_id,
                 "moderator_id": current_user.id,
                 "detail": f"Вы были кикнуты из комнаты {room.name}",
@@ -428,7 +433,6 @@ class RoomMemberService:
             target_user_id (uuid.UUID): ID пользователя, которого нужно забанить.
             ban_data (BanCreate): Данные для бана (причина, room_id).
             current_user (User): Текущий аутентифицированный пользователь, выполняющий действие.
-            manager (Any): Экземпляр ConnectionManager для WebSocket-уведомлений.
 
         Returns:
             BanResponse: Объект BanResponse, представляющий созданный бан.
@@ -522,7 +526,6 @@ class RoomMemberService:
             room_id (uuid.UUID): ID комнаты.
             target_user_id (uuid.UUID): ID пользователя, с которого нужно снять бан.
             current_user (User): Текущий аутентифицированный пользователь, выполняющий действие.
-            manager (Any): Экземпляр ConnectionManager для WebSocket-уведомлений.
 
         Returns:
             dict[str, Any]: Сообщение об успешном снятии бана.
@@ -782,10 +785,7 @@ class RoomMemberService:
                         related_object_id=room_id,
                     )
 
-                return {
-                    "status": "success",
-                    "detail": "Вы успешно присоединились к комнате.",
-                }
+                self.notify_mapper.to_response(notification)
 
             elif action == "decline":
                 self.notify_repo.mark_notification_as_read(
@@ -793,7 +793,7 @@ class RoomMemberService:
                 )
 
                 if inviter:
-                    await self.notify_repo.add_notification(
+                    self.notify_repo.add_notification(
                         user_id=inviter_id,
                         notification_type=NotificationType.SYSTEM_MESSAGE,
                         message=f"{invited_user.username} отклонил(а) ваше приглашение в комнату {room.name}.",
@@ -801,7 +801,7 @@ class RoomMemberService:
                         room_id=room_id,
                         related_object_id=room_id,
                     )
-                return {"status": "success", "detail": "Приглашение отклонено."}
+                self.notify_mapper.to_response(notification)
 
             else:
                 raise InvalidActionError(

@@ -2,7 +2,6 @@ from app.config.settings import settings
 from app.domain.entity import UserEntity
 
 from app.domain.exceptions.user_exception import UserNotAuthorized
-#from app.domain.interfaces.user_gateway import UserGateway
 from app.application.services.redis_service import RedisService
 from app.application.services.base_oauth_service import _generic_refresh_token
 
@@ -14,27 +13,7 @@ class GoogleService:
 
     def __init__(self,user: UserEntity,redis_service: RedisService):
         self.user = user
-        #self.user_repo = user_repo
         self.redis_service = redis_service
-
-    #def _update_user_profile(self,update_data: dict) -> bool:
-    #    user = self.user_repo.get_user_by_id(self.user.id)
-    #    if not user:
-    #        logger.warning(
-    #            f"Попытка обновить профиль несуществующего пользователя с ID '{self.user.id}'."
-    #        )
-    #        raise UserNotFound(detail="Пользователь не найден")
-#
-    #    try:
-    #        self.user_repo.update_user(user, update_data)
-    #        logger.info(f"Профиль пользователя '{self.user.id}' успешно обновлен.")
-    #        return True
-    #    except Exception as e:
-    #        logger.error(
-    #            f"Ошибка при обновлении профиля пользователя '{self.user.id}': {e}",
-    #            exc_info=True,
-    #        )
-    #        raise ServerError(detail="Ошибка при обновлении пользователя")
 
     async def _refresh_access_token(self) -> dict:
         """
