@@ -72,7 +72,7 @@ class RabbitConfig:
 
 @dataclass(slots=True, frozen=True)
 class AvatarConfig:
-    AX_AVATAR_SIZE_BYTES: int = 5 * 1024 * 1024
+    MAX_AVATAR_SIZE_BYTES: int = 5 * 1024 * 1024
     BACKEND_ROOT: Path = Path(__file__).resolve().parent.parent.parent
     AVATARS_STORAGE_DIR: Path = BACKEND_ROOT / "avatars"
 

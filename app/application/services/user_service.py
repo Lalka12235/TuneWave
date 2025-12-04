@@ -1,8 +1,6 @@
 import uuid
 
-from app.config.settings import settings
 from app.config.log_config import logger
-from app.domain.entity import UserEntity
 from app.domain.interfaces.ban_gateway import BanGateway
 from app.domain.interfaces.user_gateway import UserGateway
 from app.presentation.schemas.user_schemas import (
@@ -13,11 +11,9 @@ from app.application.mappers.user_mapper import UserMapper
 from app.domain.exceptions.user_exception import (
     UserAlrediExist,
     UserNotFound,
-    AvatarFyleType,
-    FileExceedsSize,
 ) 
 from app.domain.exceptions.exception import ServerError
-from  typing import Any
+from typing import Any
 
 
 class UserService:
@@ -34,43 +30,6 @@ class UserService:
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         self.user_mapper = user_mapper
-
-    def _check_for_existing_user_and_raise_if_found(
-        self,
-        email: str | None = None,
-        google_id: str | None = None,
-        spotify_id: str | None = None,
-        exclude_user_id: uuid.UUID | None = None,
-    ):
-        if email:
-            user = self.user_repo.get_user_by_email(email)
-            if user and (exclude_user_id is None or user.id != exclude_user_id):
-                logger.warning(
-                    f"Попытка создать/обновить пользователя: email '{email}' уже существует."
-                )
-                raise UserAlrediExist(
-                    detail=f"Пользователь с email '{email}' уже существует."
-                )
-
-        if google_id:
-            user = self.user_repo.get_user_by_google_id(google_id)
-            if user and (exclude_user_id is None or user.id != exclude_user_id):
-                logger.warning(
-                    f"Попытка создать/обновить пользователя: Google ID '{google_id}' уже существует."
-                )
-                raise UserAlrediExist(
-                    detail=f"Пользователь с Google ID '{google_id}' уже существует."
-                )
-
-        if spotify_id:
-            user = self.user_repo.get_user_by_spotify_id(spotify_id)
-            if user and (exclude_user_id is None or user.id != exclude_user_id):
-                logger.warning(
-                    f"Попытка создать/обновить пользователя: Spotify ID '{spotify_id}' уже существует."
-                )
-                raise UserAlrediExist(
-                    detail=f"Пользователь с Spotify ID '{spotify_id}' уже существует."
-                )
 
     async def get_user_by_id(self, user_id: uuid.UUID) -> UserResponse:
         """
@@ -169,28 +128,25 @@ class UserService:
         Returns:
             UserResponse: Информация о создании
         """
-        self._check_for_existing_user_and_raise_if_found(
-            user_data.get('email'), user_data.get('google_id'), user_data.get('spotify_id')
-        )
+        email,google_id,spotify_id = user_data.get('email'),user_data.get('google_id'),user_data.get('spotify_id')
+        user = None
+        if email:
+            user = self.user_repo.get_user_by_email(email)
+        if google_id:
+            user = self.user_repo.get_user_by_google_id(google_id)
+        if spotify_id:
+            user = self.user_repo.get_user_by_spotify_id(spotify_id)
+
+        if user:
+            logger.warning(
+                f"Попытка создать/обновить пользователя: уже существует."
+            )
+            raise UserAlrediExist(detail="Пользователь уже существует")
         try:
             new_user = self.user_repo.create_user(user_data)
             logger.info(
                 f"Пользователь '{user_data.get('username')}' ({new_user.id}) успешно зарегистрирован."
             )
-            #subject = "Добро пожаловать в TuneWave!"
-            #body = f"""
-            #Привет, {user_data.get('username')}!
-#
-            #Спасибо за регистрацию в TuneWave. Мы рады видеть тебя в нашем музыкальном сообществе.
-            #Начни создавать комнаты и делиться музыкой с друзьями!
-#
-            #С уважением,
-            #Команда TuneWave
-            #"""
-            #email_sent = (user_data.email, subject, body)
-            #if not email_sent:
-            #    logger.warning(f"Сообщение на почту не отправилось {email_sent}")
-            #    pass
         except Exception as e:
             logger.error(
                 f"Ошибка при создании пользователя '{user_data.get('email')}': {e}",
@@ -213,9 +169,6 @@ class UserService:
 
         Returns:
             UserResponse: Обновленный объект UserResponse.
-
-        Raises:
-            HTTPException: Если пользователь не найден (404) или новый email уже занят другим пользователем (409).
         """
         user = self.user_repo.get_user_by_id(user_id)
         if not user:
@@ -244,8 +197,6 @@ class UserService:
         Raises:
             HTTPException: Пользователь не найден(404)
 
-        Returns:
-            dict[str,Any]: Информация об удалении
         """
         user = self.user_repo.get_user_by_id(user_id)
 
@@ -255,7 +206,7 @@ class UserService:
             )
             raise UserNotFound(detail="Пользователь не найден")
         try:
-            _ = self.user_repo.hard_delete_user(user_id)
+            status_deleted = self.user_repo.hard_delete_user(user_id)
         except Exception as e:
             logger.error(
                 f"Ошибка при физическом удалении пользователя '{user_id}': {e}",
@@ -265,73 +216,6 @@ class UserService:
 
         return {
             "detail": "delete user",
-            "status": "success",
+            "status": status_deleted,
             "id": str(user_id),
         }
-
-    async def load_avatar(
-        self, user: UserEntity, content: bytes, content_type: str, filename: str
-    ) -> UserResponse:
-        """
-        Загружает файл аватарки, сохраняет его и обновляет URL в профиле пользователя.
-
-        Args:
-            user (User): Объект текущего пользователя
-            content (bytes): Содержимое файла в байтах
-            content_type (str): MIME-тип файла
-            filename (str): Имя загружаемого файла
-
-        Raises:
-            HTTPException: Если файл не соответствует требованиям (тип, размер)
-
-        Returns:
-            UserResponse: Обновленный объект пользователя с новым URL аватарки
-        """
-        allowed_types = ["image/jpeg", "image/png", "image/gif"]
-        if content_type not in allowed_types:
-            logger.warning(
-                f"Загруженный файл аватара имеет недопустимый тип: '{content_type}'."
-            )
-            raise AvatarFyleType(
-                detail="Изображение должно быть в формате JPEG, PNG или GIF",
-            )
-
-        if len(content) > settings.avatar.MAX_AVATAR_SIZE_BYTES:
-            logger.warning(
-                f"Размер загруженного файла аватара ({len(content)} байт) "
-                f"превышает лимит ({settings.avatar.MAX_AVATAR_SIZE_BYTES} байт)."
-            )
-            raise FileExceedsSize(
-                detail=f"Размер файла не должен превышать {settings.avatar.MAX_AVATAR_SIZE_BYTES // (1024*1024)}МБ",
-            )
-
-        file_extension = filename.split(".")[-1] if "." in filename else "png"
-        unique_filename = f"{uuid.uuid4()}.{file_extension}"
-        file_path = settings.avatar.AVATARS_STORAGE_DIR / unique_filename
-
-        try:
-            settings.avatar.AVATARS_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-
-            with open(file_path, "wb") as f:
-                f.write(content)
-
-            new_avatar_url = f"{settings.BASE_URL}/avatars/{unique_filename}"
-            updated_user = await self.update_user_profile(
-                user.id, {'avatar_url': new_avatar_url}
-            )
-
-            logger.info(
-                f"Аватар пользователя '{user.id}' успешно загружен и обновлен. URL: {new_avatar_url}"
-            )
-            return updated_user
-
-        except Exception as e:
-            if file_path.exists():
-                file_path.unlink()
-            logger.error(
-                f"Ошибка сервера при загрузке аватара для пользователя '{user.id}': {e}",
-                exc_info=True,
-            )
-            raise ServerError(
-                detail="Ошибка сервера при загрузке аватара",
-            )
