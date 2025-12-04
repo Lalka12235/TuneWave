@@ -12,6 +12,8 @@ from app.config.log_config import configure_logging
 from app.config.settings import settings
 from app.presentation.api.v1.error_handler import register_errors_handlers
 from app.config.di.container import get_container
+import uvicorn
+import multiprocessing
 
 configure_logging()
 
@@ -79,5 +81,5 @@ app = create_app()
 
 
 
-#if __name__ == "__main__":
-#    uvicorn.run(app,reload=True,workers=multiprocessing.cpu_count(),host='0.0.0.0',port=8000)
+if __name__ == "__main__":
+    uvicorn.run(app,reload=True,workers=multiprocessing.cpu_count(),host='0.0.0.0',port=8000,factory=True)
