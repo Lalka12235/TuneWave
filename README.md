@@ -1,67 +1,74 @@
-# TuneWave
+#TuneWave
 
-**TuneWave – это платформа, где пользователи могут находить единомышленников по музыкальным вкусам, слушать треки вместе в реальном времени, обсуждать музыку и открывать новые жанры. Алгоритм рекомендаций подбирает комнаты с музыкой и людьми, а также предлагает интересные треки на основе предпочтений**
+**TuneWave is a platform where users can find like-minded music lovers, listen to tracks together in real time, discuss music, and discover new genres. The recommendation algorithm selects rooms with music and people, and suggests interesting tracks based on preferences**
 
-**Технологический стек**
+**Technology Stack**
 
 **Backend:**
- - **Язык: Python**
- - **Фреймворк: FastAPI**
- - **База данных: PostgreSQL (основная)**
- - **ORM: SQLAlchemy**
- - **Migration: Alembic**
- - **Аутентификация: OAuth2 (Google/Spotify)**
+- **Language: Python**
+- **Framework: FastAPI**
+- **Database: PostgreSQL (main)**
+- **ORM: SQLAlchemy**
+- **Migration: Alembic**
+- **Authentication: OAuth2 (Google/Spotify)**
+- **redis**
+- **rabbitmq**
+- **nginx**
 
 **DevOps:**
- - **Контейнеризация: Docker**
- - **CI/CD: GitLab**
- - **Хостинг: https://www.heroku.com**
+- **Containerization: Docker**
+- **CI/CD: GitLab**
+- **Hosting: https://www.heroku.com**
 
 **Frontend:**
- - **Язык: TypeScript/JavaScript**
- - **Фреймворк: React**
- - **Стилизация: Tailwind CSS**
+- **Language: TypeScript/JavaScript**
+- **Framework: React**
+- **Styling: Tailwind CSS**
 
-**Дополнительно**
- - **WebSockets – для синхронизации прослушивания и чатов**
- - **Redis – для кеширования**
- - **RabbitMQ – для асинхронной обработки задач (отправка почты, фоновая обработка данных Spotify, уведомления) и надежной очереди сообщений**  
+**Additional**
+- **WebSockets – for synchronizing listening and chats**
+- **Redis – for caching**
+- **RabbitMQ – for asynchronous task processing (sending email, background Spotify data processing, notifications) and a reliable message queue**
 
-**Минимальный функционал для теста (MVP):**
- 1. Регистрация и авторизация (OAuth через Google/Spotify/). 
- 2. Создание комнат (публичные и приватные). 
- 3. Подключение к комнате (прослушивание музыки в реальном времени). 
- 4. Добавление треков в очередь . 
- 5. Чат в комнате (основной способ общения).
- 6. Рекомендации комнат на основе жанров и истории прослушиваний.
- 7. История прослушиваний (в профиле пользователя).
+**Minimum functionality for testing (MVP):**
+1. Registration and authorization (OAuth via Google/Spotify/).
+
+2. Creating rooms (public and private).
+
+3. Joining a room (listening to music in real time).
+
+4. Adding tracks to the queue.
+
+5. Chat in the room (the main method of communication).
+6. Room recommendations based on genres and listening history.
+7. Listening history (in the user profile).
 
 
-# Docs API
+# API Docs
 
 ---
 
-Вот документация к вашему API в едином стиле:
+Here's your API documentation in a uniform style:
 
-## WebSocket чат
+## WebSocket Chat
 
 ### `GET /ws/chat/{room_id}`
 
-**Описание:**  
-WebSocket эндпоинт для подключения к чату в комнате.
+**Description:**
+WebSocket endpoint for connecting to a room chat.
 
-**Параметры:**
+**Parameters:**
 
-| Название | Тип  | Местоположение | Описание                  |
+| Name | Type | Location | Description |
 |----------|------|----------------|---------------------------|
-| room_id  | UUID | path           | Уникальный ID комнаты     |
-| token    | str  | query          | Токен аутентификации      |
+| room_id | UUID | path | Unique room ID |
+| token | str | query | Authentication token |
 
-**Особенности:**  
-- Отправка и получение сообщений в реальном времени  
-- Сообщения в формате JSON, ключ `text`  
-- Рассылка сообщений всем участникам  
-- Уведомление при выходе пользователя  
+**Features:**
+- Send and receive messages in real time
+- Messages in JSON format, `text` key
+- Send messages to all participants
+- Notification when a user leaves
 
 ---
 
@@ -69,61 +76,61 @@ WebSocket эндпоинт для подключения к чату в комн
 
 ### `GET /users/me`
 
-**Описание:**  
-Получить профиль текущего пользователя.
+**Description:**
+Get the current user's profile.
 
-**Аутентификация:** Да (JWT)
+**Authentication:** Yes (JWT)
 
-**Ответ:**  
-`UserResponse` - данные профиля пользователя.
+**Response:**
+`UserResponse` - user profile data.
 
-**Ограничения:**  
-10 запросов в минуту
+**Limits:**
+10 requests per minute
 
 ### `PUT /users/{user_id}`
 
-**Описание:**  
-Обновить профиль пользователя.
+**Description:**
+Update a user's profile.
 
-**Параметры:**
+**Parameters:**
 
-| Название | Тип  | Описание            |
+| Name | Type | Description |
 |----------|------|---------------------|
-| user_id  | UUID | ID пользователя     |
+| user_id | UUID | User ID |
 
-**Тело запроса:**  
+**Request Body:**
 `UserUpdate`
 
-**Ответ:**  
-Обновленный профиль `UserResponse`
+**Response:**
+Updated profile `UserResponse`
 
 ### `POST /users/me/avatar`
 
-**Описание:**  
-Загрузить аватар пользователя.
+**Description:**
+Upload a user's avatar.
 
-**Форма данных:**  
+**Data Form:**
 `avatar_file` (UploadFile)
 
-**Ответ:**  
-`UserResponse` с обновленным URL аватара
+**Response:**
+`UserResponse` with the updated avatar URL
 
-**Ограничения:**  
-5 запросов в минуту
+**Limits:**
+5 requests per minute
 
 ### `GET /users/{user_id}`
 
-**Описание:**  
-Получить публичную информацию о пользователе.
+**Description:**
+Get public user information.
 
-**Параметры:**  
+**Parameters:**
 `user_id` - UUID
 
-**Ответ:**  
+**Response:**
 `UserResponse`
 
-**Ограничения:**  
-20 запросов в минуту
+**Limits:**
+20 requests per minute
 
 ---
 
@@ -131,34 +138,34 @@ WebSocket эндпоинт для подключения к чату в комн
 
 ### `GET /track/{spotify_id}`
 
-**Описание:**  
-Получить трек по Spotify ID.
+**Description:**
+Get a track by Spotify ID.
 
-**Параметры:**
+**Parameters:**
 
-| Название   | Тип  | Описание         |
+| Name | Type | Description |
 |------------|------|------------------|
-| spotify_id | str  | ID трека Spotify |
+| spotify_id | str | Spotify track ID |
 
-**Ответ:**  
-`TrackBase` с информацией о треке
+**Response:**
+`TrackBase` with track information
 
-**Ограничения:**  
-15 запросов в минуту
+**Limits:**
+15 requests per minute
 
 ### `POST /track/`
 
-**Описание:**  
-Создать трек на основе данных Spotify.
+**Description:**
+Create a track based on Spotify data.
 
-**Тело запроса:**  
+**Request Body:**
 `TrackCreate`
 
-**Ответ:**  
-Созданный трек `TrackCreate`
+**Response:**
+Created track `TrackCreate`
 
-**Ограничения:**  
-10 запросов в минуту
+**Limits:**
+10 requests per minute
 
 ---
 
@@ -166,118 +173,135 @@ WebSocket эндпоинт для подключения к чату в комн
 
 ### `GET /favorites/me`
 
-**Описание:**  
-Получить любимые треки текущего пользователя.
+**Description:**
+Get the current user's favorite tracks.
 
-**Ответ:**  
+**Response:**
 `list[FavoriteTrackResponse]`
 
-**Ограничения:**  
-15 запросов в минуту
+**Limits:**
+15 requests per minute
 
 ### `POST /favorites/me`
 
-**Описание:**  
-Добавить трек в избранное.
+**Description:**
+Add a track to favorites.
 
-**Тело запроса:**  
+**Request Body:**
 `FavoriteTrackAdd`
 
-**Ответ:**  
+**Response:**
 `FavoriteTrackResponse`
 
-**Ограничения:**  
-5 запросов в минуту
+**Limits:**
+5 requests per minute
 
 ### `DELETE /favorites/me/{spotify_id}`
 
-**Описание:**  
-Удалить трек из избранного.
+**Description:**
+Remove a track from favorites.
 
-**Параметры:**  
+**Parameters:**
 `spotify_id` - str
 
-**Ответ:**  
-Статус операции
+**Response:**
+Operation Status
 
-**Ограничения:**  
-5 запросов в минуту
+**Limits:**
+5 requests per minute
 
 ### `GET /favorites/{user_id}`
 
-**Описание:**  
-Получить избранные треки пользователя.
+**Description:**
+Get a user's favorite tracks.
 
-**Параметры:**  
+**Parameters:**
 `user_id` - UUID
 
-**Ответ:**  
+**Response:**
 `list[FavoriteTrackResponse]`
 
-**Ограничения:**  
-10 запросов в минуту
+**Limits:**
+10 requests per minute
 
 ---
 
 ## Room API
 
-### Основные операции
+### Basic Operations
 
-| Метод | URL                | Описание                          | Требования              |
+| Method | URL | Description | Requirements |
 |-------|--------------------|----------------------------------|------------------------|
-| POST  | `/rooms/`          | Создать комнату                  | Аутентификация         |
-| PUT   | `/rooms/{room_id}` | Обновить комнату                 | Владелец комнаты       |
-| DELETE| `/rooms/{room_id}` | Удалить комнату                  | Владелец комнаты       |
-| POST  | `/rooms/{room_id}/join` | Присоединиться к комнате      | Аутентификация         |
-| POST  | `/rooms/{room_id}/leave` | Покинуть комнату             | Участник комнаты       |
-| GET   | `/rooms/{room_id}/members` | Получить участников       | Нет                   |
-| GET   | `/rooms/by-name/`  | Найти комнату по названию        | Нет                   |
-| GET   | `/rooms/my-rooms`  | Получить комнаты пользователя    | Аутентификация         |
-| GET   | `/rooms/`          | Получить все комнаты             | Нет                   |
-| GET   | `/rooms/{room_id}` | Получить комнату по ID           | Нет                   |
+| POST | `/rooms/` | Create a room | Authentication |
+| PUT | `/rooms/{room_id}` | Update a room | Room owner |
+| DELETE | `/rooms/{room_id}` | Delete a room | Room owner |
+| POST | `/rooms/{room_id}/join` | Join a room | Authentication |
+| POST | `/rooms/{room_id}/leave` | Leave a room | Room member |
+| GET | `/rooms/{room_id}/members` | Get members | No |
+| GET | `/rooms/by-name/` | Find a room by name | No |
+| GET | `/rooms/my-rooms` | Get a user's rooms | Authentication |
+| GET | `/rooms/` | Get all rooms | No |
+| GET | `/rooms/{room_id}` | Get a room by ID | No |
 
-**Ограничения:**  
-10 запросов в минуту (кроме создания комнаты - 5 запросов)
+**Limits:**
+10 requests per minute (except creating a room - 5 requests)
 
-### Управление участниками
+### Managing Members
 
-| Метод | URL                          | Описание                          |
-|-------|------------------------------|----------------------------------|
-| PUT   | `/rooms/{room_id}/members/{user_id}/role` | Изменить роль участника |
-| POST  | `/rooms/{room_id}/invite/{user_id}` | Пригласить пользователя    |
+| Method | URL | Description |
+|-------|-----------------------------|----------------------------------|
+| PUT | `/rooms/{room_id}/members/{user_id}/role` | Change a member's role |
+| POST | `/rooms/{room_id}/invite/{user_id}` | Invite a user |
 
-**Требования:**  
-Владелец или модератор комнаты
+**Requirements:**
+Room owner or moderator
 
-**Ограничения:**  
-5 запросов в минуту
+**Limits:**
+5 requests per minute
 
-### Баны
+### Bans
 
-| Метод | URL                          | Описание                  |
-|-------|------------------------------|--------------------------|
-| POST  | `/rooms/{room_id}/members/{user_id}/ban` | Забанить пользователя |
-| DELETE| `/rooms/{room_id}/members/{user_id}/ban` | Разбанить пользователя |
+| Method | URL | Description |
+|-------|----------------------------|-------------------------|
+| POST | `/rooms/{room_id}/members/{user_id}/ban` | Ban a user |
+| DELETE| `/rooms/{room_id}/members/{user_id}/ban` | Unban a user |
 
-**Требования:**  
-Владелец комнаты
+**Requirements:**
+Room owner
 
-**Ограничения:**  
-5 запросов в минуту
+**Limits:**
+5 requests per minute
 
-### Очередь треков
+### Track Queue
 
-| Метод | URL                          | Описание                  |
-|-------|------------------------------|--------------------------|
-| POST  | `/rooms/{room_id}/queue`     | Добавить трек в очередь  |
-| GET   | `/rooms/{room_id}/queue`     | Получить очередь треков  |
-| DELETE| `/rooms/{room_id}/queue/{association_id}` | Удалить трек из очереди |
+| Method | URL | Description
 
-**Требования:**  
-Владелец комнаты (для POST/DELETE)
+### Bans
 
-**Ограничения:**  
-10 запросов в минуту
+| Method | URL | Description |
+|-------|----------------------------|-------------------------|
+| POST | `/rooms/{room_id}/members/{user_id}/ban` | Ban a user |
+| DELETE| `/rooms/{room_id}/members/{user_id}/ban` | Unban a user |
+
+**Requirements:**
+Room owner
+
+**Limits:**
+5 requests per minute
+
+### Track Queue
+
+| Method | URL | Description |
+|-------|-----------------------------|---------------------------|
+| POST | `/rooms/{room_id}/queue` | Add a track to the queue |
+| GET | `/rooms/{room_id}/queue` | Get the track queue |
+| DELETE| `/rooms/{room_id}/queue/{association_id}` | Remove a track from the queue |
+
+**Requirements:**
+Room owner (for POST/DELETE)
+
+**Limits:**
+10 requests per minute
 
 ---
 
@@ -285,63 +309,63 @@ WebSocket эндпоинт для подключения к чату в комн
 
 ### `GET /chat/{room_id}`
 
-**Описание:**  
-Получить историю сообщений с пагинацией.
+**Description:**
+Get message history with pagination.
 
-**Параметры:**
+**Parameters:**
 
-| Название         | Тип        | Описание                        |
-|------------------|------------|--------------------------------|
-| room_id          | UUID       | ID комнаты                     |
-| limit            | int        | Лимит сообщений (обязательно)   |
-| before_timestamp | datetime   | Пагинация - получить старые     |
+| Name | Type | Description |
+|------------------|-----------|--------------------------------|
+| room_id | UUID | Room ID |
+| limit | int | Message limit (required) |
+| before_timestamp | datetime | Pagination - get old |
 
-**Ответ:**  
+**Response:**
 `list[MessageResponse]`
 
-**Ограничения:**  
-10 запросов в минуту
+**Limits:**
+10 requests per minute
 
 ### `POST /chat/{room_id}`
 
-**Описание:**  
-Отправить сообщение в чат.
+**Description:**
+Send a message to the chat.
 
-**Тело запроса:**  
+**Request Body:**
 `MessageCreate`
 
-**Ответ:**  
+**Response:**
 `MessageResponse`
 
-**Ограничения:**  
-5 запросов в 5 секунд
+**Limits:**
+5 requests per 5 seconds
 
 ---
 
 ## Friendship API
 
-### Основные операции
+### Basic Operations
 
-| Метод | URL                          | Описание                  |
+| Method | URL | Description |
+|-------|-----------------------------|--------------------------|
+| POST | `/friendships/send-request` | Send a friend request |
+| PUT | `/friendships/{id}/accept` | Accept the request |
+| PUT | `/friendships/{id}/decline` | Decline the request |
+| DELETE | `/friendships/{id}` | Delete the friendship |
+
+**Limits:**
+5 requests per minute
+
+### Retrieving Data
+
+| Method | URL | Description |
 |-------|------------------------------|--------------------------|
-| POST  | `/friendships/send-request`  | Отправить запрос в друзья |
-| PUT   | `/friendships/{id}/accept`   | Принять запрос           |
-| PUT   | `/friendships/{id}/decline`  | Отклонить запрос         |
-| DELETE| `/friendships/{id}`          | Удалить дружбу           |
+| GET | `/friendships/my-friends` | Get friends |
+| GET | `/friendships/my-send-requests` | Sent requests |
+| GET | `/friendships/my-received-requests` | Received requests |
 
-**Ограничения:**  
-5 запросов в минуту
-
-### Получение данных
-
-| Метод | URL                          | Описание                  |
-|-------|------------------------------|--------------------------|
-| GET   | `/friendships/my-friends`    | Получить друзей          |
-| GET   | `/friendships/my-send-requests` | Отправленные запросы |
-| GET   | `/friendships/my-received-requests` | Полученные запросы |
-
-**Ограничения:**  
-15 запросов в минуту
+**Limits:**
+15 requests per minute
 
 ---
 
@@ -349,43 +373,43 @@ WebSocket эндпоинт для подключения к чату в комн
 
 ### `GET /notifications/my`
 
-**Описание:**  
-Получить уведомления пользователя.
+**Description:**
+Get user notifications.
 
-**Параметры:**
+**Parameters:**
 
-| Название | Тип | Описание              | Default |
-|----------|-----|----------------------|---------|
-| limit    | int | Лимит уведомлений     | 10      |
-| offset   | int | Смещение для пагинации | 0       |
+| Name | Type | Description | Default |
+|----------|----------------------|---------|
+| limit | int | Notification limit | 10 |
+| offset | int | Pagination offset | 0 |
 
-**Ответ:**  
+**Response:**
 `list[NotificationResponse]`
 
-**Ограничения:**  
-10 запросов в минуту
+**Limits:**
+10 requests per minute
 
 ### `PUT /notifications/{id}/mark-read`
 
-**Описание:**  
-Пометить уведомление как прочитанное.
+**Description:**
+Mark a notification as read.
 
-**Ответ:**  
+**Response:**
 `NotificationResponse`
 
-**Ограничения:**  
-5 запросов в минуту
+**Limits:**
+5 requests per minute
 
 ### `DELETE /notifications/{id}`
 
-**Описание:**  
-Удалить уведомление.
+**Description:**
+Delete a notification.
 
-**Ответ:**  
-Статус операции
+**Response:**
+Operation status
 
-**Ограничения:**  
-5 запросов в минуту
+**Limits:**
+5 requests per minute
 
 ---
 
@@ -393,22 +417,22 @@ WebSocket эндпоинт для подключения к чату в комн
 
 ### `GET /ban/my-issued`
 
-**Описание:**  
-Получить баны, выданные текущим пользователем.
+**Description:**
+Get bans issued by the current user.
 
-**Ответ:**  
+**Response:**
 `list[BanResponse]`
 
 ### `GET /ban/my-received`
 
-**Описание:**  
-Получить баны, полученные текущим пользователем.
+**Description:**
+Get bans received by the current user.
 
-**Ответ:**  
+**Response:**
 `list[BanResponse]`
 
-**Ограничения:**  
-15 запросов в минуту
+**Limits:**
+15 requests per minute
 
 ---
 
@@ -416,26 +440,26 @@ WebSocket эндпоинт для подключения к чату в комн
 
 ### `GET /auth/config`
 
-**Описание:**  
-Получить OAuth конфигурации для фронтенда.
+**Description:**
+Get OAuth configurations for the frontend.
 
-**Ответ:**  
+**Response:**
 `FrontendConfig`
 
-**Ограничения:**  
-15 запросов в минуту
+**Limits:**
+15 requests per minute
 
 ### Google OAuth
 
-| Метод | URL               | Описание                                  |
-|-------|-------------------|-------------------------------------------|
-| GET   | `/auth/google/login` | Перенаправление на авторизацию Google |
-| GET   | `/auth/google/callback` | Обработка callback, выдача JWT |
+| Method | URL | Description |
+|-------|-------------------|------------------------------------------|
+| GET | `/auth/google/login` | Redirect to Google authorization |
+| GET | `/auth/google/callback` | Process callback, issue JWT |
 
 ### Spotify OAuth
 
-| Метод | URL                  | Описание                                  |
-|-------|----------------------|-------------------------------------------|
-| GET   | `/auth/spotify/callback` | Обработка callback Spotify, выдача JWT |
+| Method | URL | Description |
+|-------|----------------------|------------------------------------------|
+| GET | `/auth/spotify/callback` | Process Spotify callback, issue JWT |
 
-После успешной аутентификации через OAuth происходит редирект на фронтенд с JWT-токеном в параметре URL.
+After successful authentication via OAuth, a redirect to the frontend occurs with the JWT token in the URL parameter.
