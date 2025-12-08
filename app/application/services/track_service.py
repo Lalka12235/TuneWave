@@ -70,8 +70,8 @@ class TrackService:
         logger.info(
             f"Сервис треков: Трек '{spotify_data['spotify_id']}' не найден в кеше, запрашиваем у Spotify API."
         )
-        try: # This should call self.create_track, not TrackService.create_track
-            new_local_track_response = TrackService.create_track(spotify_data)
+        try:
+            new_local_track_response = self.create_track(spotify_data)
             logger.info(
                 f"Сервис треков: Трек '{spotify_data['spotify_id']}' успешно получен от Spotify и кеширован в БД."
             )

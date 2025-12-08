@@ -155,7 +155,7 @@ class RoomService:
                 detail=f"Ошибка при обновлении комнаты: {e}",
             )
 
-    def delete_room(self, room_id: uuid.UUID, owner: UserEntity) -> dict[str, str]:
+    def delete_room(self, room_id: uuid.UUID, owner: UserEntity) -> dict[str, str] | None:
         """_summary_
 
         Args:

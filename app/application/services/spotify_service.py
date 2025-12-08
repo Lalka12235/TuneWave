@@ -102,7 +102,7 @@ class SpotifyService:
         current_time = int(time()) 
         key_access = f'spotify_auth:{self.user.id}:access'
         key_config = f'spotify_auth:{self.user.id}:config'
-        data_token: dict = self.redis_service.hget(key_config)
+        data_token: dict = await self.redis_service.hget(key_config)
         access_token = self.redis_service.get(key_access)
         expires_at = data_token.get('expires_at',None)
         if expires_at is None or \
