@@ -4,14 +4,11 @@ from fastapi.staticfiles import StaticFiles
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 import os
 
-from dishka.integrations.fastapi import setup_dishka
-
 from app.presentation.middleware.loggingMiddleware import LogMiddleware
 from app.presentation.api.v1.all_route import V1_ROUTERS
 from app.config.log_config import configure_logging
 from app.config.settings import settings
 from app.presentation.api.v1.error_handler import register_errors_handlers
-from app.config.di.container import get_container
 import uvicorn
 import multiprocessing
 
@@ -54,8 +51,6 @@ def create_app() -> FastAPI:
         }],
         # lifespan=lifespan
     )
-    container = get_container()
-    setup_dishka(container, app)
 
     app.add_middleware(ProxyHeadersMiddleware)
 
