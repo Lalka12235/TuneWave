@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from datetime import datetime
 
 if TYPE_CHECKING:
-    from app.infrastructure.db.models import User,Track,RoomTrackAssociationModel,Member_room_association,Message,Ban,notification
+    from app.infrastructure.db.models import User,Track,RoomTrackAssociationModel,Member_room_association,Message,Ban,Notification
 
 
 class Room(Base):
@@ -54,7 +54,6 @@ class Room(Base):
     banned: Mapped['Ban'] = relationship(back_populates='room')
     playback_host: Mapped["User | None"] = relationship(foreign_keys=[playback_host_id])
 
-    # Новая связь для текущего играющего трека в очереди
     current_playing_track_assoc: Mapped["RoomTrackAssociationModel | None"] = relationship(foreign_keys=[current_playing_track_association_id])
 
 
