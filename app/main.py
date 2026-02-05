@@ -24,8 +24,7 @@ def setup_router(app: FastAPI, routers: list):
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(
-        title="TuneWave",
+    app = FastAPI( title="TuneWave",
         description="""
         🎵 **TuneWave** - Ваша персональная музыкальная вселенная
 

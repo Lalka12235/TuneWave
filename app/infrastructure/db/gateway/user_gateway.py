@@ -1,9 +1,12 @@
-from sqlalchemy import select,delete
+from sqlalchemy import select,delete,update
+from sqlalchemy.exc import IntegrityError
+from app.domain.exceptions.exception import ServerError
 from app.infrastructure.db.models import User
 from sqlalchemy.orm import Session
 import uuid
 from app.domain.interfaces.user_gateway import UserGateway
 from app.domain.entity import UserEntity
+from app.config.log_config import logger
 
 
 class SAUserGateway(UserGateway):
@@ -117,14 +120,22 @@ class SAUserGateway(UserGateway):
             spotify_profile_url=user_data.get('spotify_profile_url'),
             spotify_image_url=user_data.get('spotify_image_url'),
         )
-
-        self._db.add(new_user)
-        self._db.flush()
-        self._db.refresh(new_user)
-        return self.from_model_to_entity(new_user)
+        try:
+            self._db.add(new_user)
+            self._db.flush()
+            self._db.refresh(new_user)
+            return self.from_model_to_entity(new_user)
+        except IntegrityError as e:
+            self._db.rollback()
+            logger.error("UserRepository: ошибка при создании пользователя: %r",e,exc_info=True)
+            raise ServerError(detail='Ошибка бд IntegrityError')
+        except Exception as e:
+            self._db.rollback()
+            logger.error("UserRepository: неизвестная ошибка при добавлении пользоателя: %r",e,exc_info=True)
+            raise ServerError()
     
     
-    def update_user(self, user_entity: UserEntity, update_data: dict[str, str]) -> UserEntity:
+    def update_user(self, user_id: uuid.UUID, update_data: dict[str, str]) -> bool:
         """
         Обновляет существующего пользователя в базе данных.
         
@@ -136,14 +147,21 @@ class SAUserGateway(UserGateway):
         Returns:
             User: Обновленный объект User.
         """
-        user = self._db.execute(select(User).where(User.id == user_entity.id))
-        for key, value in update_data.items():
-            setattr(user, key, value)
-        
-        self._db.add(user)
-        self._db.flush()
-        self._db.refresh(user)
-        return self.from_model_to_entity(user)
+        try:
+            stmt = update(User
+            ).where(User.id == user_id
+            ).values(**update_data)
+            result = self._db.execute(stmt)
+            self._db.flush()
+            return result.rowcount > 0
+        except IntegrityError as e:
+            self._db.rollback()
+            logger.error('UserRepository: ошибка при обновление пользователя: %r',e,exc_info=True)
+            raise ServerError(detail='UserRepository: Ошибка при обновление')
+        except Exception as e:
+            self._db.rollback()
+            logger.error('UserRepository: неизвестная ошибка при обновление пользователя: %r',e,exc_info=True)
+            raise ServerError()
     
     def hard_delete_user(self, user_id: uuid.UUID) -> bool:
         """
@@ -156,6 +174,20 @@ class SAUserGateway(UserGateway):
         Returns:
             bool: True, если пользователь был удален, иначе False.
         """
-        stmt = delete(User).where(User.id == user_id)
-        result = self._db.execute(stmt)
-        return result.rowcount > 0 
+        try:
+            stmt = delete(User).where(User.id == user_id)
+            result = self._db.execute(stmt)
+        
+            self._db.flush() 
+        
+            return result.rowcount > 0
+        
+        except IntegrityError as e:
+            self._db.rollback()
+            logger.error("UserRepository: Невозможно удалить пользователя (FK constraint): %r", e)
+            raise ServerError(detail="Удаление невозможно: у пользователя есть связанные данные")
+
+        except Exception as e:
+            self._db.rollback()
+            logger.error("UserRepository: Ошибка при удалении пользователя: %r", e)
+            raise ServerError()

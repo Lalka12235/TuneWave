@@ -12,7 +12,6 @@ from app.domain.exceptions.user_exception import (
     UserAlrediExist,
     UserNotFound,
 ) 
-from app.domain.exceptions.exception import ServerError
 from typing import Any
 
 
@@ -128,32 +127,17 @@ class UserService:
         Returns:
             UserResponse: Информация о создании
         """
-        email,google_id,spotify_id = user_data.get('email'),user_data.get('google_id'),user_data.get('spotify_id')
-        user = None
-        if email:
-            user = self.user_repo.get_user_by_email(email)
-        if google_id:
-            user = self.user_repo.get_user_by_google_id(google_id)
-        if spotify_id:
-            user = self.user_repo.get_user_by_spotify_id(spotify_id)
+        user = self.user_repo.get_user_by_email(user_data.get('email'))
 
         if user:
             logger.warning(
                 f"Попытка создать/обновить пользователя: уже существует."
             )
             raise UserAlrediExist(detail="Пользователь уже существует")
-        try:
-            new_user = self.user_repo.create_user(user_data)
-            logger.info(
-                f"Пользователь '{user_data.get('username')}' ({new_user.id}) успешно зарегистрирован."
-            )
-        except Exception as e:
-            logger.error(
-                f"Ошибка при создании пользователя '{user_data.get('email')}': {e}",
-                exc_info=True,
-            )
-            raise ServerError(detail="Ошибка при создании пользователя")
-
+        new_user = self.user_repo.create_user(user_data)
+        logger.info(
+            f"Пользователь '{user_data.get('username')}' ({new_user.id}) успешно зарегистрирован."
+        )
         return self.user_mapper.to_response(new_user)
 
     async def update_user_profile(
@@ -170,21 +154,8 @@ class UserService:
         Returns:
             UserResponse: Обновленный объект UserResponse.
         """
-        user = self.user_repo.get_user_by_id(user_id)
-        if not user:
-            logger.warning(
-                f"Попытка обновить профиль несуществующего пользователя с ID '{user_id}'."
-            )
-            raise UserNotFound(detail="Пользователь не найден")
-        try:
-            updated_user = self.user_repo.update_user(user, update_data)
-            logger.info(f"Профиль пользователя '{user_id}' успешно обновлен.")
-        except Exception as e:
-            logger.error(
-                f"Ошибка при обновлении профиля пользователя '{user_id}': {e}",
-                exc_info=True,
-            )
-            raise ServerError(detail="Ошибка при обновлении пользователя")
+        updated_user = self.user_repo.update_user(user_id, update_data)
+        logger.info(f"Профиль пользователя '{user_id}' успешно обновлен.")
 
         return self.user_mapper.to_response(updated_user)
 
@@ -198,21 +169,7 @@ class UserService:
             HTTPException: Пользователь не найден(404)
 
         """
-        user = self.user_repo.get_user_by_id(user_id)
-
-        if not user:
-            logger.warning(
-                f"Попытка удалить несуществующего пользователя с ID '{user_id}'."
-            )
-            raise UserNotFound(detail="Пользователь не найден")
-        try:
-            status_deleted = self.user_repo.hard_delete_user(user_id)
-        except Exception as e:
-            logger.error(
-                f"Ошибка при физическом удалении пользователя '{user_id}': {e}",
-                exc_info=True,
-            )
-            raise ServerError(detail="Ошибка при удаление пользователя")
+        status_deleted = self.user_repo.hard_delete_user(user_id)
 
         return {
             "detail": "delete user",
