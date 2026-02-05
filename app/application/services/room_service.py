@@ -88,25 +88,21 @@ class RoomService:
             raise PublicRoomCannotHavePasswordError()
 
         room_data.pop("password", None)
-        try:
-            new_room = self.room_repo.create_room(room_data)
+        
+        new_room = self.room_repo.create_room(room_data)
 
-            self.member_room_repo.add_member(
-                owner.id, new_room.id, role=Role.OWNER.value
-            )
+        self.member_room_repo.add_member(
+            owner.id, new_room.id, role=Role.OWNER.value
+        )
 
-            room_response = self.room_mapper.to_response(new_room)
-            websocket_message = {
-                "action": "room_created",
-                "room_data": room_response.model_dump_json(),
-            }
-            await manager.broadcast(manager.GLOBAL_ROOM_ID, websocket_message)
+        room_response = self.room_mapper.to_response(new_room)
+        websocket_message = {
+            "action": "room_created",
+            "room_data": room_response.model_dump_json(),
+        }
+        await manager.broadcast(manager.GLOBAL_ROOM_ID, websocket_message)
 
-            return self.room_mapper.to_response(new_room)
-        except Exception as e:
-            raise ServerError(
-                detail=f"Ошибка при создании комнаты: {e}",
-            )
+        return self.room_mapper.to_response(new_room)
 
     def update_room(
         self, room_id: uuid.UUID, update_data: dict[str,Any], current_user: UserEntity
@@ -145,15 +141,9 @@ class RoomService:
         elif "password" in update_data and update_data["password"] is None:
             update_data["password_hash"] = None
 
-        try:
-            updated_room_db = self.room_repo.update_room(room, update_data)
+        updated_room_db = self.room_repo.update_room(room, update_data)
 
-            return self.room_mapper.to_response(updated_room_db)
-        except Exception as e:
-
-            raise ServerError(
-                detail=f"Ошибка при обновлении комнаты: {e}",
-            )
+        return self.room_mapper.to_response(updated_room_db)
 
     def delete_room(self, room_id: uuid.UUID, owner: UserEntity) -> dict[str, str] | None:
         """_summary_
@@ -172,22 +162,16 @@ class RoomService:
 
         if room.owner_id != owner.id:
             raise RoomPermissionDeniedError(
-                detail="У вас нет прав для обновления этой комнаты.",
+                detail="У вас нет прав для удаления этой комнаты.",
             )
-        try:
-            deleted_successfully = self.room_repo.delete_room(room_id)
+        deleted_successfully = self.room_repo.delete_room(room_id)
 
-            if deleted_successfully:
-                return {
-                    "status": "success",
-                    "detail": "Комната успешно удалена.",
-                    "id": str(room_id),
-                }
-        except Exception as e:
-
-            raise ServerError(
-                detail=f"Не удалось удалить комнату. {e}",
-            )
+        if deleted_successfully:
+            return {
+                 "status": "success",
+                 "detail": "Комната успешно удалена.",
+                 "id": str(room_id),
+             }
 
     async def get_user_rooms(self, user: UserEntity) -> list[RoomResponse]:
         """
