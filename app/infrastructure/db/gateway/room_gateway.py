@@ -1,10 +1,13 @@
+from app.domain.exceptions.exception import ServerError
 from app.infrastructure.db.models import Room,Member_room_association,RoomTrackAssociationModel
-from sqlalchemy import select,delete
+from sqlalchemy import select,delete,update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session,joinedload
 import uuid
 from typing import Any
 from app.domain.entity import RoomEntity
 from app.domain.interfaces.room_gateway import RoomGateway
+from app.config.log_config import logger
 
 
 class SARoomGateway(RoomGateway):
@@ -103,13 +106,21 @@ class SARoomGateway(RoomGateway):
             Room: Созданный объект комнаты.
         """
         new_room = Room(**room_data)
-        self._db.add(new_room)
-        self._db.flush()
-        self._db.refresh(new_room)
-        return self.from_model_to_entity(new_room)
+        try:
+            self._db.add(new_room)
+            self._db.flush()
+            self._db.refresh(new_room)
+            return self.from_model_to_entity(new_room)
+        except IntegrityError as e:
+            self._db.rollback()
+            logger.error("RoomRepository: произошла ошибка при создании комнаты: %r",e,exc_info=True)
+            raise ServerError()
+        except Exception as e:
+            self._db.rollback()
+            logger.error("RoomRepository: неизвестная ошибка при создании комнаты: %r",e,exc_info=True)
+            raise ServerError()
     
-    
-    def update_room(self,room: RoomEntity, update_data: dict[str,Any]) -> RoomEntity:
+    def update_room(self,room: RoomEntity, update_data: dict[str,Any]) -> bool:
         """
         Обновляет существующую комнату в базе данных.
 
@@ -120,10 +131,21 @@ class SARoomGateway(RoomGateway):
         Returns:
             Room: Обновленный объект комнаты.
         """
-        for key,value in update_data.items():
-            setattr(room,key,value)
-        return self.from_model_to_entity(room)
-
+        try:
+            stmt = update(Room).where(Room.id == room.id).values(
+                **update_data
+            )
+            result = self._db.execute(stmt)
+            
+            return result.rowcount > 0
+        except IntegrityError as e:
+            self._db.rollback()
+            logger.error("RoomRepository: произошла ошибка при обновлении комнаты: %r",e,exc_info=True)
+            raise ServerError()
+        except Exception as e:
+            self._db.rollback()
+            logger.error("RoomRepository: неизвестная ошибка при обновлении комнаты: %r",e,exc_info=True)
+            raise ServerError()
 
     
     def delete_room(self, room_id: uuid.UUID) -> bool:
@@ -136,9 +158,18 @@ class SARoomGateway(RoomGateway):
         Returns:
             bool: True, если комната была успешно удалена, иначе False.
         """
-        stmt = delete(Room).where(Room.id == room_id)
-        result = self._db.execute(stmt)
-        return result.rowcount > 0
+        try:
+            stmt = delete(Room).where(Room.id == room_id)
+            result = self._db.execute(stmt)
+            return result.rowcount > 0
+        except IntegrityError as e:
+            self._db.rollback()
+            logger.error("RoomRepository: произошла ошибка при удалении комнаты: %r",e,exc_info=True)
+            raise ServerError()
+        except Exception as e:
+            self._db.rollback()
+            logger.error("RoomRepository: неизвестная ошибка при удалении комнаты: %r",e,exc_info=True)
+            raise ServerError()
     
 
     
