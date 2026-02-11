@@ -65,7 +65,7 @@ def create_app() -> FastAPI:
     register_errors_handlers(app)
 
     setup_router(app, V1_ROUTERS)
-
+    
     os.makedirs(settings.avatar.AVATARS_STORAGE_DIR, exist_ok=True)
     app.mount("/avatars", StaticFiles(directory=settings.avatar.AVATARS_STORAGE_DIR), name="avatars")
 

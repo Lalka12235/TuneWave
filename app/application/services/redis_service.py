@@ -80,7 +80,6 @@ class RedisService:
             await self._client.lpush(name, value)
             return True
         except Exception as e:
-            # Добавлено логирование
             logger.error("RedisService: lpush error for name=%s: %s", name, e, exc_info=True)
             return False
 
@@ -90,56 +89,45 @@ class RedisService:
             await self._client.rpush(name, value)
             return True
         except Exception as e:
-            # Добавлено логирование
             logger.error("RedisService: rpush error for name=%s: %s", name, e, exc_info=True)
             return False
 
     async def lrange(self, name: str, start: int = 0, end: int = -1) -> list[str]:
         """Возвращает диапазон элементов списка."""
         try:
-            # Добавлен await
             return await self._client.lrange(name=name, start=start, end=end)
         except Exception as e:
-            # Добавлено логирование
             logger.error("RedisService: lrange error for name=%s: %s", name, e, exc_info=True)
             return []
 
     async def rpop(self, name: str) -> str:
         """Удаляет и возвращает последний элемент списка."""
         try:
-            # Добавлен await
             result = await self._client.rpop(name=name)
             if result:
-                # Декодирование, если возвращаются байты
                 return result.decode('utf-8') if isinstance(result, bytes) else result
             return ''
         except Exception as e:
-            # Добавлено логирование
             logger.error("RedisService: rpop error for name=%s: %s", name, e, exc_info=True)
             return ''
 
     async def lpop(self, name: str) -> str:
         """Удаляет и возвращает первый элемент списка."""
         try:
-            # Добавлен await
             result = await self._client.lpop(name=name)
             if result:
-                # Декодирование, если возвращаются байты
                 return result.decode('utf-8') if isinstance(result, bytes) else result
             return ''
         except Exception as e:
-            # Добавлено логирование
             logger.error("RedisService: lpop error for name=%s: %s", name, e, exc_info=True)
             return ''
 
     async def length_list(self, name: str) -> int:
         """Возвращает длину списка."""
         try:
-            # Добавлен await
             length = await self._client.llen(name=name)
             return length if length is not None else 0
         except Exception as e:
-            # Добавлено логирование
             logger.error("RedisService: length_list error for name=%s: %s", name, e, exc_info=True)
             return 0
 
@@ -149,6 +137,5 @@ class RedisService:
             await self._client.lrem(key, count, value)
             return True
         except Exception as e:
-            # Добавлено логирование
             logger.error("RedisService: lrem error for key=%s: %s", key, e, exc_info=True)
             return False

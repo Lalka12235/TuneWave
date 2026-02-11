@@ -12,18 +12,17 @@ async def _generic_refresh_token(
     client_secret: str,
     api_name: str,
 ) -> dict:
-    """Универсальная логика обновления токена OAuth."""
-    
+
     key_config = f'{key_prefix}:{self.user.id}:config'
     key_access = f'{key_prefix}:{self.user.id}:access'
-    
+
     token_data = {
         'grant_type': 'refresh_token',
         'refresh_token': refresh_token,
         'client_id': client_id,
         'client_secret': client_secret
     }
-    
+
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
     try:
@@ -32,7 +31,7 @@ async def _generic_refresh_token(
             response = await client.post(url=token_url, data=token_data, headers=headers)
             response.raise_for_status()
             new_tokens: dict = response.json()
-            
+
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 400:
             hset_dict = {
@@ -45,7 +44,7 @@ async def _generic_refresh_token(
             raise ServerError(
                 detail=f"Токен обновления {api_name} недействителен. Пожалуйста, переавторизуйтесь."
             )
-        
+
         logger.error(f"{api_name}Service: Ошибка HTTP при обновлении токена: {e.response.text}", exc_info=True)
         raise ServerError(
             detail=f"Ошибка при обновлении токена {api_name}"

@@ -75,18 +75,14 @@ class SpotifyService:
             logger.error(f"SpotifyService: Непредвиденная ошибка при получении устройств Spotify для пользователя {self.user.id}: {e}", exc_info=True)
             return None
 
-        return None
-
-
-
-    def _check_user_spotify_credentials(self):
+    async def _check_user_spotify_credentials(self):
         """
         Проверяет наличие необходимых токенов Spotify у пользователя.
         """
         key_access = f'spotify_auth:{self.user.id}:access'
         key_config = f'spotify_auth:{self.user.id}:config'
-        access_token = self.redis_service.get(key_access)
-        data_token: dict = self.redis_service.hget(key_config)
+        access_token = await self.redis_service.get(key_access)
+        data_token: dict = await self.redis_service.hget(key_config)
         refresh_token = data_token.get('refresh_token',None)
         if not access_token and not refresh_token:
             logger.error(f'SpotifyService: Отсутствуют токены Spotify у пользователя {self.user.id}.')
@@ -104,7 +100,7 @@ class SpotifyService:
         key_config = f'spotify_auth:{self.user.id}:config'
         data_token: dict = await self.redis_service.hget(key_config)
         access_token = self.redis_service.get(key_access)
-        expires_at = data_token.get('expires_at',None)
+        expires_at: int | None = data_token.get('expires_at',None)
         if expires_at is None or \
            expires_at <= (current_time + 300):
             logger.info(f'SpotifyService: Токен Spotify пользователя {self.user.id} истек или отсутствует, инициируем обновление.')
