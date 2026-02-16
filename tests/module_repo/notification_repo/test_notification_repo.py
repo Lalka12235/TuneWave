@@ -1,6 +1,7 @@
 import uuid
 from app.domain.enum import NotificationType
 
+
 def test_get_notification_by_id(notification_repo, user_data1):
     notification = notification_repo.add_notification(
         user_id=user_data1['id'],

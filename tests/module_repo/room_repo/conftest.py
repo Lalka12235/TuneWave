@@ -2,9 +2,8 @@ import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from app.infrastructure.db.models import Base
-from app.infrastructure.db.gateway.room_gateway import SARoomGateway
 from sqlalchemy.orm import Session
-from typing import Generator,Any
+from typing import Generator
 
 db_url = "sqlite:///:memory:"
 
@@ -37,20 +36,3 @@ def db_session() -> Generator[Session,None,None]:
         raise
     finally:
         db.close()
-
-@pytest.fixture(scope="function")
-def room_repo(db_session: Session) -> SARoomGateway:
-    """
-    Предоставляет экземпляр UserRepository, используя сессию, 
-    предоставленную фикстурой db_session.
-    """
-    repo = SARoomGateway(db_session)
-    return repo
-
-@pytest.fixture(scope="function")
-def room_data() -> dict[str,Any]:
-    return {
-        'name':'aspirin',
-        'max_members': 2,
-        'is_private': False,
-    }

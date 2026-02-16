@@ -3,7 +3,7 @@ from app.domain.enum import FriendshipStatus
 from datetime import datetime
 
 
-def test_get_friendship_by_id(create_table, friendship_repo, user_data1, user_data2):
+def test_get_friendship_by_id(friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -16,7 +16,7 @@ def test_get_friendship_by_id(create_table, friendship_repo, user_data1, user_da
     assert found_friendship.accepter_id == user2.id
     assert found_friendship.status == FriendshipStatus.PENDING
 
-def test_get_friendship_by_users(create_table, friendship_repo, user_data1, user_data2):
+def test_get_friendship_by_users(friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -28,7 +28,7 @@ def test_get_friendship_by_users(create_table, friendship_repo, user_data1, user
     assert found_friendship.requester_id == user1.id
     assert found_friendship.accepter_id == user2.id
 
-def test_get_user_friends(create_table, friendship_repo, user_data1, user_data2):
+def test_get_user_friends(friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -46,7 +46,7 @@ def test_get_user_friends(create_table, friendship_repo, user_data1, user_data2)
     assert friendships[0].accepter_id == user2.id
     assert friendships[0].status == FriendshipStatus.ACCEPTED
 
-def test_get_sent_requests(create_table, friendship_repo, user_data1, user_data2):
+def test_get_sent_requests(friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -100,7 +100,7 @@ def test_update_friendship_status(create_table, friendship_repo, user_data1, use
     assert updated_friendship.status == FriendshipStatus.ACCEPTED
     assert updated_friendship.accepted_at is not None
 
-def test_delete_friendship(create_table, friendship_repo, user_data1, user_data2):
+def test_delete_friendship(friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
