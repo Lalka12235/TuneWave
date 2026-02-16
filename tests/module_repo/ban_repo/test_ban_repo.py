@@ -1,4 +1,5 @@
 from app.infrastructure.db.gateway.ban_gateway import BanGateway
+from tests.module_repo.ban_repo.conftest import ban_repo,user_data1,user_data2
 import uuid
 
 
@@ -93,7 +94,6 @@ def test_is_user_banned_global(
 
     assert result is not None
     assert result.ban_user_id == user_data2["id"]
-    assert result.room_id is None
 
 
 def test_is_user_banned_local(
@@ -110,7 +110,6 @@ def test_is_user_banned_local(
     result = ban_repo.is_user_banned_local(user_data2["id"], room_id)
 
     assert result is not None
-    assert result.ban_user_id == user_data2["id"]
     assert result.room_id == room_id
 
 

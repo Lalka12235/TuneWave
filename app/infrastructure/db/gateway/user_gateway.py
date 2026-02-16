@@ -18,6 +18,8 @@ class SAUserGateway(UserGateway):
         self._db = db
     
     def from_model_to_entity(self,model: User) -> UserEntity | None:
+        if model is None:
+            return None
         return UserEntity(
             id=model.id,
             username=model.username,
@@ -127,7 +129,7 @@ class SAUserGateway(UserGateway):
             return self.from_model_to_entity(new_user)
         except IntegrityError as e:
             self._db.rollback()
-            logger.error("UserRepository: ошибка при создании пользователя: %r",e,exc_info=True)
+            logger.error("UserRepository: ошибка при создании пользователя: %r",e.orig,exc_info=True)
             raise ServerError(detail='Ошибка бд IntegrityError')
         except Exception as e:
             self._db.rollback()
@@ -135,32 +137,30 @@ class SAUserGateway(UserGateway):
             raise ServerError()
     
     
-    def update_user(self, user_id: uuid.UUID, update_data: dict[str, str]) -> bool:
-        """
-        Обновляет существующего пользователя в базе данных.
-        
-        Args:
-            user_entity (User): Объект пользователя, который нужно обновить.
-            update_data (dict): Словарь с данными для обновления. Ключи словаря
-                                должны соответствовать именам полей модели User.
-            
-        Returns:
-            User: Обновленный объект User.
-        """
+    def update_user(self, user_id: uuid.UUID, update_data: dict[str, str]) -> UserEntity:
         try:
-            stmt = update(User
-            ).where(User.id == user_id
-            ).values(**update_data)
-            result = self._db.execute(stmt)
+            stmt = select(User).where(User.id == user_id)
+            model = self._db.execute(stmt).scalar_one_or_none()
+            
+            if not model:
+                return None
+
+            for key, value in update_data.items():
+                if hasattr(model, key):
+                    setattr(model, key, value)
+            
             self._db.flush()
-            return result.rowcount > 0
+            self._db.refresh(model)
+            
+            return self.from_model_to_entity(model)
+
         except IntegrityError as e:
             self._db.rollback()
-            logger.error('UserRepository: ошибка при обновление пользователя: %r',e,exc_info=True)
-            raise ServerError(detail='UserRepository: Ошибка при обновление')
+            logger.error('UserRepository: ошибка уникальности: %r', e)
+            raise ServerError(detail='Username or Email already exists')
         except Exception as e:
             self._db.rollback()
-            logger.error('UserRepository: неизвестная ошибка при обновление пользователя: %r',e,exc_info=True)
+            logger.error('UserRepository: критическая ошибка: %r', e)
             raise ServerError()
     
     def hard_delete_user(self, user_id: uuid.UUID) -> bool:

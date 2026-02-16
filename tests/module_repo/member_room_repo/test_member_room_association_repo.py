@@ -1,7 +1,8 @@
 import uuid
 from app.infrastructure.db.gateway.member_room_association_gateway import MemberRoomAssociationGateway
 from app.infrastructure.db.gateway.room_gateway import RoomGateway
-from app.infrastructure.db.models import Member_room_association
+from tests.module_repo.member_room_repo.conftest import user_data1,user_data2,member_room_repo
+from tests.module_repo.room_repo.conftest import room_repo,room_data
 
 
 def test_add_member(
@@ -13,7 +14,6 @@ def test_add_member(
         user_id=user_data1["id"], room_id=room_id, role="member"
     )
 
-    assert isinstance(member, Member_room_association)
     assert member.user_id == user_data1["id"]
     assert member.room_id == room_id
     assert member.role == "member"

@@ -13,6 +13,8 @@ class SAFavoriteTrackGateway(FavoriteTrackGateway):
 
     
     def from_model_to_entity(self,model: FavoriteTrack) -> FavoriteTrackEntity:
+        if model is None:
+            return None
         return FavoriteTrackEntity(
             user_id=model.user_id,
             track_id=model.track_id,

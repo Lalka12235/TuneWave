@@ -14,7 +14,9 @@ class SABanGateway(BanGateway):
         self._db: Session = db
     
 
-    def from_model_to_entity(self,model: Ban) -> BanEntity:
+    def from_model_to_entity(self,model: Ban) -> BanEntity | None:
+        if model is None:
+            return None
         return BanEntity(
             id=model.id,
             ban_user_id=model.ban_user_id,

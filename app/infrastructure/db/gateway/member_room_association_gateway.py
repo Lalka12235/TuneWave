@@ -17,10 +17,12 @@ class SAMemberRoomAssociationGateway(MemberRoomAssociationGateway):
     
 
     def from_model_to_entity(self,model: Member_room_association | Room) -> MemberRoomEntity | RoomEntity:
+        if model is None:
+            return None
         if isinstance(model,Member_room_association):
             return MemberRoomEntity(
                 user_id=model.user_id,
-                room_id=model.user_id,
+                room_id=model.room_id,
                 role=model.role,
                 joined_at=model.joined_at,
             )

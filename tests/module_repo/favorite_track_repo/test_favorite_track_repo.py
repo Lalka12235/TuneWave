@@ -1,21 +1,23 @@
 from app.infrastructure.db.gateway.favorite_track_gateway import FavoriteTrackGateway
 from app.infrastructure.db.gateway.user_gateway import UserGateway
 from app.infrastructure.db.gateway.track_gateway import TrackGateway
-from app.presentation.schemas.track_schemas import TrackCreate
 from app.infrastructure.db.models import User, FavoriteTrack, Track
 from app.presentation.schemas.user_schemas import UserCreate
+from tests.module_repo.favorite_track_repo.conftest import favorite_track_repo
+from tests.module_repo.user_repo.conftest import user_repo,user_data
+from tests.module_repo.track_repo.conftest import track_repo,track_data
 
 
 def test_get_favorite_track(
-    create_table,
     favorite_track_repo: FavoriteTrackGateway,
     user_repo: UserGateway,
     user_data: UserCreate,
     track_repo: TrackGateway,
-    track_data: TrackCreate,
+    track_data,
 ):
     created_user: User = user_repo.create_user(user_data)
     assert created_user is not None
+    
     created_track: Track = track_repo.create_track(track_data)
     assert created_track is not None
 
@@ -29,12 +31,11 @@ def test_get_favorite_track(
 
 
 def test_add_favorite_track(
-    create_table,
     favorite_track_repo: FavoriteTrackGateway,
     user_repo: UserGateway,
     user_data: UserCreate,
     track_repo: TrackGateway,
-    track_data: TrackCreate,
+    track_data,
 ):
     created_user: User = user_repo.create_user(user_data)
     assert created_user is not None
@@ -53,12 +54,11 @@ def test_add_favorite_track(
 
 
 def test_remove_favorite_track(
-    create_table,
     favorite_track_repo: FavoriteTrackGateway,
     user_repo: UserGateway,
     user_data: UserCreate,
     track_repo: TrackGateway,
-    track_data: TrackCreate,
+    track_data,
 ):
     created_user: User = user_repo.create_user(user_data)
     assert created_user is not None
@@ -80,12 +80,11 @@ def test_remove_favorite_track(
 
 
 def test_is_favorite_track(
-    create_table,
     favorite_track_repo: FavoriteTrackGateway,
     user_repo: UserGateway,
     user_data: UserCreate,
     track_repo: TrackGateway,
-    track_data: TrackCreate,
+    track_data,
 ):
     created_user: User = user_repo.create_user(user_data)
     assert created_user is not None

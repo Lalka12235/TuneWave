@@ -14,6 +14,8 @@ class SAChatGateway(ChatGateway):
 
     
     def from_model_to_entity(self,model: Message) -> MessageEntity | None:
+        if model is None:
+            return None
         return MessageEntity(
             id=model.id,
             text=model.text,

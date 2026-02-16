@@ -1,3 +1,4 @@
+import uuid
 from app.infrastructure.db.models import User
 from app.infrastructure.db.gateway.user_gateway import UserGateway
 from app.presentation.schemas.user_schemas import UserCreate
@@ -43,7 +44,7 @@ def test_get_user_by_spotify_id(user_data: UserCreate, user_repo: UserGateway):
     assert fetched_user.spotify_id == created_user.spotify_id
 
 
-def test_create_user(user_data: UserCreate, create_table, user_repo: UserGateway):
+def test_create_user(user_data: UserCreate,user_repo: UserGateway):
     """Проверяет создание нового пользователя."""
     user: User = user_repo.create_user(user_data)
 
@@ -52,18 +53,21 @@ def test_create_user(user_data: UserCreate, create_table, user_repo: UserGateway
     assert user.email == user_data["email"]
 
 
-def test_update_user(user_data: UserCreate, create_table, user_repo: UserGateway):
-    """Проверяет обновление данных пользователя."""
-    created_user: User = user_repo.create_user(user_data)
-    update_data = {"username": "aspirin2"}
+def test_update_user(user_data: UserCreate, user_repo: UserGateway):
+    created_user = user_repo.create_user(user_data)
+    
+    # Генерируем гарантированно новое имя
+    new_username = f"updated_{uuid.uuid4().hex[:6]}"
+    update_data = {"username": new_username}
 
-    updated_user: User = user_repo.update_user(created_user, update_data)
+    # ВАЖНО: передаем .id, так как метод ожидает uuid.UUID
+    updated_user = user_repo.update_user(created_user.id, update_data)
 
     assert updated_user is not None
-    assert updated_user.username == "aspirin2"
+    assert updated_user.username == new_username
 
 
-def test_hard_delete_user(user_data: UserCreate, create_table, user_repo: UserGateway):
+def test_hard_delete_user(user_data: UserCreate, user_repo: UserGateway):
     """Проверяет жесткое удаление пользователя."""
     created_user: User = user_repo.create_user(user_data)
 

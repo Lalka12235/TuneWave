@@ -89,7 +89,7 @@ class SARoomGateway(RoomGateway):
             joinedload(Room.room_track).joinedload(RoomTrackAssociationModel.track)
         )
         result = self._db.execute(stmt).unique().scalars().all()
-        return self.from_model_to_entity(result)
+        return [self.from_model_to_entity(res) for res in result ]
     
 
 
@@ -184,7 +184,7 @@ class SARoomGateway(RoomGateway):
             joinedload(Room.room_track),
         )
         result = self._db.execute(stmt).scalars().all()
-        return self.from_model_to_entity(result)
+        return [self.from_model_to_entity(res) for res in result ]
     
 
     

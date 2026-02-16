@@ -1,6 +1,5 @@
 import uuid
 from app.infrastructure.db.gateway.room_track_association_gateway import RoomTrackAssociationGateway
-from app.infrastructure.db.models import RoomTrackAssociationModel
 
 def test_add_track_and_get_last_order(room_track_repo: RoomTrackAssociationGateway):
     room_id = uuid.uuid4()
@@ -15,7 +14,6 @@ def test_add_track_and_get_last_order(room_track_repo: RoomTrackAssociationGatew
         room_track_repo.get_last_order_in_queue(room_id), 
         user_id
     )
-    assert isinstance(assoc1, RoomTrackAssociationModel)
     assert assoc1.room_id == room_id
     assert assoc1.track_id == track_id1
     assert assoc1.order_in_queue == 0

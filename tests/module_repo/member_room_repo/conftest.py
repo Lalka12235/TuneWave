@@ -61,12 +61,6 @@ def user_data1() -> dict[str,str]:
         'spotify_id': None,
         'spotify_profile_url': None,
         'spotify_image_url': None,
-        'spotify_access_token': None,
-        'spotify_refresh_token': None,
-        'spotify_token_expires_at': None,
-        'google_access_token': 'CgERyARtjw0206',
-        'google_refresh_token': '1/c',
-        'google_token_expires_at': 1755947584,
         'avatar_url': None,
         'bio': None
     }
@@ -83,12 +77,6 @@ def user_data2() -> dict[str,str]:
         'spotify_id': None,
         'spotify_profile_url': None,
         'spotify_image_url': None,
-        'spotify_access_token': None,
-        'spotify_refresh_token': None,
-        'spotify_token_expires_at': None,
-        'google_access_token': 'CgERyARtjw0206',
-        'google_refresh_token': '1/c',
-        'google_token_expires_at': 1755947584,
         'avatar_url': None,
         'bio': None
     }

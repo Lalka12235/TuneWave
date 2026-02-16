@@ -19,6 +19,8 @@ class SAFriendshipGateway(FriendshipGateway):
 
     
     def from_model_to_entity(self,model: Friendship) -> FriendshipEntity:
+        if model is None:
+            return None
         return FriendshipEntity(
             id=model.id,
             requester_id=model.requester_id,
@@ -168,6 +170,7 @@ class SAFriendshipGateway(FriendshipGateway):
         )
         self._db.add(new_friendship)
         self._db.flush()
+        self._db.refresh(new_friendship)
         return self.from_model_to_entity(new_friendship)
     
     

@@ -13,6 +13,8 @@ class SARoomTrackAssociationGateway(RoomTrackAssociationGateway):
 
     
     def from_model_to_entity(self,model: RoomTrackAssociationModel) -> RoomTrackAssociationEntity:
+        if model is None:
+            return None
         return RoomTrackAssociationEntity(
             id=model.id,
             room_id=model.room_id,
@@ -53,7 +55,7 @@ class SARoomTrackAssociationGateway(RoomTrackAssociationGateway):
                 joinedload(RoomTrackAssociationModel.user)
             )
         result = self._db.execute(stmt).scalars().all()
-        return result
+        return [self.from_model_to_entity(res) for res in result]
     
 
     

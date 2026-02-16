@@ -18,6 +18,8 @@ class SANotificationGateway(NotificationGateway):
 
 
     def from_model_to_entity(self,model: Notification) -> NotificationEntity:
+        if model is None:
+            return None
         return NotificationEntity(
             id=model.id,
             user_id=model.user_id,
