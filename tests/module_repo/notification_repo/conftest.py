@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from app.infrastructure.db.models import Base
-from app.infrastructure.db.gateway.notification_gateway import NotificationGateway
+from app.infrastructure.db.gateway.notification_gateway import SANotificationGateway
 from sqlalchemy.orm import Session
 from typing import Generator
 import uuid
@@ -40,12 +40,12 @@ def db_session() -> Generator[Session,None,None]:
         db.close()
 
 @pytest.fixture(scope="function")
-def notification_repo(db_session: Session) -> NotificationGateway:
+def notification_repo(db_session: Session) -> SANotificationGateway:
     """
     Предоставляет экземпляр UserRepository, используя сессию, 
     предоставленную фикстурой db_session.
     """
-    repo = NotificationGateway(db_session)
+    repo = SANotificationGateway(db_session)
     return repo
 
 

@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from app.infrastructure.db.models import Base
-from app.infrastructure.db.gateway.favorite_track_gateway import FavoriteTrackGateway
+from app.infrastructure.db.gateway.favorite_track_gateway import SAFavoriteTrackGateway
 from sqlalchemy.orm import Session
 from typing import Generator
 
@@ -39,10 +39,10 @@ def db_session() -> Generator[Session,None,None]:
         db.close()
 
 @pytest.fixture(scope="function")
-def favorite_track_repo(db_session: Session) -> FavoriteTrackGateway:
+def favorite_track_repo(db_session: Session) -> SAFavoriteTrackGateway:
     """
     Предоставляет экземпляр UserRepository, используя сессию, 
     предоставленную фикстурой db_session.
     """
-    repo = FavoriteTrackGateway(db_session)
+    repo = SAFavoriteTrackGateway(db_session)
     return repo

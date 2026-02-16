@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from app.infrastructure.db.models import Base
-from app.infrastructure.db.gateway.room_gateway import RoomGateway
+from app.infrastructure.db.gateway.room_gateway import SARoomGateway
 from sqlalchemy.orm import Session
 from typing import Generator,Any
 
@@ -39,12 +39,12 @@ def db_session() -> Generator[Session,None,None]:
         db.close()
 
 @pytest.fixture(scope="function")
-def room_repo(db_session: Session) -> RoomGateway:
+def room_repo(db_session: Session) -> SARoomGateway:
     """
     Предоставляет экземпляр UserRepository, используя сессию, 
     предоставленную фикстурой db_session.
     """
-    repo = RoomGateway(db_session)
+    repo = SARoomGateway(db_session)
     return repo
 
 @pytest.fixture(scope="function")

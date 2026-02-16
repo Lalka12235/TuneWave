@@ -1,8 +1,8 @@
 import uuid
-from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
-from app.models.room_track_association import RoomTrackAssociationModel
+from app.infrastructure.db.gateway.room_track_association_gateway import RoomTrackAssociationGateway
+from app.infrastructure.db.models import RoomTrackAssociationModel
 
-def test_add_track_and_get_last_order(room_track_repo: RoomTrackAssociationRepository):
+def test_add_track_and_get_last_order(room_track_repo: RoomTrackAssociationGateway):
     room_id = uuid.uuid4()
     track_id1 = uuid.uuid4()
     user_id = uuid.uuid4()
@@ -36,7 +36,7 @@ def test_add_track_and_get_last_order(room_track_repo: RoomTrackAssociationRepos
     assert [a.order_in_queue for a in queue] == [0, 1]
     assert [a.track_id for a in queue] == [track_id1, track_id2]
 
-def test_get_queue_for_room(room_track_repo: RoomTrackAssociationRepository):
+def test_get_queue_for_room(room_track_repo: RoomTrackAssociationGateway):
     room_id = uuid.uuid4()
     track_id = uuid.uuid4()
     user_id = uuid.uuid4()
@@ -53,7 +53,7 @@ def test_get_queue_for_room(room_track_repo: RoomTrackAssociationRepository):
     assert queue[0].room_id == room_id
     assert queue[0].track_id == track_id
 
-def test_remove_track_from_queue(room_track_repo: RoomTrackAssociationRepository):
+def test_remove_track_from_queue(room_track_repo: RoomTrackAssociationGateway):
     room_id = uuid.uuid4()
     track_id = uuid.uuid4()
     user_id = uuid.uuid4()
@@ -71,7 +71,7 @@ def test_remove_track_from_queue(room_track_repo: RoomTrackAssociationRepository
     queue = room_track_repo.get_queue_for_room(room_id)
     assert len(queue) == 0
 
-def test_get_last_order_in_queue(room_track_repo: RoomTrackAssociationRepository):
+def test_get_last_order_in_queue(room_track_repo: RoomTrackAssociationGateway):
     room_id = uuid.uuid4()
     
     assert room_track_repo.get_last_order_in_queue(room_id) == 0
@@ -89,7 +89,7 @@ def test_get_last_order_in_queue(room_track_repo: RoomTrackAssociationRepository
 
     assert room_track_repo.get_last_order_in_queue(room_id) == 3
 
-def test_remove_nonexistent_track(room_track_repo: RoomTrackAssociationRepository):
+def test_remove_nonexistent_track(room_track_repo: RoomTrackAssociationGateway):
     room_id = uuid.uuid4()
     track_id = uuid.uuid4()
 
