@@ -1,10 +1,9 @@
 from app.infrastructure.db.models import Friendship,User
-from app.infrastructure.db.gateway.friendship_gateway import FriendshipGateway
 from app.domain.enum import FriendshipStatus
 from datetime import datetime
 
 
-def test_get_friendship_by_id(create_table, friendship_repo: FriendshipGateway, user_data1: dict, user_data2: dict):
+def test_get_friendship_by_id(create_table, friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -17,7 +16,7 @@ def test_get_friendship_by_id(create_table, friendship_repo: FriendshipGateway, 
     assert found_friendship.accepter_id == user2.id
     assert found_friendship.status == FriendshipStatus.PENDING
 
-def test_get_friendship_by_users(create_table, friendship_repo: FriendshipGateway, user_data1: dict, user_data2: dict):
+def test_get_friendship_by_users(create_table, friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -29,7 +28,7 @@ def test_get_friendship_by_users(create_table, friendship_repo: FriendshipGatewa
     assert found_friendship.requester_id == user1.id
     assert found_friendship.accepter_id == user2.id
 
-def test_get_user_friends(create_table, friendship_repo: FriendshipGateway, user_data1: dict, user_data2: dict):
+def test_get_user_friends(create_table, friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -47,7 +46,7 @@ def test_get_user_friends(create_table, friendship_repo: FriendshipGateway, user
     assert friendships[0].accepter_id == user2.id
     assert friendships[0].status == FriendshipStatus.ACCEPTED
 
-def test_get_sent_requests(create_table, friendship_repo: FriendshipGateway, user_data1: dict, user_data2: dict):
+def test_get_sent_requests(create_table, friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -59,7 +58,7 @@ def test_get_sent_requests(create_table, friendship_repo: FriendshipGateway, use
     assert sent_requests[0].requester_id == user1.id
     assert sent_requests[0].status == FriendshipStatus.PENDING
 
-def test_get_received_requests(create_table, friendship_repo: FriendshipGateway, user_data1: dict, user_data2: dict):
+def test_get_received_requests(create_table, friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -71,7 +70,7 @@ def test_get_received_requests(create_table, friendship_repo: FriendshipGateway,
     assert received_requests[0].accepter_id == user2.id
     assert received_requests[0].status == FriendshipStatus.PENDING
 
-def test_add_friend_request(create_table, friendship_repo: FriendshipGateway, user_data1: dict, user_data2: dict):
+def test_add_friend_request(create_table, friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -82,7 +81,7 @@ def test_add_friend_request(create_table, friendship_repo: FriendshipGateway, us
     assert friendship.accepter_id == user2.id
     assert friendship.status == FriendshipStatus.PENDING
 
-def test_update_friendship_status(create_table, friendship_repo: FriendshipGateway, user_data1: dict, user_data2: dict):
+def test_update_friendship_status(create_table, friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     
@@ -101,7 +100,7 @@ def test_update_friendship_status(create_table, friendship_repo: FriendshipGatew
     assert updated_friendship.status == FriendshipStatus.ACCEPTED
     assert updated_friendship.accepted_at is not None
 
-def test_delete_friendship(create_table, friendship_repo: FriendshipGateway, user_data1: dict, user_data2: dict):
+def test_delete_friendship(create_table, friendship_repo, user_data1, user_data2):
     user1 = User(**user_data1)
     user2 = User(**user_data2)
     

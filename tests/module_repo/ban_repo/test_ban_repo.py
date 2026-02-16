@@ -1,9 +1,7 @@
-from app.infrastructure.db.gateway.ban_gateway import BanGateway
-from tests.module_repo.ban_repo.conftest import ban_repo,user_data1,user_data2
 import uuid
 
 
-def test_get_bans_by_admin(ban_repo: BanGateway, user_data1: dict, user_data2: dict):
+def test_get_bans_by_admin(ban_repo, user_data1, user_data2):
     room_id = uuid.uuid4()
     ban_repo.add_ban(
         room_id=room_id,
@@ -19,7 +17,7 @@ def test_get_bans_by_admin(ban_repo: BanGateway, user_data1: dict, user_data2: d
     assert bans[0].ban_user_id == user_data2["id"]
 
 
-def test_get_bans_on_user(ban_repo: BanGateway, user_data1: dict, user_data2: dict):
+def test_get_bans_on_user(ban_repo, user_data1, user_data2):
     room_ids = [uuid.uuid4(), uuid.uuid4()]
     for room_id in room_ids:
         ban_repo.add_ban(
@@ -35,7 +33,7 @@ def test_get_bans_on_user(ban_repo: BanGateway, user_data1: dict, user_data2: di
     assert all(ban.ban_user_id == user_data2["id"] for ban in bans)
 
 
-def test_add_ban(ban_repo: BanGateway, user_data1: dict, user_data2: dict):
+def test_add_ban(ban_repo, user_data1, user_data2):
     room_id = uuid.uuid4()
     ban = ban_repo.add_ban(
         room_id=room_id,
@@ -51,7 +49,7 @@ def test_add_ban(ban_repo: BanGateway, user_data1: dict, user_data2: dict):
     assert ban.reason == "Test ban reason"
 
 
-def test_remove_ban_local(ban_repo: BanGateway, user_data1: dict, user_data2: dict):
+def test_remove_ban_local(ban_repo, user_data1, user_data2):
     room_id = uuid.uuid4()
     ban_repo.add_ban(
         room_id=room_id,
@@ -66,7 +64,7 @@ def test_remove_ban_local(ban_repo: BanGateway, user_data1: dict, user_data2: di
     assert ban_repo.is_user_banned_local(user_data2["id"], room_id) is None
 
 
-def test_remove_ban_global(ban_repo: BanGateway, user_data1: dict, user_data2: dict):
+def test_remove_ban_global(ban_repo, user_data1, user_data2):
     ban_repo.add_ban(
         room_id=None,
         ban_user_id=user_data2["id"],
@@ -81,7 +79,7 @@ def test_remove_ban_global(ban_repo: BanGateway, user_data1: dict, user_data2: d
 
 
 def test_is_user_banned_global(
-    ban_repo: BanGateway, user_data1: dict, user_data2: dict
+   ban_repo, user_data1, user_data2
 ):
     ban_repo.add_ban(
         room_id=None,
@@ -97,7 +95,7 @@ def test_is_user_banned_global(
 
 
 def test_is_user_banned_local(
-    ban_repo: BanGateway, user_data1: dict, user_data2: dict
+ban_repo, user_data1, user_data2
 ):
     room_id = uuid.uuid4()
     ban_repo.add_ban(
@@ -113,7 +111,7 @@ def test_is_user_banned_local(
     assert result.room_id == room_id
 
 
-def test_no_bans_exist(ban_repo: BanGateway, user_data1: dict):
+def test_no_bans_exist(ban_repo, user_data1):
     room_id = uuid.uuid4()
 
     global_ban = ban_repo.is_user_banned_global(user_data1["id"])

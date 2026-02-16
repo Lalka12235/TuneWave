@@ -1,10 +1,5 @@
-from app.infrastructure.db.models import Message,Room,User
-from app.infrastructure.db.gateway.chat_gateway import ChatGateway
-from app.infrastructure.db.gateway.room_gateway import RoomGateway
-from app.infrastructure.db.gateway.user_gateway import UserGateway
-from app.presentation.schemas.user_schemas import UserCreate
-from tests.module_repo.chat_repo.conftest import create_table,chat_repo,room_repo
-from tests.module_repo.user_repo.conftest import user_repo
+#from app.infrastructure.db.models import Message,Room,User
+#from app.presentation.schemas.user_schemas import UserCreate
 
 
 

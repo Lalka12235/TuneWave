@@ -1,4 +1,4 @@
-from sqlalchemy import select,delete,update
+from sqlalchemy import select,delete
 from sqlalchemy.exc import IntegrityError
 from app.domain.exceptions.exception import ServerError
 from app.infrastructure.db.models import User

@@ -1,12 +1,8 @@
 import uuid
-from app.infrastructure.db.gateway.member_room_association_gateway import MemberRoomAssociationGateway
-from app.infrastructure.db.gateway.room_gateway import RoomGateway
-from tests.module_repo.member_room_repo.conftest import user_data1,user_data2,member_room_repo
-from tests.module_repo.room_repo.conftest import room_repo,room_data
 
 
 def test_add_member(
-    member_room_repo: MemberRoomAssociationGateway, user_data1: dict
+    member_room_repo, user_data1
 ):
     room_id = uuid.uuid4()
 
@@ -20,7 +16,7 @@ def test_add_member(
 
 
 def test_remove_member(
-    member_room_repo: MemberRoomAssociationGateway, user_data1: dict
+    member_room_repo, user_data1
 ):
     room_id = uuid.uuid4()
 
@@ -36,7 +32,7 @@ def test_remove_member(
 
 
 def test_get_association_by_ids(
-    member_room_repo: MemberRoomAssociationGateway, user_data1: dict
+    member_room_repo, user_data1
 ):
     room_id = uuid.uuid4()
 
@@ -52,7 +48,7 @@ def test_get_association_by_ids(
 
 
 def test_get_members_by_room_id(
-    member_room_repo: MemberRoomAssociationGateway,
+    member_room_repo,
     user_data1: dict,
     user_data2: dict,
 ):
@@ -70,9 +66,9 @@ def test_get_members_by_room_id(
 
 
 def test_get_rooms_by_user_id(
-    member_room_repo: MemberRoomAssociationGateway,
+    member_room_repo,
     user_data1: dict,
-    room_repo: RoomGateway,
+    room_repo,
     room_data,
 ):
     length = 3
@@ -93,7 +89,7 @@ def test_get_rooms_by_user_id(
 
 
 def test_update_role(
-    member_room_repo: MemberRoomAssociationGateway, user_data1: dict
+    member_room_repo, user_data1
 ):
     room_id = uuid.uuid4()
 
@@ -109,7 +105,7 @@ def test_update_role(
 
 
 def test_get_member_room_association(
-    member_room_repo: MemberRoomAssociationGateway, user_data1: dict
+    member_room_repo, user_data1
 ):
     room_id = uuid.uuid4()
 
@@ -125,11 +121,11 @@ def test_get_member_room_association(
     assert association.role == "member"
 
 
-def test_remove_nonexistent_member(member_room_repo: MemberRoomAssociationGateway):
+def test_remove_nonexistent_member(member_room_repo):
     result = member_room_repo.remove_member(uuid.uuid4(), uuid.uuid4())
     assert result is False
 
 
-def test_get_nonexistent_association(member_room_repo: MemberRoomAssociationGateway):
+def test_get_nonexistent_association(member_room_repo):
     association = member_room_repo.get_association_by_ids(uuid.uuid4(), uuid.uuid4())
     assert association is None

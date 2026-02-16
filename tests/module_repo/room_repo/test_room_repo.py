@@ -1,12 +1,7 @@
-from app.infrastructure.db.gateway.room_gateway import RoomGateway
-from app.infrastructure.db.gateway.user_gateway import UserGateway
-from typing import Any
 from app.infrastructure.db.models import Room,User
-from app.presentation.schemas.user_schemas import UserCreate
-from tests.module_repo.room_repo.conftest import room_repo,room_data
-from tests.module_repo.user_repo.conftest import user_data,user_repo
 
-def test_get_room_by_id(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
+
+def test_get_room_by_id(room_repo,room_data,user_repo,user_data):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -21,7 +16,7 @@ def test_get_room_by_id(room_repo: RoomGateway,room_data: dict[str,Any],user_rep
     assert fetched.max_members == room_data.get('max_members')
 
 
-def test_get_room_by_name(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
+def test_get_room_by_name(room_repo,room_data,user_repo,user_data):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -36,7 +31,7 @@ def test_get_room_by_name(room_repo: RoomGateway,room_data: dict[str,Any],user_r
     assert fetched.max_members == room_data.get('max_members')
 
 
-def test_get_all_rooms(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
+def test_get_all_rooms(room_repo,room_data,user_repo,user_data):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -50,7 +45,7 @@ def test_get_all_rooms(room_repo: RoomGateway,room_data: dict[str,Any],user_repo
     assert len(fetched) > 0
 
 
-def test_create_room(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
+def test_create_room(room_repo,room_data,user_repo,user_data):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -63,7 +58,7 @@ def test_create_room(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: 
     assert fetched is not None
 
 
-def test_update_room(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
+def test_update_room(room_repo,room_data,user_repo,user_data):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -77,7 +72,7 @@ def test_update_room(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: 
     assert updated is not None
 
 
-def test_delete_room(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
+def test_delete_room(room_repo,room_data,user_repo,user_data):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -89,7 +84,7 @@ def test_delete_room(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: 
     updated: bool = room_repo.delete_room(created.id)
     assert updated
 
-def test_get_active_rooms(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
+def test_get_active_rooms(room_repo,room_data,user_repo,user_data):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -102,7 +97,7 @@ def test_get_active_rooms(room_repo: RoomGateway,room_data: dict[str,Any],user_r
     assert len(fetched_list) == 0
 
 
-def test_get_owner_room(room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
+def test_get_owner_room(room_repo,room_data,user_repo,user_data):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
