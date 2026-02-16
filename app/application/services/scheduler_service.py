@@ -2,10 +2,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.config.session import get_db
-from app.repositories.room_repo import RoomRepository
-from app.repositories.room_track_association_repo import RoomTrackAssociationRepository
-from app.services.room_service import RoomService
-from backend.app.services.spotify_service import SpotifyService
+from app.infrastructure.db.gateway.room_gateway import SARoomGateway
+from app.infrastructure.db.gateway.room_track_association_gateway import SARoomTrackAssociationGateway
+from app.application.services.room_service import RoomService
+from app.application.services.spotify_service import SpotifyService
+from app.config.log_config import logger
 
 
 class SchedulerService:
@@ -33,11 +34,11 @@ class SchedulerService:
         """ 
         db = next(get_db())
         try:
-            active_rooms = RoomRepository.get_active_rooms(db)
+            active_rooms = SARoomGateway.get_active_rooms(db)
 
             for room in active_rooms:
                 if room.current_track_id and room.is_playing:
-                    owner_user = RoomRepository.get_owner_room(db, room.id)
+                    owner_user = SARoomGateway.get_owner_room(db, room.id)
                     if not owner_user or not owner_user.spotify_access_token:
                         continue
 
@@ -51,7 +52,7 @@ class SchedulerService:
                         state = await spotify.get_playback_state()
                         time_left = state.get('duration_ms') - state.get('progress_ms')
                         if time_left <= 5000:
-                            next_track_association = RoomTrackAssociationRepository.get_first_track_in_queue(db, room.id)
+                            next_track_association = SARoomTrackAssociationGateway.get_first_track_in_queue(db, room.id)
                         
                             if next_track_association:
                                 await spotify.play(
@@ -63,7 +64,7 @@ class SchedulerService:
                             room.current_track_id = next_track_association.track_id
                             room.current_track_position_ms = 0
                             
-                            RoomTrackAssociationRepository.remove_track_from_queue_by_association_id(db, next_track_association.id)
+                            SARoomTrackAssociationGateway.remove_track_from_queue_by_association_id(db, next_track_association.id)
                             RoomService._reorder_queue(db, room.id)
                         else:
                             await spotify.pause(device_id=device_id)
@@ -73,7 +74,7 @@ class SchedulerService:
                     except Exception:
                         try:
                             await spotify.pause(device_id=device_id)
-                        except:
-                            pass                  
+                        except Exception as e:
+                            logger.error('SchesulerService: произошла ошибка %r',e,exc_info=True)             
         finally:
             db.close()

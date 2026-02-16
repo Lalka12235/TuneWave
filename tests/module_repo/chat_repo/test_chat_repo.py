@@ -18,7 +18,7 @@ def test_get_message_for_room(chat_repo: ChatGateway,create_table,room_repo: Roo
     assert created_user is not None
 
     message_list: list[Message] = chat_repo.get_message_for_room(room.id)
-    assert type(message_list) == list
+    assert isinstance(type(message_list),list)
     assert len(message_list) >= 0
     assert message_list is not None
     assert room.owner.username == user_data['username']
