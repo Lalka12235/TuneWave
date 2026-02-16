@@ -1,17 +1,17 @@
-from app.repositories.favorite_track_repo import FavoriteTrackRepository
-from app.repositories.user_repo import UserRepository
-from app.repositories.track_repo import TrackRepository
-from app.schemas.track_schemas import TrackCreate
-from app.models import User, FavoriteTrack, Track
-from app.schemas.user_schemas import UserCreate
+from app.infrastructure.db.gateway.favorite_track_gateway import FavoriteTrackGateway
+from app.infrastructure.db.gateway.user_gateway import UserGateway
+from app.infrastructure.db.gateway.track_gateway import TrackGateway
+from app.presentation.schemas.track_schemas import TrackCreate
+from app.infrastructure.db.models import User, FavoriteTrack, Track
+from app.presentation.schemas.user_schemas import UserCreate
 
 
 def test_get_favorite_track(
     create_table,
-    favorite_track_repo: FavoriteTrackRepository,
-    user_repo: UserRepository,
+    favorite_track_repo: FavoriteTrackGateway,
+    user_repo: UserGateway,
     user_data: UserCreate,
-    track_repo: TrackRepository,
+    track_repo: TrackGateway,
     track_data: TrackCreate,
 ):
     created_user: User = user_repo.create_user(user_data)
@@ -30,10 +30,10 @@ def test_get_favorite_track(
 
 def test_add_favorite_track(
     create_table,
-    favorite_track_repo: FavoriteTrackRepository,
-    user_repo: UserRepository,
+    favorite_track_repo: FavoriteTrackGateway,
+    user_repo: UserGateway,
     user_data: UserCreate,
-    track_repo: TrackRepository,
+    track_repo: TrackGateway,
     track_data: TrackCreate,
 ):
     created_user: User = user_repo.create_user(user_data)
@@ -54,10 +54,10 @@ def test_add_favorite_track(
 
 def test_remove_favorite_track(
     create_table,
-    favorite_track_repo: FavoriteTrackRepository,
-    user_repo: UserRepository,
+    favorite_track_repo: FavoriteTrackGateway,
+    user_repo: UserGateway,
     user_data: UserCreate,
-    track_repo: TrackRepository,
+    track_repo: TrackGateway,
     track_data: TrackCreate,
 ):
     created_user: User = user_repo.create_user(user_data)
@@ -81,10 +81,10 @@ def test_remove_favorite_track(
 
 def test_is_favorite_track(
     create_table,
-    favorite_track_repo: FavoriteTrackRepository,
-    user_repo: UserRepository,
+    favorite_track_repo: FavoriteTrackGateway,
+    user_repo: UserGateway,
     user_data: UserCreate,
-    track_repo: TrackRepository,
+    track_repo: TrackGateway,
     track_data: TrackCreate,
 ):
     created_user: User = user_repo.create_user(user_data)

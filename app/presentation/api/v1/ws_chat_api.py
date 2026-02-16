@@ -39,7 +39,7 @@ async def send_message(
 
             try:
                 message_data = json.loads(data)
-                text = message_data["text"]
+                message_data["text"]
             except (json.JSONDecodeError, KeyError):
                 continue
 

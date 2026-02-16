@@ -131,7 +131,7 @@ class UserService:
 
         if user:
             logger.warning(
-                f"Попытка создать/обновить пользователя: уже существует."
+                "Попытка создать/обновить пользователя: уже существует."
             )
             raise UserAlrediExist(detail="Пользователь уже существует")
         new_user = self.user_repo.create_user(user_data)

@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from app.models import Base
-from app.repositories.friendship_repo import FriendshipRepository
+from app.infrastructure.db.models import Base
+from app.infrastructure.db.gateway.friendship_gateway import FriendshipGateway
 from sqlalchemy.orm import Session
 from typing import Generator
 import uuid
@@ -40,12 +40,12 @@ def db_session() -> Generator[Session,None,None]:
         db.close()
 
 @pytest.fixture(scope="function")
-def friendship_repo(db_session: Session) -> FriendshipRepository:
+def friendship_repo(db_session: Session) -> FriendshipGateway:
     """
     Предоставляет экземпляр UserRepository, используя сессию, 
     предоставленную фикстурой db_session.
     """
-    repo = FriendshipRepository(db_session)
+    repo = FriendshipGateway(db_session)
     return repo
 
 

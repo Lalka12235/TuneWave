@@ -5,9 +5,6 @@ from sqlalchemy.orm import Session, sessionmaker
 from redis.asyncio import Redis
 
 from app.domain.entity import UserEntity
-from app.domain.exceptions.auth_exception import InvalidTokenError
-from app.domain.exceptions.user_exception import UserNotAuthorized, UserNotFound
-from app.presentation.auth.auth import check_provider
 
 from app.application.services.avatar_storage_service import AvatarStorageService
 # 1. КОНФИГУРАЦИЯ И СЕССИИ

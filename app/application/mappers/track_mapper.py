@@ -1,6 +1,6 @@
 from app.domain.entity import TrackEntity,RoomTrackAssociationEntity
 from app.presentation.schemas.room_schemas import TrackInQueueResponse
-from app.presentation.schemas.track_schemas import TrackCreate, TrackResponse
+from app.presentation.schemas.track_schemas import TrackResponse
 
 class TrackMapper:
 

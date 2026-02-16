@@ -10,8 +10,6 @@ from app.application.services.friendship_service import FriendshipService
 from app.application.services.redis_service import RedisService
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
-from fastapi import Depends
-from app.presentation.auth.auth import get_current_user
 
 friendship = APIRouter(
     tags=['Friendship'],

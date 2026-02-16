@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from app.models import Base
-from app.repositories.ban_repo import BanRepository
+from app.infrastructure.db.models import Base
+from app.infrastructure.db.gateway.ban_gateway import BanGateway
 from sqlalchemy.orm import Session
 from typing import Generator
 import uuid
@@ -40,12 +40,12 @@ def db_session() -> Generator[Session,None,None]:
         db.close()
 
 @pytest.fixture(scope="function")
-def ban_repo(db_session: Session) -> BanRepository:
+def ban_repo(db_session: Session) -> BanGateway:
     """
     Предоставляет экземпляр UserRepository, используя сессию, 
     предоставленную фикстурой db_session.
     """
-    repo = BanRepository(db_session)
+    repo = BanGateway(db_session)
     return repo
 
 

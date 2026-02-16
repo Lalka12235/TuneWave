@@ -32,7 +32,7 @@ class RedisService:
         try:
             await self._client.delete(key)
             return True
-        except Exception as e:
+        except Exception:
             return False
 
 

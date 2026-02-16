@@ -1,11 +1,11 @@
 import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from app.models import Base
-from app.repositories.track_repo import TrackRepository
+from app.infrastructure.db.models import Base
+from app.infrastructure.db.gateway.track_gateway import TrackGateway
 from sqlalchemy.orm import Session
 from typing import Generator
-from app.schemas.track_schemas import TrackCreate
+from app.presentation.schemas.track_schemas import TrackCreate
 
 db_url = "sqlite:///:memory:"
 
@@ -40,12 +40,12 @@ def db_session() -> Generator[Session,None,None]:
         db.close()
 
 @pytest.fixture(scope="function")
-def track_repo(db_session: Session) -> TrackRepository:
+def track_repo(db_session: Session) -> TrackGateway:
     """
     Предоставляет экземпляр UserRepository, используя сессию, 
     предоставленную фикстурой db_session.
     """
-    repo = TrackRepository(db_session)
+    repo = TrackGateway(db_session)
     return repo
 
 @pytest.fixture(scope="function")

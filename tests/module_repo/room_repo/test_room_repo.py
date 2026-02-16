@@ -1,10 +1,10 @@
-from app.repositories.room_repo import RoomRepository
-from app.repositories.user_repo import UserRepository
+from app.infrastructure.db.gateway.room_gateway import RoomGateway
+from app.infrastructure.db.gateway.user_gateway import UserGateway
 from typing import Any
-from app.models import Room,User
-from app.schemas.user_schemas import UserCreate
+from app.infrastructure.db.models import Room,User
+from app.presentation.schemas.user_schemas import UserCreate
 
-def test_get_room_by_id(create_table,room_repo: RoomRepository,room_data: dict[str,Any],user_repo: UserRepository,user_data: UserCreate):
+def test_get_room_by_id(create_table,room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -19,7 +19,7 @@ def test_get_room_by_id(create_table,room_repo: RoomRepository,room_data: dict[s
     assert fetched.max_members == room_data.get('max_members')
 
 
-def test_get_room_by_name(create_table,room_repo: RoomRepository,room_data: dict[str,Any],user_repo: UserRepository,user_data: UserCreate):
+def test_get_room_by_name(create_table,room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -34,7 +34,7 @@ def test_get_room_by_name(create_table,room_repo: RoomRepository,room_data: dict
     assert fetched.max_members == room_data.get('max_members')
 
 
-def test_get_all_rooms(create_table,room_repo: RoomRepository,room_data: dict[str,Any],user_repo: UserRepository,user_data: UserCreate):
+def test_get_all_rooms(create_table,room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -48,7 +48,7 @@ def test_get_all_rooms(create_table,room_repo: RoomRepository,room_data: dict[st
     assert len(fetched) > 0
 
 
-def test_create_room(create_table,room_repo: RoomRepository,room_data: dict[str,Any],user_repo: UserRepository,user_data: UserCreate):
+def test_create_room(create_table,room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -61,7 +61,7 @@ def test_create_room(create_table,room_repo: RoomRepository,room_data: dict[str,
     assert fetched is not None
 
 
-def test_update_room(create_table,room_repo: RoomRepository,room_data: dict[str,Any],user_repo: UserRepository,user_data: UserCreate):
+def test_update_room(create_table,room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -76,7 +76,7 @@ def test_update_room(create_table,room_repo: RoomRepository,room_data: dict[str,
     assert updated.name == new_name
 
 
-def test_delete_room(create_table,room_repo: RoomRepository,room_data: dict[str,Any],user_repo: UserRepository,user_data: UserCreate):
+def test_delete_room(create_table,room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -88,7 +88,7 @@ def test_delete_room(create_table,room_repo: RoomRepository,room_data: dict[str,
     updated: bool = room_repo.delete_room(created.id)
     assert updated
 
-def test_get_active_rooms(create_table,room_repo: RoomRepository,room_data: dict[str,Any],user_repo: UserRepository,user_data: UserCreate):
+def test_get_active_rooms(create_table,room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -101,7 +101,7 @@ def test_get_active_rooms(create_table,room_repo: RoomRepository,room_data: dict
     assert len(fetched_list) == 0
 
 
-def test_get_owner_room(create_table,room_repo: RoomRepository,room_data: dict[str,Any],user_repo: UserRepository,user_data: UserCreate):
+def test_get_owner_room(create_table,room_repo: RoomGateway,room_data: dict[str,Any],user_repo: UserGateway,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,

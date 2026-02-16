@@ -12,7 +12,6 @@ from app.presentation.auth.hash import make_hash_pass
 from app.infrastructure.ws.connection_manager import manager
 from app.application.mappers.room_mapper import RoomMapper
 
-from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.room_exception import (
     RoomAlreadyExistsError,
     RoomNotFoundError,

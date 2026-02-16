@@ -1,12 +1,12 @@
-from app.models import Message,Room,User
-from app.repositories.chat_repo import ChatRepository
-from app.repositories.room_repo import RoomRepository
-from app.repositories.user_repo import UserRepository
-from app.schemas.user_schemas import UserCreate
+from app.infrastructure.db.models import Message,Room,User
+from app.infrastructure.db.gateway.chat_gateway import ChatGateway
+from app.infrastructure.db.gateway.room_gateway import RoomGateway
+from app.infrastructure.db.gateway.user_gateway import UserGateway
+from app.presentation.schemas.user_schemas import UserCreate
 
 
 
-def test_get_message_for_room(chat_repo: ChatRepository,create_table,room_repo: RoomRepository,room_data,user_repo: UserRepository,user_data: UserCreate):
+def test_get_message_for_room(chat_repo: ChatGateway,create_table,room_repo: RoomGateway,room_data,user_repo: UserGateway,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
@@ -24,7 +24,7 @@ def test_get_message_for_room(chat_repo: ChatRepository,create_table,room_repo: 
     assert room.owner.username == user_data['username']
 
 
-def test_create_message(chat_repo: ChatRepository,create_table,room_repo: RoomRepository,room_data,user_repo: UserRepository,user_data: UserCreate):
+def test_create_message(chat_repo: ChatGateway,create_table,room_repo: RoomGateway,room_data,user_repo: UserGateway,user_data: UserCreate):
     created_user: User = user_repo.create_user(user_data)
     room_data_with_owner = {
         **room_data,
