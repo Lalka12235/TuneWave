@@ -61,9 +61,12 @@ from app.application.services.room_member_service import RoomMemberService
 from app.application.services.room_playback_service import RoomPlaybackService
 from app.application.services.room_queue_service import RoomQueueService
 from app.application.services.redis_service import RedisService
-from app.presentation.auth.auth import AuthService,get_current_user
+from app.presentation.auth.auth import AuthService
 from app.application.services.google_service import GoogleService
 from app.application.services.spotify_service import SpotifyService
+from app.application.services.indentity_provider import IndentityProvider
+from app.application.services.http_service import HttpService
+
 
 
 # --- БАЗОВЫЕ ЗАВИСИМОСТИ ---
@@ -271,13 +274,22 @@ def get_auth_service(
     return AuthService(user_repo, ban_repo, user_mapper, redis_service)
 
 def get_google_service(
-    user: Annotated[UserEntity, Depends(get_current_user)],
+    #user: Annotated[UserEntity, Depends(get_current_user)],
     redis: Annotated[RedisService, Depends(get_redis_service)],
 ) -> GoogleService:
-    return GoogleService(user, redis)
+    return GoogleService(redis)
 
 def get_spotify_service(
-    user: Annotated[UserEntity, Depends(get_current_user)],
+    #user: Annotated[UserEntity, Depends(get_current_user)],
     redis: Annotated[RedisService, Depends(get_redis_service)],
 ) -> SpotifyService:
-    return SpotifyService(user, redis)
+    return SpotifyService(redis)
+
+def get_indentity_provider(
+    user_repo: Annotated[UserGateway, Depends(get_user_repo)],
+    redis_service: Annotated[RedisService, Depends(get_redis_service)],
+) -> IndentityProvider:
+    return IndentityProvider(user_repo=user_repo,redis_service=redis_service)
+
+def get_http_service() -> HttpService:
+    return HttpService()

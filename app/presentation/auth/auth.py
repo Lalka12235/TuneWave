@@ -1,5 +1,3 @@
-from typing import NewType
-
 from app.domain.interfaces.ban_gateway import BanGateway
 from app.domain.interfaces.user_gateway import UserGateway
 from app.application.mappers.mappers import UserMapper
@@ -12,7 +10,7 @@ from app.presentation.schemas.user_schemas import (
     GoogleOAuthData,
     SpotifyOAuthData,
     Token,
-    UserResponse
+    UserResponse,
 )
 from app.infrastructure.celery.tasks import send_email_task
 from app.domain.exceptions.exception import ServerError
@@ -20,25 +18,32 @@ from app.domain.exceptions.auth_exception import (
     InvalidTokenError,
     UserBannedError,
 )
-from app.domain.exceptions.user_exception import UserNotFound,UserNotAuthorized
+from app.domain.exceptions.user_exception import UserNotFound, UserNotAuthorized
 from app.application.services.redis_service import RedisService
 import httpx
+from app.application.services.session_service import SessionID, SessionService
+from app.config.settings import settings
 
 oauth2_scheme = HTTPBearer(description="Введите ваш JWT-токен (Bearer <TOKEN>)")
-
-AuthData = NewType("AuthData", dict)
 
 
 class AuthService:
 
-    def __init__(self,user_repo: UserGateway,ban_repo: BanGateway,user_mapper: UserMapper,redis_service: RedisService):
+    def __init__(
+        self,
+        user_repo: UserGateway,
+        ban_repo: BanGateway,
+        user_mapper: UserMapper,
+        redis_service: RedisService,
+        session_service: SessionService,
+    ):
         self.user_repo = user_repo
         self.ban_repo = ban_repo
         self.user_mapper = user_mapper
         self.redis_service = redis_service
+        self.session_service = session_service
 
-
-    def _check_existing_user_by_email(self,email: str) -> UserEntity:
+    def _check_existing_user_by_email(self, email: str) -> UserEntity:
         """
         Проверяет существование пользователя по почте
         """
@@ -47,7 +52,7 @@ class AuthService:
             logger.warning(f"Пользователь не найден {email}")
         return user
 
-    def _check_global_bal_user(self,user_id: uuid.UUID) -> bool:
+    def _check_global_bal_user(self, user_id: uuid.UUID) -> bool:
         """
         Проверка пользователя на наличие бана на платформе
         """
@@ -61,7 +66,65 @@ class AuthService:
             )
         return global_ban
 
+    async def _save_token_and_session(
+        self,
+        user_id: uuid.UUID,
+        google_data: GoogleOAuthData | None = None,
+        spotify_data: SpotifyOAuthData | None = None,
+    ) -> SessionID:
+        if google_data:
+            key_access = f"google_auth:{user_id}:access"
+            key_config = f"google_auth:{user_id}:config"
+            session_id = self.session_service.generate_session_id()
+            key_session = f"session:{session_id}"
+
+            hset_dict = {
+                "refresh_token": google_data.google_refresh_token,
+                "expires_at": str(google_data.google_token_expires_at),
+            }
+
+            save_session_id = await self.redis_service.set(
+                key_session, user_id, settings.SESSION_EXPIRATION
+            )
+
+            save_access_token = await self.redis_service.set(
+                key_access,
+                google_data.google_access_token,
+                google_data.google_token_expires_at,
+            )
+            save_refresh_token = await self.redis_service.hset(key_config, hset_dict)
+
+            if not save_access_token and not save_refresh_token and save_session_id:
+                return False
+            return True
+        else:
+            key_access = f"spotify_auth:{user_id}:access"
+            key_config = f"spotify_auth:{user_id}:config"
+
+            hset_dict = {
+                "refresh_token": spotify_data.spotify_access_token,
+                "expires_at": str(spotify_data.spotify_token_expires_at),
+            }
+
+            session_id = self.session_service.generate_session_id()
+            key_session = f"session:{session_id}"
+
+            save_session_id = await self.redis_service.set(
+                key_session, user_id, settings.SESSION_EXPIRATION
+            )
+
+            save_access_token = await self.redis_service.set(
+                key_access,
+                spotify_data.spotify_access_token,
+                spotify_data.spotify_token_expires_at,
+            )
+            save_refresh_token = await self.redis_service.hset(key_config, hset_dict)
+
+            if not save_access_token and not save_refresh_token:
+                return None
+            return session_id
             
+
     async def authenticate_user_with_google(
         self, google_data: GoogleOAuthData
     ) -> tuple[UserResponse, Token] | None:
@@ -73,28 +136,17 @@ class AuthService:
         user = self._check_existing_user_by_email(google_data.email)
         if not user:
             user = self.user_repo.get_user_by_google_id(google_data.google_id)
-        
 
         if user:
             self._check_global_bal_user(user.id)
             update_data = {}
-
-            key_access = f'google_auth:{user.id}:access'
-            key_config = f'google_auth:{user.id}:config'
-
-            hset_dict = {
-                'refresh_token':google_data.google_refresh_token,
-                'expires_at':str(google_data.google_token_expires_at),
-            }
-
-            save_access_token = await self.redis_service.set(key_access,google_data.google_access_token,google_data.google_token_expires_at)
-            save_refresh_token = await self.redis_service.hset(key_config,hset_dict)
-
-            if not save_access_token and not save_refresh_token:
-                raise ServerError(
-                    detail='Ошибка при сохранение токенов. Попробуй заново авторизоваться'
-                )
             
+            session_id = self._save_token_and_session(user.id,google_data)
+            if session_id is None:
+                raise ServerError(
+                    detail="Ошибка при сохранение токенов и создании сессии. Попробуй заново авторизоваться"
+                )
+
             if not user.google_id:
                 update_data["google_id"] = google_data.google_id
                 update_data["google_image_url"] = google_data.google_image_url
@@ -126,7 +178,7 @@ class AuthService:
                 logger.info(
                     f"Новый пользователь '{user.id}' зарегистрирован через Google OAuth."
                 )
-                send_email_task.delay(google_data.email,google_data.username)
+                send_email_task.delay(google_data.email, google_data.username)
             except Exception as e:
                 logger.error(
                     f"Ошибка при создании пользователя через Google OAuth '{google_data.email}': {e}",
@@ -136,13 +188,11 @@ class AuthService:
                     detail="Ошибка при создании пользователя",
                 )
 
-            return self.user_mapper.to_response(user), Token(
-                access_token=google_data.google_access_token, token_type="bearer"
-            )
+            return self.user_mapper.to_response(user), session_id
 
     async def authenticate_user_with_spotify(
-            self, spotify_data: SpotifyOAuthData
-        ) -> tuple[UserResponse, Token]:
+        self, spotify_data: SpotifyOAuthData
+    ) -> tuple[UserResponse, Token]:
         """
         Аутентифицирует пользователя через Spotify OAuth.
         Создает или обновляет пользователя в БД и возвращает JWT-токен вашего приложения.
@@ -156,22 +206,12 @@ class AuthService:
             self._check_global_bal_user(user.id)
             update_data = {}
 
-            key_access = f'spotify_auth:{user.id}:access'
-            key_config = f'spotify_auth:{user.id}:config'
-            
-            hset_dict = {
-                'refresh_token': spotify_data.spotify_access_token,
-                'expires_at': str(spotify_data.spotify_token_expires_at),
-            }
-
-            save_access_token = await self.redis_service.set(key_access,spotify_data.spotify_access_token,spotify_data.spotify_token_expires_at)
-            save_refresh_token = await self.redis_service.hset(key_config   ,hset_dict)
-
-            if not save_access_token and not save_refresh_token:
+            session_id = self._save_token_and_session(user.id,spotify_data=spotify_data)
+            if session_id is None:
                 raise ServerError(
-                    detail='Ошибка при сохранение токенов. Попробуй заново авторизоваться'
+                    detail="Ошибка при сохранение токенов и создании сессии. Попробуй заново авторизоваться"
                 )
-            
+
             if not user.spotify_id:
                 update_data["spotify_id"] = spotify_data.spotify_id
                 update_data["spotify_image_url"] = spotify_data.spotify_image_url
@@ -209,7 +249,7 @@ class AuthService:
                 logger.info(
                     f"Новый пользователь '{user.id}' зарегистрирован через Spotify OAuth."
                 )
-                send_email_task.delay(spotify_data.email,spotify_data.username)
+                send_email_task.delay(spotify_data.email, spotify_data.username)
             except Exception as e:
                 logger.error(
                     f"Ошибка при создании пользователя через Spotify OAuth '{spotify_data.email}': {e}",
@@ -219,70 +259,4 @@ class AuthService:
                     detail="Ошибка при создании пользователя",
                 )
 
-        return self.user_mapper.to_response(user), Token(
-            access_token=spotify_data.spotify_access_token, token_type="bearer"
-        )
-
-async def check_provider(token: str) -> dict[str, str]:
-    google_url = "https://www.googleapis.com/oauth2/v3/userinfo"
-    spotify_url = "https://api.spotify.com/v1/me"
-
-    async with httpx.AsyncClient() as client:
-
-        google_resp = await client.get(
-            google_url,
-            headers={"Authorization": f"Bearer {token}"}
-        )
-
-        if google_resp.status_code == 200:
-            data = google_resp.json()
-            return {
-                "provider": "google",
-                "external_id": data["sub"],
-            }
-
-        spotify_resp = await client.get(
-            spotify_url,
-            headers={"Authorization": f"Bearer {token}"}
-        )
-
-        if spotify_resp.status_code == 200:
-            data = spotify_resp.json()
-            return {
-                "provider": "spotify",
-                "external_id": data["id"],
-            }
-
-        raise InvalidTokenError("Invalid access token (not Google or Spotify).")
-
-
-async def get_current_user_id(request: Request) -> AuthData:
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        raise InvalidTokenError()
-
-    token = auth.replace("Bearer ", "")
-    provider_data = await check_provider(token)
-    return AuthData(provider_data)
-
-
-async def get_current_user(
-        auth_data: AuthData,
-        user_repo: UserGateway,
-) -> UserEntity:
-    provider = auth_data["provider"]
-    external_id = auth_data["external_id"]
-
-    if provider == "google":
-        user = user_repo.get_user_by_google_id(external_id)
-
-    elif provider == "spotify":
-        user = user_repo.get_user_by_spotify_id(external_id)
-
-    else:
-        raise UserNotAuthorized()
-
-    if not user:
-        raise UserNotFound()
-
-    return user
+        return self.user_mapper.to_response(user), session_id

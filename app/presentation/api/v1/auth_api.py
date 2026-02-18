@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 import httpx
 import jwt
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status,Depends
 from fastapi.responses import RedirectResponse
 from app.domain.entity import UserEntity
 
@@ -18,6 +18,8 @@ from app.application.services.google_service import GoogleService
 from app.application.services.spotify_service import SpotifyService
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
+from app.presentation.dependencies import get_http_service
+from app.application.services.http_service import HttpService
 
 
 
@@ -65,6 +67,7 @@ async def google_login():
 async def google_callback(
     code: Annotated[str,Query(..., description="Код авторизации от Google")],
     auth_service: FromDishka[AuthService],
+    http_service: Annotated[HttpService,Depends(get_http_service)],
     state: str | None = Query(None, description="Параметр состояния для защиты от CSRF"),
 ) -> RedirectResponse: 
     """
@@ -80,21 +83,7 @@ async def google_callback(
         "grant_type": "authorization_code",
     }
 
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(token_url,data=token_data)
-            response.raise_for_status()
-            google_tokens: dict = response.json()
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Не удалось обменять код авторизации Google: {e.response.text}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при запросе токенов Google: {e}"
-        )
+    google_tokens = await http_service.get_tokens(token_url,token_data)
     
     id_token = google_tokens.get('id_token')
     google_access_token = google_tokens.get('access_token')
@@ -146,14 +135,14 @@ async def google_callback(
         google_token_expires_at=google_token_expires_at
     )
 
-    user_response, app_token = await auth_service.authenticate_user_with_google(google_oauth_data)
+    user_response, session_id = await auth_service.authenticate_user_with_google(google_oauth_data)
 
     redirect_url = "http://127.0.0.1:5500/frontend/auth.html"
     response = RedirectResponse(url=redirect_url)
 
     response.set_cookie(
-        key="access_token",
-        value=app_token.access_token,
+        key="session_id",
+        value=session_id,
         httponly=True,
         secure=False,
         samesite="Lax",
@@ -169,6 +158,7 @@ async def google_callback(
 async def spotify_callback(
     code: Annotated[str, Query(..., description="Код авторизации от Spotify")],
     auth_service: FromDishka[AuthService],
+    http_service: Annotated[HttpService,Depends(get_http_service)],
     state: str | None = Query(None,description="Параметр состояния для защиты от CSRF"),
 ) -> RedirectResponse:
     """
@@ -195,21 +185,7 @@ async def spotify_callback(
         'redirect_uri': settings.spotify.SPOTIFY_REDIRECT_URI,
     }
 
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(token_url, headers=token_headers, data=token_data)
-            response.raise_for_status()
-            spotify_tokens = response.json()
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Не удалось обменять код авторизации Spotify: {e.response.text}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при запросе токенов Spotify: {e}"
-        )
+    spotify_tokens = await http_service.handle_request_get(token_url,token_data)
     
     spotify_access_token = spotify_tokens.get('access_token')
     spotify_refresh_token = spotify_tokens.get('refresh_token')
@@ -229,22 +205,8 @@ async def spotify_callback(
     user_profile_headers = {
         'Authorization': f'Bearer {spotify_access_token}'
     }
-
-    try:
-        async with httpx.AsyncClient() as client:
-            user_profile_response = await client.get(user_profile_url, headers=user_profile_headers)
-            user_profile_response.raise_for_status()
-            spotify_user_data: dict = user_profile_response.json()
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Не удалось получить данные профиля Spotify: {e.response.text}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при запросе профиля Spotify: {e}"
-        )
+    
+    spotify_user_data = await http_service.handle_request_get(user_profile_url,headers=user_profile_headers)
 
     email = spotify_user_data.get('email')
     username = spotify_user_data.get('display_name')
@@ -272,14 +234,14 @@ async def spotify_callback(
         spotify_scope=spotify_scope
     )
 
-    user_response, app_token = await auth_service.authenticate_user_with_spotify(spotify_oauth_data)
+    user_response, session_id = await auth_service.authenticate_user_with_spotify(spotify_oauth_data)
 
     redirect_url = "http://127.0.0.1:5500/frontend/auth.html"
     response = RedirectResponse(url=redirect_url)
 
     response.set_cookie(
         key="access_token",
-        value=app_token.access_token,
+        value=session_id,
         httponly=True,
         secure=False,
         samesite="Lax",
