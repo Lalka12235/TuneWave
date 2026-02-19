@@ -15,7 +15,7 @@ from app.presentation.schemas.spotify_schemas import (
 from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.spotify_exception import SpotifyAPIError,SpotifyAuthorizeError,CommandError
 from app.application.services.redis_service import RedisService
-from app.application.services.base_oauth_service import _generic_refresh_token
+from app.application.services.http_service import HttpService
 
 
 class SpotifyService:
@@ -26,9 +26,10 @@ class SpotifyService:
     SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
     SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com/api"
 
-    def __init__(self,user: UserEntity,redis_service: RedisService):
+    def __init__(self,redis_service: RedisService,http_service: HttpService,user: UserEntity | None = None):
         self.user = user
         self.redis_service = redis_service
+        self.http_service = http_service
         self._check_user_spotify_credentials()
 
 
@@ -126,7 +127,7 @@ class SpotifyService:
             
         refresh_token = tokens_str.get('refresh_token')
         
-        await _generic_refresh_token(
+        await self.http_service.generic_refresh_token(
             self=self,
             token_url=token_url,
             key_prefix='spotify_auth',
@@ -180,7 +181,10 @@ class SpotifyService:
             raise SpotifyAPIError(
                 detail=f"Неизвестная ошибка при запросе к Spotify API ({endpoint}): {e}"
             )
-        
+    
+    @property.setter
+    def set_user(self,current_user: UserEntity) -> None:
+        self.user = current_user
         
     async def search_track(self,query: str, limit: int = 10) -> list[SpotifyTrackDetails]:
         """

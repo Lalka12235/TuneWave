@@ -3,7 +3,7 @@ from app.domain.entity import UserEntity
 
 from app.domain.exceptions.user_exception import UserNotAuthorized
 from app.application.services.redis_service import RedisService
-from app.application.services.base_oauth_service import _generic_refresh_token
+from app.application.services.http_service import HttpService
 
 
 
@@ -11,9 +11,10 @@ class GoogleService:
 
     GOOGLE_API_BASE_URl = 'https://oauth2.googleapis.com'
 
-    def __init__(self,user: UserEntity,redis_service: RedisService):
+    def __init__(self,redis_service: RedisService,http_service: HttpService,user: UserEntity | None = None):
         self.user = user
         self.redis_service = redis_service
+        self.http_service = http_service
 
     async def _refresh_access_token(self) -> dict:
         """
@@ -28,7 +29,7 @@ class GoogleService:
             
         refresh_token = tokens_str.get('refresh_token')
         
-        new_tokens = await _generic_refresh_token(
+        new_tokens = await self.http_service.generic_refresh_token(
             self=self,
             token_url=token_url,
             key_prefix='google_auth',
@@ -39,3 +40,7 @@ class GoogleService:
         )
         
         return new_tokens
+
+    @property.setter
+    def set_user(self,current_user: UserEntity) -> None:
+        self.user = current_user

@@ -89,6 +89,7 @@ class Settings:
     avatar: AvatarConfig = AvatarConfig()
 
     BASE_URL: str = "http://127.0.0.1:8000"
+    SESSION_EXPIRATION = 604800
 
 
 settings = Settings()
