@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.notification_schemas import NotificationResponse

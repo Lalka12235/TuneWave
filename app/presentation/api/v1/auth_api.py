@@ -1,9 +1,8 @@
-import base64
+#import base64
 import time
 from typing import Annotated
 from urllib.parse import urlencode
 
-import httpx
 import jwt
 from fastapi import APIRouter, HTTPException, Query, status,Depends
 from fastapi.responses import RedirectResponse
@@ -171,13 +170,13 @@ async def spotify_callback(
     
     # Spotify требует Basic-аутентификацию для этого запроса
     # Кодируем client_id:client_secret в Base64
-    auth_str = f"{settings.spotify.SPOTIFY_CLIENT_ID}:{settings.spotify.SPOTIFY_CLIENT_SECRET}"
-    encoded_auth_str = base64.b64encode(auth_str.encode()).decode()
+    #auth_str = f"{settings.spotify.SPOTIFY_CLIENT_ID}:{settings.spotify.SPOTIFY_CLIENT_SECRET}"
+    #encoded_auth_str = base64.b64encode(auth_str.encode()).decode()
 
-    token_headers = {
-        'Authorization': f'Basic {encoded_auth_str}',
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
+    #token_headers = {
+    #    'Authorization': f'Basic {encoded_auth_str}',
+    #    'Content-Type': 'application/x-www-form-urlencoded'
+    #}
 
     token_data = {
         'grant_type': "authorization_code",

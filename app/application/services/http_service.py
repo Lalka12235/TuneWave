@@ -1,7 +1,6 @@
 import httpx
 from fastapi import HTTPException, status
 from time import time
-import httpx
 from app.domain.exceptions.exception import ServerError
 from app.config.log_config import logger
 

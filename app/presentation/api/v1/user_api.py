@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Path, UploadFile, Cookie,Depends
+from fastapi import APIRouter, Path, UploadFile, Depends
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.user_schemas import UserResponse, UserUpdate

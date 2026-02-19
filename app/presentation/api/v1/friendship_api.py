@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Path, status
+from fastapi import APIRouter, Depends, Path, status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.friendship_schemas import FriendshipRequestCreate, FriendshipResponse
