@@ -2,11 +2,12 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie,Path, Query
+from fastapi import APIRouter, Depends,Path, Query
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.message_schemas import MessageCreate, MessageResponse
 from app.application.services.chat_service import ChatService
+from app.presentation.dependencies import get_current_user
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
@@ -17,7 +18,7 @@ chat = APIRouter(
     route_class=DishkaRoute
 )
 
-user_dependencies = FromDishka[UserEntity]
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 chat_service = FromDishka[ChatService]
 
 
@@ -57,7 +58,6 @@ async def create_message(
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
     user: user_dependencies,
     message: MessageCreate,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> MessageResponse:
     """
     Создает новое сообщение в комнате.
@@ -73,6 +73,4 @@ async def create_message(
     Returns:
         MessageResponse: Объект созданного сообщения с ID и временной меткой.
     """
-    user.set_session_id = session_id
-    user_from_identity = user.get_current_user()
-    return chat_service.create_message(room_id,user_from_identity.id,message)
+    return chat_service.create_message(room_id,user.id,message)

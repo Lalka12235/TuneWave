@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import (
     APIRouter,
-    Cookie,
+    Depends,
     Path,
     WebSocket,
     WebSocketDisconnect,
@@ -15,9 +15,10 @@ from app.application.services.chat_service import ChatService
 from app.infrastructure.ws.connection_manager import manager
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
+from app.presentation.dependencies import get_current_user
 
 chat_ws = APIRouter(tags=["Chat WS"], prefix="/ws/chat",route_class=DishkaRoute)
-user_dependencies = FromDishka[UserEntity]
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 chat_service = FromDishka[ChatService]
 
 
@@ -27,14 +28,11 @@ async def send_message(
     websocket: WebSocket,
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],
     user: user_dependencies,
-    session_id: Annotated[str | None, Cookie()] = None,
     #chat_serv: chat_service,
 ):
     """
     Эндпоинт WebSocket для чата в комнате.
     """
-    user.set_session_id = session_id
-    user_from_identity = user.get_current_user()
     await manager.connect(room_id, websocket)
 
     try:

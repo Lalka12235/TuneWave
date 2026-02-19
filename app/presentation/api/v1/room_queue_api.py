@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Path,status
+from fastapi import APIRouter, Depends, Path,status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.room_schemas import (
@@ -12,10 +12,12 @@ from app.application.services.room_queue_service import RoomQueueService
 from app.application.services.redis_service import RedisService
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
+from app.presentation.dependencies import get_current_user
 
 room_queue = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 
-user_dependencies = FromDishka[UserEntity]
+
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 redis_service = FromDishka[RedisService]
 room_queue_service = FromDishka[RoomQueueService]
 
@@ -30,15 +32,12 @@ async def add_track_to_queue(
     request: AddTrackToQueueRequest,
     room_id: Annotated[uuid.UUID, Path(..., description="Уникальный ID комнаты")],
     room_queue_service: room_queue_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> TrackInQueueResponse:
     """
     Добавляет трек в очередь комнаты. Только владелец комнаты может это сделать.
     """
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
     association = await room_queue_service.add_track_to_queue(
-        room_id=room_id, track_spotify_id=request.spotify_id, current_user=user_from_identity
+        room_id=room_id, track_spotify_id=request.spotify_id, current_user=current_user
     )
     return association
 
@@ -73,13 +72,10 @@ async def remove_track_from_queue(
         uuid.UUID, Path(..., description="ID ассоциации трека в очереди")
     ],
     room_queue_service: room_queue_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict:
     """
     Удаляет трек из очереди комнаты по ID ассоциации. Только владелец комнаты может это сделать.
     """
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
     return await room_queue_service.remove_track_from_queue(
-        room_id, association_id, user_from_identity.id
+        room_id, association_id, current_user.id
     )

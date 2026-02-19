@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Cookie, Path,status
+from fastapi import APIRouter, Depends, Path,status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.ban_schemas import BanCreate, BanResponse
@@ -14,12 +14,12 @@ from app.presentation.schemas.user_schemas import UserResponse
 from app.application.services.room_member_service import RoomMemberService
 
 from app.application.services.redis_service import RedisService
-
+from app.presentation.dependencies import get_current_user
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
 room_member = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 
-user_dependencies = FromDishka[UserEntity]
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 room_member_service = FromDishka[RoomMemberService]
 redis_service = FromDishka[RedisService]
 
@@ -38,15 +38,12 @@ async def join_room(
     current_user: user_dependencies,
     request_data: JoinRoomRequest,
     room_member_service: room_member_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> RoomResponse:
     """
     Пользователь присоединяется к комнате.
     Требуется аутентификация. Если комната приватная, требуется пароль.
     """
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
-    return await room_member_service.join_room(user_from_identity, room_id, request_data.password)
+    return await room_member_service.join_room(current_user, room_id, request_data.password)
 
 
 
@@ -58,15 +55,12 @@ async def leave_room(
     ],
     current_user: user_dependencies,
     room_member_service: room_member_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict:
     """
     Пользователь покидает комнату.
     Требуется аутентификация.
     """
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
-    return await room_member_service.leave_room(room_id, user_from_identity)
+    return await room_member_service.leave_room(room_id, current_user)
 
 
 @room_member.get(
@@ -111,7 +105,6 @@ async def add_ban(
     ban_data: BanCreate,
     user: user_dependencies,
     room_member_service: room_member_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> BanResponse:
     """
     Банит пользователя в конкретной комнате или глобально.
@@ -128,10 +121,8 @@ async def add_ban(
     Returns:
         BanResponse: Детали созданной записи о бане.
     """
-    user.set_session_id = session_id
-    user_from_identity = user.get_current_user()
     ban_data = ban_data.model_dump()
-    return await room_member_service.ban_user_from_room(room_id, user_id, ban_data, user_from_identity)
+    return await room_member_service.ban_user_from_room(room_id, user_id, ban_data, user)
 
 
 @room_member.delete(
@@ -153,7 +144,6 @@ async def unban_user(
     ],
     current_user: user_dependencies,
     room_member_service: room_member_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict[str, Any]:
     """
     Снимает бан с пользователя в конкретной комнате или глобально.
@@ -161,18 +151,10 @@ async def unban_user(
     Только владелец комнаты может снимать баны в своей комнате.
     (Логика глобального разбана пока не реализована на уровне прав)
 
-    Args:
-        room_id (uuid.UUID): ID комнаты.
-        target_user_id (uuid.UUID): ID пользователя, с которого нужно снять бан.
-        db (Session): Сессия базы данных.
-        current_user (User): Текущий аутентифицированный пользователь.
-
     Returns:
         dict: Сообщение об успешном снятии бана.
     """
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
-    return await room_member_service.unban_user_from_room(room_id, user_id, user_from_identity)
+    return await room_member_service.unban_user_from_room(room_id, user_id, current_user)
 
 
 @room_member.post(
@@ -189,24 +171,15 @@ async def send_room_invite(
     ],
     current_user: user_dependencies,
     room_member_service: room_member_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict[str, str]:
     """
     Отправляет приглашение указанному пользователю присоединиться к комнате.
     Только владелец или модератор комнаты может отправлять приглашения.
 
-    Args:
-        room_id (uuid.UUID): ID комнаты, куда приглашают.
-        invited_user_id (uuid.UUID): ID пользователя, которого приглашают.
-        db (Session): Сессия базы данных.
-        current_user (User): Текущий аутентифицированный пользователь (отправитель приглашения).
-
     Returns:
         dict[str, str]: Сообщение об успешной отправке приглашения.
     """
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
-    return await room_member_service.send_room_invite(room_id, user_from_identity.id, invited_user_id)
+    return await room_member_service.send_room_invite(room_id, current_user.id, invited_user_id)
 
 
 @room_member.put(
@@ -222,7 +195,6 @@ async def respond_to_room_invite(
     response_data: InviteResponse,
     current_user: user_dependencies,
     room_member_service: room_member_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict[str, str]:
     """
     Отвечает на приглашение в комнату (принимает или отклоняет).
@@ -235,10 +207,8 @@ async def respond_to_room_invite(
     Returns:
         dict[str, str]: Сообщение о результате операции.
     """
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
     return await room_member_service.handle_room_invite_response(
-        notification_id, user_from_identity.id, response_data.action
+        notification_id, current_user.id, response_data.action
     )
 
 @room_member.put(
@@ -257,7 +227,6 @@ async def update_member_role(
     user: user_dependencies,
     new_role: RoomMemberRoleUpdate,
     room_member_service: room_member_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> RoomMemberResponse:
     """
     Изменяет роль члена комнаты. Доступно только владельцу комнаты.
@@ -274,8 +243,6 @@ async def update_member_role(
     Raises:
         HTTPException: Если комната не найдена, у пользователя нет прав, или произошла ошибка.
     """
-    user.set_session_id = session_id
-    user_from_identity = user.get_current_user()
     return await room_member_service.update_member_role(
-        room_id, target_user_id, new_role.role, user_from_identity
+        room_id, target_user_id, new_role.role, user
     )

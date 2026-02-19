@@ -1,5 +1,6 @@
 from typing import Annotated
-from fastapi import Depends
+from fastapi import Depends, HTTPException, Request
+from rich import status
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from redis.asyncio import Redis
@@ -292,3 +293,12 @@ def get_indentity_provider(
 ) -> IndentityProvider:
     return IndentityProvider(user_repo=user_repo,redis_service=redis_service)
 
+
+def get_current_user(request: Request):
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Не авторизован"
+        )
+    return user

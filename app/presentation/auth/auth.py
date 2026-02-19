@@ -8,7 +8,6 @@ from app.config.log_config import logger
 from app.presentation.schemas.user_schemas import (
     GoogleOAuthData,
     SpotifyOAuthData,
-    Token,
     UserResponse,
 )
 from app.infrastructure.celery.tasks import send_email_task

@@ -5,6 +5,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 import os
 
 from app.presentation.middleware.loggingMiddleware import LogMiddleware
+from app.presentation.middleware.session_middleware import SessionMiddleware
 from app.presentation.api.v1.all_route import V1_ROUTERS
 from app.config.log_config import configure_logging
 from app.config.settings import settings
@@ -52,6 +53,7 @@ def create_app() -> FastAPI:
     )
 
     app.add_middleware(ProxyHeadersMiddleware)
+    
 
     app.add_middleware(
         CORSMiddleware,
@@ -61,6 +63,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.add_middleware(LogMiddleware)
+    app.add_middleware(SessionMiddleware)
 
     register_errors_handlers(app)
 

@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status
 
 
 from app.domain.entity import UserEntity
@@ -15,10 +15,11 @@ from app.application.services.room_service import RoomService
 from app.application.services.redis_service import RedisService
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
+from app.presentation.dependencies import get_current_user
 
 room = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 
-user_dependencies = FromDishka[UserEntity]
+user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
 redis_service = FromDishka[RedisService]
 room_service = FromDishka[RoomService]
 
@@ -33,16 +34,13 @@ async def create_room(
     room_data: RoomCreate,
     current_user: user_dependencies,
     room_serv: room_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> RoomResponse:
     """
     Создает новую комнату.
     Требуется аутентификация. Владелец комнаты будет текущим аутентифицированным пользователем.
     """
     room_data = room_data.model_dump()
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
-    return await room_serv.create_room(room_data, user_from_identity)
+    return await room_serv.create_room(room_data, current_user)
 
 
 @room.put(
@@ -55,16 +53,13 @@ def update_room(
     update_data: RoomUpdate,
     current_user: user_dependencies,
     room_serv: room_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> RoomResponse:
     """
     Обновляет информацию о комнате по ее ID.
     Требуется аутентификация. Только владелец комнаты может ее обновить.
     """
     update_data = update_data.model_dump(exclude_unset=True)
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
-    return room_serv.update_room(room_id, update_data, user_from_identity)
+    return room_serv.update_room(room_id, update_data, current_user)
 
 
 @room.delete(
@@ -76,15 +71,12 @@ def delete_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для удаления")],
     current_user: user_dependencies,
     room_serv: room_service,
-    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict:
     """
     Удаляет комнату по ее ID.
     Требуется аутентификация. Только владелец комнаты может ее удалить.
     """
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
-    return room_serv.delete_room(room_id, user_from_identity)
+    return room_serv.delete_room(room_id, current_user)
 
 
 
@@ -115,17 +107,15 @@ async def get_room_by_name(
 )
 @inject
 async def get_my_rooms(
-    current_user: user_dependencies,room_serv: room_service, redis_client: redis_service,session_id: Annotated[str | None, Cookie()] = None,
+    current_user: user_dependencies,room_serv: room_service, redis_client: redis_service
 ) -> list[RoomResponse]:
     """
     Получает список всех комнат, в которых состоит текущий аутентифицированный пользователь.
     Требуется аутентификация.
     """
-    current_user.set_session_id = session_id
-    user_from_identity = current_user.get_current_user()
-    key = f'rooms:get_my_rooms:{user_from_identity.id}'
+    key = f'rooms:get_my_rooms:{current_user.id}'
     async def fetch():
-        return await room_serv.get_user_rooms(user_from_identity)
+        return await room_serv.get_user_rooms(current_user)
     return await redis_client.get_or_set(key,fetch,300)
 
 @room.get(
