@@ -11,6 +11,7 @@ from app.presentation.schemas.spotify_schemas import (
 
 from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.spotify_exception import SpotifyAuthorizeError,SpotifyAPIError
+from app.application.services.http_service import HttpService
 
 class SpotifyPublicService:
     """
@@ -19,6 +20,9 @@ class SpotifyPublicService:
     """
     SPOTIFY_API_BASE_URL = 'https://api.spotify.com/v1'
     SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/api/token'
+    
+    def __init__(self,http_service: HttpService):
+        self.http_service = http_service
     
     _access_token = None
     _token_expires_at = 0
@@ -38,28 +42,18 @@ class SpotifyPublicService:
             'client_id': settings.spotify.SPOTIFY_CLIENT_ID,
             'client_secret': settings.spotify.SPOTIFY_CLIENT_SECRET,
         }
-
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(url=token_url,data=token_data)
-                response.raise_for_status()
-                spotify_token: dict = response.json()
+            spotify_token = self.http_service.handle_request(url=token_url,data=token_data,method='post')
+
+            self._access_token = spotify_token.get('access_token')
+            self._token_expires_at = int(time.time() + spotify_token.get('expires_in'))
+
+            return self._access_token
         except httpx.HTTPStatusError as e:
             raise SpotifyAuthorizeError(
                 status_code=e.response.status_code,
                 detail=f"Ошибка авторизации Spotify (Client Credentials Flow): {e.response.text}"
             )
-        except Exception as e:
-            raise ServerError(
-                detail=f"Неизвестная ошибка при получении токена Spotify: {e}"
-            )
-
-
-        self._access_token = spotify_token.get('access_token')
-        self._token_expires_at = int(time.time() + spotify_token.get('expires_in'))
-
-        return self._access_token
-    
         
     async def _make_spotify_request(self,method: str,endpoint: str, **kwargs) -> dict[str,str]:
         """
@@ -72,24 +66,15 @@ class SpotifyPublicService:
         full_url = self.SPOTIFY_API_BASE_URL + endpoint
 
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.request(method, full_url, headers=headers, **kwargs)
-                response.raise_for_status()
-                spotify_response = response.json()
-                return spotify_response
+            return await self.http_service.make_request(method, full_url,headers=headers, **kwargs)
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
-                raise SpotifyAuthorizeError(
-                    detail=f"Неавторизованный запрос к Spotify API. Возможно, требуется переавторизация: {e.response.text}"
-                )
-            raise SpotifyAPIError(
-                status_code=e.response.status_code,
-                detail=f"Ошибка Spotify API ({endpoint}): {e.response.text}"
-            )
-        except Exception as e:
-            raise ServerError(
-                detail=f"Неизвестная ошибка при запросе к Spotify API ({endpoint}): {e}"
-            )
+                raise SpotifyAuthorizeError(detail="Требуется переавторизация")
+        
+        raise SpotifyAPIError(
+            status_code=e.response.status_code,
+            detail=f"Ошибка Spotify ({endpoint}): {e.response.text}"
+        )
         
         
     async def search_public_track(self,query: str, limit: int = 10) -> dict[str,str]:

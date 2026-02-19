@@ -8,27 +8,29 @@ from app.config.log_config import logger
 
 class HttpService:
     
-    async def handle_request_get(
+    def __init__(self):
+        self.client = httpx.AsyncClient()
+    
+    async def handle_request(
         self,
+        method: str,
         url: str,
         data: dict[str, str] | None = None,
         headers: dict[str, str] | None = None,
+        params: dict | None = None,
+        **kwargs
     ) -> dict:
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(url=url,data=data,headers=headers)
-                response.raise_for_status()
-                data: dict = response.json()
-                return data
+            response = await self.client.request(kwargs,method=method,url=url,data=data,headers=headers,params=params)
+            response.raise_for_status()
+            data: dict = response.json()
+            return data
         except httpx.HTTPStatusError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Не удалось выполнить запрос: {e.response.text}",
-            )
+            raise e
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Ошибка при запросе: {e}",
+                detail=f"Ошибка при запросе на {url}: {e}",
             )
             
     async def generic_refresh_token(
@@ -53,11 +55,10 @@ class HttpService:
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
         try:
-            async with httpx.AsyncClient() as client:
-                logger.info(f"{api_name}Service: Отправляем запрос на обновление токена для пользователя {self.user.id}")
-                response = await client.post(url=token_url, data=token_data, headers=headers)
-                response.raise_for_status()
-                new_tokens: dict = response.json()
+            logger.info(f"{api_name}Service: Отправляем запрос на обновление токена для пользователя {self.user.id}")
+            response = await self.client.post(url=token_url, data=token_data, headers=headers)
+            response.raise_for_status()
+            new_tokens: dict = response.json()
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400:

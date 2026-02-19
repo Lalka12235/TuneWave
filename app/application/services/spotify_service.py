@@ -48,33 +48,23 @@ class SpotifyService:
         headers = {
             'Authorization': f'Bearer {access_token}'
         }
-
-        try:
-            async with httpx.AsyncClient() as client:
-                logger.info(f'SpotifyService: Отправляем запрос на Spotify API для получения устройств пользователя {self.user.id} по адресу: {device_url}')
-                response = await client.get(url=device_url, headers=headers)
-                response.raise_for_status()
-                
-                devices_data: dict = response.json()
-                devices_list = devices_data.get('devices', [])
-
-
-                if not devices_list:
-                    logger.info(f'SpotifyService: Для пользователя {self.user.id} не обнаружено активных устройств Spotify.')
-                    return None
-
-                for device in devices_list:
-                    if device.get('is_active'):
-                        logger.info(f"SpotifyService: Найдено активное устройство '{device.get('name')}' (ID: {device.get('id')}) для пользователя {self.user.id}.")
-                        return device.get('id')
-                logger.info(f"SpotifyService: У пользователя {self.user.id} нет активных устройств.")
-                return None
-        except httpx.HTTPStatusError as e:
-            logger.warning(f"SpotifyService: Ошибка HTTP при получении устройств Spotify для пользователя {self.user.id}: Статус {e.response.status_code} - Ответ: {e.response.text}", exc_info=True)
+        
+        
+        logger.info(f'SpotifyService: Отправляем запрос на Spotify API для получения устройств пользователя {self.user.id} по адресу: {device_url}')
+        response = self.http_service.handle_request_get(device_url,headers=headers)
+        
+        devices = response.json().get('devices', [])
+        if not devices:
+            logger.info(f'SpotifyService: Для пользователя {self.user.id} не обнаружено активных устройств Spotify.')
             return None
-        except Exception as e:
-            logger.error(f"SpotifyService: Непредвиденная ошибка при получении устройств Spotify для пользователя {self.user.id}: {e}", exc_info=True)
-            return None
+
+        active_device = next((d for d in devices if d.get('is_active')), None)
+        if active_device:
+            logger.info(f"SpotifyService: Найдено активное устройство {active_device.get('name')}")
+            return active_device.get('id')
+            
+        logger.info(f"SpotifyService: Активных устройств не найдено.")
+        return None
 
     async def _check_user_spotify_credentials(self):
         """
@@ -150,9 +140,7 @@ class SpotifyService:
         try:
             async with httpx.AsyncClient() as client:
                 logger.debug(f"SpotifyService: Выполняем запрос '{method} {endpoint}' для пользователя {self.user.id}.")
-                response = await client.request(method, full_url, headers=headers, **kwargs)
-                response.raise_for_status()
-                spotify_response = response.json()
+                spotify_response = await self.http_service.handle_request(method, full_url, headers=headers, **kwargs)
                 return spotify_response
         except httpx.HTTPStatusError as e:
             logger.error(f"SpotifyService: Ошибка HTTP при запросе '{method} {endpoint}' для пользователя {self.user.id}: Статус {e.response.status_code} - Ответ: {e.response.text}", exc_info=True)
@@ -175,11 +163,6 @@ class SpotifyService:
             raise SpotifyAPIError(
                 status_code=e.response.status_code,
                 detail=f"Ошибка Spotify API ({endpoint}): {e.response.text}"
-            )
-        except Exception as e:
-            logger.error(f"SpotifyService: Неизвестная ошибка при запросе к Spotify API ({endpoint}) для пользователя {self.user.id}: {e}", exc_info=True)
-            raise SpotifyAPIError(
-                detail=f"Неизвестная ошибка при запросе к Spotify API ({endpoint}): {e}"
             )
     
     @property.setter
