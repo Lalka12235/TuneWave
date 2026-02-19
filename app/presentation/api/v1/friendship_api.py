@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Path, status
+from fastapi import APIRouter, Cookie, Path, status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.friendship_schemas import FriendshipRequestCreate, FriendshipResponse
@@ -33,6 +33,7 @@ async def send_friend_request(
     friend_service: friendship_service,
     request_data: FriendshipRequestCreate,
     user: user_dependencies,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> FriendshipResponse:
     """
     Отправляет запрос на дружбу указанному пользователю.
@@ -44,7 +45,9 @@ async def send_friend_request(
     Returns:
         FriendshipResponse: Детали созданной записи о запросе на дружбу.
     """
-    return await friend_service.send_friend_request(user.id,request_data.accepter_id)
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
+    return await friend_service.send_friend_request(user_from_identity.id,request_data.accepter_id)
 
 
 @friendship.put(
@@ -56,7 +59,8 @@ async def send_friend_request(
 async def accept_friend_request(
     friend_service: friendship_service,
     friendship_id: Annotated[uuid.UUID,Path(..., description="ID запроса на дружбу для принятия.")],
-    user: user_dependencies
+    user: user_dependencies,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> FriendshipResponse:
     """
     Принимает ожидающий запрос на дружбу.
@@ -68,7 +72,9 @@ async def accept_friend_request(
     Returns:
         FriendshipResponse: Детали обновленной записи о дружбе.
     """
-    return await friend_service.accept_friend_request(friendship_id,user.id)
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
+    return await friend_service.accept_friend_request(friendship_id,user_from_identity.id)
 
 
 @friendship.put(
@@ -80,7 +86,8 @@ async def accept_friend_request(
 async def decline_friend_request(
     friend_service: friendship_service,
     friendship_id: Annotated[uuid.UUID,Path(..., description="ID запроса на дружбу для отклонения.")],
-    user: user_dependencies
+    user: user_dependencies,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> FriendshipResponse:
     """
     Отклоняет ожидающий запрос на дружбу.
@@ -92,7 +99,9 @@ async def decline_friend_request(
     Returns:
         FriendshipResponse: Детали обновленной записи о дружбе (статус DECLINED).
     """
-    return await friend_service.decline_friend_request(friendship_id,user.id)
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
+    return await friend_service.decline_friend_request(friendship_id,user_from_identity.id)
 
 
 @friendship.delete(
@@ -104,6 +113,7 @@ async def delete_friendship(
     friend_service: friendship_service,
     friendship_id: Annotated[uuid.UUID, Path(..., description="ID записи о дружбе для удаления.")],
     current_user: user_dependencies,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict[str, str]:
     """
     Удаляет существующую запись о дружбе или отменяет ожидающий запрос.
@@ -116,6 +126,8 @@ async def delete_friendship(
     Returns:
         dict[str, str]: Сообщение об успешном удалении.
     """
+    current_user.set_session_id = session_id
+    user_from_identity = current_user.get_current_user()
     return await friend_service.delete_friendship(friendship_id,current_user.id)
 
 
@@ -129,21 +141,20 @@ async def delete_friendship(
 async def get_my_friend(
     friend_service: friendship_service,
     user: user_dependencies,
-    redis_client: redis_service
+    redis_client: redis_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> list[FriendshipResponse]:
     """
     Получает список всех принятых друзей текущего аутентифицированного пользователя.
 
-    Args:
-        db (Session): Сессия базы данных.
-        current_user (User): Текущий аутентифицированный пользователь.
-
     Returns:
         List[FriendshipResponse]: Список объектов FriendshipResponse со статусом ACCEPTED.
     """
-    key = f'friendship:get_my_friend:{user.id}'
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
+    key = f'friendship:get_my_friend:{user_from_identity.id}'
     async def fetch():
-        return friend_service.get_my_fridns(user.id)
+        return friend_service.get_my_fridns(user_from_identity.id)
     return await redis_client.get_or_set(key,fetch,300)
 
 @friendship.get(
@@ -155,22 +166,21 @@ async def get_my_friend(
 async def get_my_sent_requests(
     friend_service: friendship_service,
     current_user: user_dependencies,
-    redis_client: redis_service
+    redis_client: redis_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> list[FriendshipResponse]:
     """
     Получает список запросов на дружбу, отправленных текущим аутентифицированным пользователем,
     которые находятся в статусе PENDING.
 
-    Args:
-        db (Session): Сессия базы данных.
-        current_user (User): Текущий аутентифицированный пользователь.
-
     Returns:
         List[FriendshipResponse]: Список объектов FriendshipResponse со статусом PENDING.
     """
-    key = f'friendship:get_my_sent_requests:{current_user.id}'
+    current_user.set_session_id = session_id
+    user_from_identity = credits.get_current_user()
+    key = f'friendship:get_my_sent_requests:{user_from_identity.id}'
     async def fetch():
-        return await friend_service.get_my_sent_requests(current_user.id)
+        return await friend_service.get_my_sent_requests(user_from_identity.id)
     return await redis_client.get_or_set(key,fetch,300)
 
 
@@ -183,20 +193,19 @@ async def get_my_sent_requests(
 async def get_my_received_requests(
     friend_service: friendship_service,
     current_user: user_dependencies,
-    redis_client: redis_service
+    redis_client: redis_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> list[FriendshipResponse]:
     """
     Получает список запросов на дружбу, полученных текущим аутентифицированным пользователем,
     которые находятся в статусе PENDING.
 
-    Args:
-        db (Session): Сессия базы данных.
-        current_user (User): Текущий аутентифицированный пользователь.
-
     Returns:
         List[FriendshipResponse]: Список объектов FriendshipResponse со статусом PENDING.
     """
-    key = f'friendship:get_my_received_requests:{current_user.id}'
+    current_user.set_session_id = session_id
+    user_from_identity = current_user.get_current_user()
+    key = f'friendship:get_my_received_requests:{user_from_identity.id}'
     async def fetch():
-        return await friend_service.get_my_received_requests(current_user.id)
+        return await friend_service.get_my_received_requests(user_from_identity.id)
     return await redis_client.get_or_set(key,fetch,300)

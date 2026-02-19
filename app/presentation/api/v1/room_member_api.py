@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Path,status
+from fastapi import APIRouter, Cookie, Path,status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.ban_schemas import BanCreate, BanResponse
@@ -38,12 +38,15 @@ async def join_room(
     current_user: user_dependencies,
     request_data: JoinRoomRequest,
     room_member_service: room_member_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> RoomResponse:
     """
     Пользователь присоединяется к комнате.
     Требуется аутентификация. Если комната приватная, требуется пароль.
     """
-    return await room_member_service.join_room(current_user, room_id, request_data.password)
+    current_user.set_session_id = session_id
+    user_from_identity = current_user.get_current_user()
+    return await room_member_service.join_room(user_from_identity, room_id, request_data.password)
 
 
 
@@ -55,12 +58,15 @@ async def leave_room(
     ],
     current_user: user_dependencies,
     room_member_service: room_member_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict:
     """
     Пользователь покидает комнату.
     Требуется аутентификация.
     """
-    return await room_member_service.leave_room(room_id, current_user)
+    current_user.set_session_id = session_id
+    user_from_identity = current_user.get_current_user()
+    return await room_member_service.leave_room(room_id, user_from_identity)
 
 
 @room_member.get(
@@ -74,7 +80,6 @@ async def get_room_members(
     ],
     room_member_service: room_member_service,
     redis_client: redis_service,
-    
 ) -> list[UserResponse]:
     """
     Получает список всех участников комнаты.
@@ -106,6 +111,7 @@ async def add_ban(
     ban_data: BanCreate,
     user: user_dependencies,
     room_member_service: room_member_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> BanResponse:
     """
     Банит пользователя в конкретной комнате или глобально.
@@ -122,8 +128,10 @@ async def add_ban(
     Returns:
         BanResponse: Детали созданной записи о бане.
     """
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
     ban_data = ban_data.model_dump()
-    return await room_member_service.ban_user_from_room(room_id, user_id, ban_data, user)
+    return await room_member_service.ban_user_from_room(room_id, user_id, ban_data, user_from_identity)
 
 
 @room_member.delete(
@@ -145,6 +153,7 @@ async def unban_user(
     ],
     current_user: user_dependencies,
     room_member_service: room_member_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict[str, Any]:
     """
     Снимает бан с пользователя в конкретной комнате или глобально.
@@ -161,7 +170,9 @@ async def unban_user(
     Returns:
         dict: Сообщение об успешном снятии бана.
     """
-    return await room_member_service.unban_user_from_room(room_id, user_id, current_user)
+    current_user.set_session_id = session_id
+    user_from_identity = current_user.get_current_user()
+    return await room_member_service.unban_user_from_room(room_id, user_id, user_from_identity)
 
 
 @room_member.post(
@@ -178,6 +189,7 @@ async def send_room_invite(
     ],
     current_user: user_dependencies,
     room_member_service: room_member_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict[str, str]:
     """
     Отправляет приглашение указанному пользователю присоединиться к комнате.
@@ -192,7 +204,9 @@ async def send_room_invite(
     Returns:
         dict[str, str]: Сообщение об успешной отправке приглашения.
     """
-    return await room_member_service.send_room_invite(room_id, current_user.id, invited_user_id)
+    current_user.set_session_id = session_id
+    user_from_identity = current_user.get_current_user()
+    return await room_member_service.send_room_invite(room_id, user_from_identity.id, invited_user_id)
 
 
 @room_member.put(
@@ -208,6 +222,7 @@ async def respond_to_room_invite(
     response_data: InviteResponse,
     current_user: user_dependencies,
     room_member_service: room_member_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict[str, str]:
     """
     Отвечает на приглашение в комнату (принимает или отклоняет).
@@ -220,8 +235,10 @@ async def respond_to_room_invite(
     Returns:
         dict[str, str]: Сообщение о результате операции.
     """
+    current_user.set_session_id = session_id
+    user_from_identity = current_user.get_current_user()
     return await room_member_service.handle_room_invite_response(
-        notification_id, current_user.id, response_data.action
+        notification_id, user_from_identity.id, response_data.action
     )
 
 @room_member.put(
@@ -240,6 +257,7 @@ async def update_member_role(
     user: user_dependencies,
     new_role: RoomMemberRoleUpdate,
     room_member_service: room_member_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> RoomMemberResponse:
     """
     Изменяет роль члена комнаты. Доступно только владельцу комнаты.
@@ -256,6 +274,8 @@ async def update_member_role(
     Raises:
         HTTPException: Если комната не найдена, у пользователя нет прав, или произошла ошибка.
     """
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
     return await room_member_service.update_member_role(
-        room_id, target_user_id, new_role.role, user
+        room_id, target_user_id, new_role.role, user_from_identity
     )

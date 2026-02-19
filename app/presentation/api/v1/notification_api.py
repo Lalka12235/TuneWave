@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Query, status
+from fastapi import APIRouter, Cookie, Path, Query, status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.notification_schemas import NotificationResponse
@@ -28,6 +28,7 @@ notify_service = FromDishka[NotificationService]
 async def get_my_notifications(
     user:user_dependencies,
     notify_service: notify_service,
+    session_id: Annotated[str | None, Cookie()] = None,
     limit: Annotated[int, Query(ge=1, le=100, description="Максимальное количество уведомлений для возврата.")] = 10,
     offset: Annotated[int, Query(ge=0, description="Смещение для пагинации.")] = 0,
 ) -> list[NotificationResponse]:
@@ -42,8 +43,10 @@ async def get_my_notifications(
     Returns:
         List[NotificationResponse]: Список объектов NotificationResponse.
     """
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
     return notify_service.get_user_notifications(
-        user.id,limit=limit, offset=offset
+        user_from_identity.id,limit=limit, offset=offset
     )
 
 
@@ -57,6 +60,7 @@ async def mark_notification_as_read(
     notify_service: notify_service,
     notification_id: Annotated[uuid.UUID,Path(...,description="ID уведомления, которое нужно отметить как прочитанное.")],
     user: user_dependencies,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> NotificationResponse:
     """
     Отмечает конкретное уведомление как прочитанное.
@@ -68,8 +72,10 @@ async def mark_notification_as_read(
     Returns:
         NotificationResponse: Детали обновленного уведомления.
     """
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
     return notify_service.mark_notification_as_read(
-        notification_id, user.id
+        notification_id, user_from_identity.id
     )
 
 
@@ -82,6 +88,7 @@ async def delete_notifications(
     notify_service: notify_service,
     notification_id: Annotated[uuid.UUID,Path(...,description="ID уведомления, которое нужно отметить как прочитанное.")],
     user: user_dependencies,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> dict[str,str]:
     """
     Удаляет конкретное уведомление.
@@ -93,6 +100,8 @@ async def delete_notifications(
     Returns:
         dict[str, str]: Сообщение об успешном удалении.
     """
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
     return notify_service.delete_notification(
-        notification_id, user.id
+        notification_id, user_from_identity.id
     )

@@ -1,14 +1,16 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Path, UploadFile
+from fastapi import APIRouter, Path, UploadFile, Cookie,Depends
 
-from app.domain.entity import UserEntity
+#from app.domain.entity import UserEntity
 from app.presentation.schemas.user_schemas import UserResponse, UserUpdate
 from app.application.services.user_service import UserService
 from app.application.services.redis_service import RedisService
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
+from app.application.services.indentity_provider import IndentityProvider
+from app.presentation.dependencies import get_indentity_provider
 
 user = APIRouter(
     tags=['User'],
@@ -16,16 +18,17 @@ user = APIRouter(
     route_class=DishkaRoute
 )
 
-user_dependencies = FromDishka[UserEntity]
+current_user = Annotated[IndentityProvider,Depends(get_indentity_provider)]
 redis_service = FromDishka[RedisService]
 user_service = FromDishka[UserService]
 
 @user.get('/me',response_model=UserResponse)
 @inject
 async def get_me(
-    user: user_dependencies,
+    user: current_user,
     redis_client: redis_service,
     user_service: user_service,
+    session_id: Annotated[str | None, Cookie()] = None,
     
 ) -> UserResponse:
     """
@@ -34,37 +37,44 @@ async def get_me(
     Returns:
         UserResponse: Pydantic-модель с данными профиля пользователя.
     """
-    cache_key = f'users:get_me:{user.id}'
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
+    cache_key = f'users:get_me:{user_from_identity.id}'
     async def fetch():
-        return user_service.user_mapper.to_response(user)
+        return user_service.user_mapper.to_response(user_from_identity)
     return await redis_client.get_or_set(cache_key,fetch,300)
 
 @user.put('/{user_id}',response_model=UserResponse)
 @inject
 async def update_profile(
-    user: user_dependencies,
+    user: current_user,
     update_data: UserUpdate,
-    user_service: user_service
+    user_service: user_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> UserResponse:
     """_summary_
 
     Args:
-        user (user_dependencies): _description_
+        user (current_user): _description_
         update_data (UserUpdate): _description_
 
     Returns:
         UserResponse: _description_
     """
+    user.set_session_id = session_id
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
     user_data = update_data.model.dict(exclude_unset=True)
-    return await user_service.update_user_profile(user.id,user_data)
+    return await user_service.update_user_profile(user_from_identity.id,user_data)
 
 
 @user.post('/me/avatar',response_model=UserResponse)
 @inject
 async def load_avatar(
-    user: user_dependencies,
+    user: current_user,
     avatar_file: UploadFile,
-    user_service: user_service
+    user_service: user_service,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> UserResponse:
     """
     Загружает новую аватарку для текущего пользователя.
@@ -77,7 +87,9 @@ async def load_avatar(
     Returns:
         UserResponse: Обновленный профиль пользователя с новым URL аватарки.
     """
-    return await user_service.load_avatar(user,avatar_file,avatar_file.content_type,avatar_file.filename)
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()    
+    return await user_service.load_avatar(user_from_identity,avatar_file,avatar_file.content_type,avatar_file.filename)
 
 
 @user.get(

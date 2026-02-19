@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter,Path, Query
+from fastapi import APIRouter, Cookie,Path, Query
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.message_schemas import MessageCreate, MessageResponse
@@ -57,6 +57,7 @@ async def create_message(
     room_id: Annotated[uuid.UUID,Path(...,description='Уникальный ID комнаты')],
     user: user_dependencies,
     message: MessageCreate,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> MessageResponse:
     """
     Создает новое сообщение в комнате.
@@ -72,4 +73,6 @@ async def create_message(
     Returns:
         MessageResponse: Объект созданного сообщения с ID и временной меткой.
     """
-    return chat_service.create_message(room_id,user.id,message)
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
+    return chat_service.create_message(room_id,user_from_identity.id,message)

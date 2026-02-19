@@ -4,8 +4,6 @@ from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from redis.asyncio import Redis
 
-from app.domain.entity import UserEntity
-
 from app.application.services.avatar_storage_service import AvatarStorageService
 # 1. КОНФИГУРАЦИЯ И СЕССИИ
 from app.config.session import get_engine,get_sessionmaker,get_session
@@ -273,17 +271,20 @@ def get_auth_service(
 ) -> AuthService:
     return AuthService(user_repo, ban_repo, user_mapper, redis_service)
 
+def get_http_service() -> HttpService:
+    return HttpService()
+
 def get_google_service(
-    #user: Annotated[UserEntity, Depends(get_current_user)],
     redis: Annotated[RedisService, Depends(get_redis_service)],
+    http_service: Annotated[HttpService,Depends(get_http_service)],
 ) -> GoogleService:
-    return GoogleService(redis)
+    return GoogleService(redis,http_service)
 
 def get_spotify_service(
-    #user: Annotated[UserEntity, Depends(get_current_user)],
     redis: Annotated[RedisService, Depends(get_redis_service)],
+    http_service: Annotated[HttpService,Depends(get_http_service)],
 ) -> SpotifyService:
-    return SpotifyService(redis)
+    return SpotifyService(redis,http_service)
 
 def get_indentity_provider(
     user_repo: Annotated[UserGateway, Depends(get_user_repo)],
@@ -291,5 +292,3 @@ def get_indentity_provider(
 ) -> IndentityProvider:
     return IndentityProvider(user_repo=user_repo,redis_service=redis_service)
 
-def get_http_service() -> HttpService:
-    return HttpService()

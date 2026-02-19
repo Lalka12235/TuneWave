@@ -1,4 +1,6 @@
-from fastapi import APIRouter, status
+from typing import Annotated
+
+from fastapi import APIRouter, Cookie, status
 
 from app.domain.entity import UserEntity
 from app.presentation.schemas.ban_schemas import BanResponse
@@ -25,6 +27,7 @@ ban_service = FromDishka[BanService]
 async def get_bans_by_admin(
     ban_service: ban_service,
     user: user_dependencies,
+    session_id: Annotated[str | None, Cookie()] = None,
     
 ) -> list[BanResponse]:
     """
@@ -36,7 +39,9 @@ async def get_bans_by_admin(
     Returns:
         list[BanResponse]: Список объектов BanResponse, представляющих выданные баны.
     """
-    return ban_service.get_bans_by_admin(user.id)
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
+    return ban_service.get_bans_by_admin(user_from_identity.id)
 
 
 @ban.get(
@@ -48,6 +53,7 @@ async def get_bans_by_admin(
 async def get_bans_on_user(
     ban_service: ban_service,
     user: user_dependencies,
+    session_id: Annotated[str | None, Cookie()] = None,
 ) -> list[BanResponse]:
     """
     Получает список всех банов, которые были получены текущим аутентифицированным пользователем.
@@ -58,4 +64,6 @@ async def get_bans_on_user(
     Returns:
         list[BanResponse]: Список объектов BanResponse, представляющих полученные баны.
     """
-    return ban_service.get_bans_on_user(user.id)
+    user.set_session_id = session_id
+    user_from_identity = user.get_current_user()
+    return ban_service.get_bans_on_user(user_from_identity.id)
