@@ -63,7 +63,7 @@ class SpotifyService:
             logger.info(f"SpotifyService: Найдено активное устройство {active_device.get('name')}")
             return active_device.get('id')
             
-        logger.info(f"SpotifyService: Активных устройств не найдено.")
+        logger.info("SpotifyService: Активных устройств не найдено.")
         return None
 
     async def _check_user_spotify_credentials(self):

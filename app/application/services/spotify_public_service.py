@@ -9,7 +9,6 @@ from app.presentation.schemas.spotify_schemas import (
     SpotifyTrackDetails,
 )
 
-from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.spotify_exception import SpotifyAuthorizeError,SpotifyAPIError
 from app.application.services.http_service import HttpService
 
@@ -71,10 +70,10 @@ class SpotifyPublicService:
             if e.response.status_code == 401:
                 raise SpotifyAuthorizeError(detail="Требуется переавторизация")
         
-        raise SpotifyAPIError(
-            status_code=e.response.status_code,
-            detail=f"Ошибка Spotify ({endpoint}): {e.response.text}"
-        )
+            raise SpotifyAPIError(
+                status_code=e.response.status_code,
+                detail=f"Ошибка Spotify ({endpoint}): {e.response.text}"
+            )
         
         
     async def search_public_track(self,query: str, limit: int = 10) -> dict[str,str]:
