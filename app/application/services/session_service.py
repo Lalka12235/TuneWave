@@ -1,9 +1,9 @@
-import uuid
+import secrets
 from typing import NewType
 
-SessionID = NewType('SessionID',uuid.UUID)
+SessionID = NewType('SessionID',str)
 
 class SessionService:
     
     def generate_session_id(self) -> SessionID:
-        return SessionID(uuid.uuid4())
+        secrets.token_hex(16)
