@@ -1,4 +1,4 @@
-#TuneWave
+# TuneWave
 
 **TuneWave is a platform where users can find like-minded music lovers, listen to tracks together in real time, discuss music, and discover new genres. The recommendation algorithm selects rooms with music and people, and suggests interesting tracks based on preferences**
 
