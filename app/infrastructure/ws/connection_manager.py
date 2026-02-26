@@ -5,8 +5,6 @@ from app.application.services.redis_service import RedisService
 
 class ConnectionManager:
     def __init__(self,redis_serive: RedisService):
-        self.active_connections: dict[uuid.UUID,list[WebSocket]] = {}
-        self.user_connections: dict[uuid.UUID,WebSocket] =  {}
         self.redis_service = redis_serive
 
     GLOBAL_ROOM_ID = uuid.UUID('00000000-0000-0000-0000-000000000000')
