@@ -5,9 +5,9 @@ from app.infrastructure.celery.email import EmailService
 
   
 @celery_app.task(
-    bind=True, # <-- ЭТО ОБЯЗАТЕЛЬНО
-    default_retry_delay=300, # 5 минут
-    max_retries=5 # Максимум 5 попыток
+    bind=True,
+    default_retry_delay=300,
+    max_retries=5
 )
 def send_email_task(
     self,

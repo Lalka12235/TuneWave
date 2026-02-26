@@ -9,7 +9,7 @@ from app.domain.enum import Role
 from app.presentation.schemas.room_schemas import RoomResponse
 
 from app.presentation.auth.hash import make_hash_pass
-from app.infrastructure.ws.connection_manager import manager
+from app.application.services.manager_notify_service import NotifyService
 from app.application.mappers.room_mapper import RoomMapper
 
 from app.domain.exceptions.room_exception import (
@@ -31,10 +31,12 @@ class RoomService:
         room_repo: RoomGateway,
         member_room_repo: MemberRoomAssociationGateway,
         room_mapper: RoomMapper,
+        notify_service: NotifyService
     ):
         self.room_repo = room_repo
         self.member_room_repo = member_room_repo
         self.room_mapper = room_mapper
+        self.notify_service = notify_service
 
     async def get_room_by_id(self, room_id: uuid.UUID) -> RoomResponse:
         """
@@ -99,7 +101,7 @@ class RoomService:
             "action": "room_created",
             "room_data": room_response.model_dump_json(),
         }
-        await manager.broadcast(manager.GLOBAL_ROOM_ID, websocket_message)
+        await self.notify_service.send_message_for_room(websocket_message)
 
         return self.room_mapper.to_response(new_room)
 

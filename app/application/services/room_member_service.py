@@ -1,9 +1,8 @@
-import json
 import uuid
 
 from app.application.mappers.notification_mapper import NotificationMapper
 from app.config.log_config import logger
-from app.domain.entity import UserEntity,RoomEntity
+from app.domain.entity import UserEntity,RoomEntity,NotificationEntity
 from app.domain.interfaces.ban_gateway import BanGateway
 from app.domain.interfaces.member_room_association import MemberRoomAssociationGateway
 from app.domain.interfaces.room_gateway import RoomGateway
@@ -25,7 +24,7 @@ from app.application.mappers.mappers import (
 from app.domain.interfaces.notification_gateway import NotificationGateway
 
 from app.presentation.auth.hash import verify_pass
-from app.infrastructure.ws.connection_manager import manager
+from app.application.services.manager_notify_service import NotifyService
 from app.presentation.schemas.user_schemas import UserResponse
 
 from app.domain.exceptions.exception import ServerError
@@ -60,7 +59,8 @@ class RoomMemberService:
         user_mapper: UserMapper,
         ban_mapper: BanMapper,
         room_member_mapper: RoomMemberMapper,
-        notify_mapper: NotificationMapper
+        notify_mapper: NotificationMapper,
+        notify_service: NotifyService
     ):
         self.room_repo = room_repo
         self.user_repo = user_repo
@@ -72,8 +72,42 @@ class RoomMemberService:
         self.ban_mapper = ban_mapper
         self.room_member_mapper = room_member_mapper
         self.notify_mapper = notify_mapper
+        self.notify_service = notify_service
+    
+    def _check_notification_owner(self,notification: NotificationEntity,current_user_id: uuid.UUID):
+        if not notification.user_id == current_user_id:
+            raise NotificationNotPermission(
+                detail="Это уведомление принадлежит не вам"
+            )
+    def _check_notification_type(self,notification: NotificationEntity,expected_type: str): 
+        if not notification.notification_type != expected_type:
+            raise NotificationTypeError(
+                detail=f"Это уведомление не является {expected_type}.",
+            )
+    def _check_notification_unread(self,notification: NotificationEntity):
+        if not notification.is_read:
+            raise NotificationStateError(
+                detail="Это приглашение уже было обработано."
+            )
+            
+    def _check_users_exist(self, inviter_id: uuid.UUID, invited_user_id: uuid.UUID) -> tuple[UserEntity,UserEntity]:
+        inviter = self.user_repo.get_user_by_id(inviter_id)
+        if not inviter:
+            raise UserNotFound(detail="Приглашающий пользователь не найден")
+        
+        invited = self.user_repo.get_user_by_id(invited_user_id)
+        if not invited:
+            raise UserNotFound(detail="Приглашаемый пользователь не найден")
+        
+        return inviter, invited
 
-    def verify_room_password(room: RoomEntity, password: str) -> bool:
+    def _check_not_self(self, current_user_id: uuid.UUID, target_user_id: uuid.UUID) -> None:
+        if current_user_id == target_user_id:
+            raise SelfInteractionError(
+                detail="Вы не можете выполнять действия самим с собой"
+            )
+    
+    def _verify_room_password(room: RoomEntity, password: str) -> bool:
         """
         Проверяет предоставленный пароль для приватной комнаты.
         """
@@ -114,7 +148,7 @@ class RoomMemberService:
             raise UserInRoomError()
 
         if room.is_private:
-            if not password or not self.verify_room_password(room, password):
+            if not password or not self._verify_room_password(room, password):
                 raise InvalidRoomPasswordError()
 
         current_members_count = len(
@@ -127,24 +161,20 @@ class RoomMemberService:
         try:
             self.member_room_repo.add_member(user.id, room_id, role=Role.MEMBER.value)
 
-            websocket_message_for_room = {
-                "action": "join_room",
-                "room_id": str(room.id),
-                "user_id": str(user.id),
-                "username": user.username,
-                "detail": f"{user.username} присоединился к комнате",
-            }
-            websocket_message_for_user = {
-                "action": "join_room",
-                "room_id": str(room.id),
-                "user_id": str(user.id),
-                "username": user.username,
-                "detail": f"Вы присоединились к комнате {room.name}",
-            }
-            await manager.send_personal_message(
-                json.dumps(websocket_message_for_user), user.id
+            await self.notify_service.send_mesasge_for_user(
+                action="join_room",
+                room_id=room_id,
+                user_id=user.id,
+                username=user.username,
+                detail=f"Вы присоединились к комнате {room.name}",
             )
-            await manager.broadcast(room_id, json.dumps(websocket_message_for_room))
+            await self.notify_service.send_message_for_room(
+                action="join_room",
+                room_id=room_id,
+                user_id=user.id,
+                username=user.username,
+                detail=f"{user.username} присоединился к комнате",
+            )
 
             return self.room_mapper.to_response(room)
         except Exception as e:
@@ -173,26 +203,22 @@ class RoomMemberService:
         try:
             room_name_for_message = room.name
             deleted_successfully = self.member_room_repo.remove_member(user.id, room_id)
-
-            websocket_message_for_room = {
-                "action": "leave_room",
-                "room_id": str(room_id),
-                "user_id": str(user.id),
-                "username": user.username,
-                "detail": f"{user.username} вышел из комнате",
-            }
-            websocket_message_for_user = {
-                "action": "leave_room",
-                "room_id": str(room_id),
-                "user_id": str(user.id),
-                "username": user.username,
-                "detail": f"Вы вышли из комнате{room_name_for_message}",
-            }
-            await manager.send_personal_message(
-                json.dumps(websocket_message_for_user), user.id
+            
+            await self.notify_service.send_mesasge_for_user(
+                action="leave_room",
+                room_id=room_id,
+                user_id=user.id,
+                username=user.username,
+                detail=f"Вы вышли из комнате{room_name_for_message}"
             )
-            await manager.broadcast(room_id, json.dumps(websocket_message_for_room))
-
+            await self.notify_service.send_message_for_room(
+                action="leave_room",
+                room_id=room_id,
+                user_id=user.id,
+                username=user.username,
+                detail=f"{user.username} вышел из комнате"
+            )
+            
             if deleted_successfully:
                 return {
                     "status": "success",
@@ -302,24 +328,22 @@ class RoomMemberService:
                     detail="Ошибка при формировании ответа после обновления роли.",
                 )
 
-            role_message_for_room = {
-                "room_id": str(room_id),
-                "username": target_user.username,
-                "new_role": target_user_association.role,
-                "moderator_id": str(current_user.id),
-                "moderator_username": current_user.username,
-                "detail": f"У пользователя {target_user.username} была обновлена роль до {target_user_association.role}",
-            }
-            role_message_for_user = {
-                "room_id": str(room_id),
-                "username": target_user.username,
-                "new_role": target_user_association.role,
-                "moderator_id": str(current_user.id),
-                "moderator_username": current_user.username,
-                "detail": f"У вас была обновлена роль до {new_role}",
-            }
-            await manager.send_personal_message(json.dumps(role_message_for_user))
-            await manager.broadcast(room_id, json.dumps(role_message_for_room))
+            await self.notify_service.send_mesasge_for_user(
+                room_id=str(room_id),
+                username=target_user.username,
+                new_role=target_user_association.role,
+                moderator_id=str(current_user.id),
+                moderator_username=current_user.username,
+                detail=f"У вас была обновлена роль до {new_role}",
+            )
+            await self.notify_service.send_message_for_room(
+                room_id=str(room_id),
+                username=target_user.username,
+                new_role=target_user_association.role,
+                moderator_id=str(current_user.id),
+                moderator_username=current_user.username,
+                detail=f"У пользователя {target_user.username} была обновлена роль до {target_user_association.role}",
+            )
 
             return self.room_member_mapper.to_response(final_association_for_response)
         except Exception as e:
@@ -369,8 +393,7 @@ class RoomMemberService:
             raise UserNotInRoomError(
                 detail="Пользователь, которого вы пытаетесь кикнуть, не найден в этой комнате.",
             )
-        if current_user.id == user_id:
-            raise SelfInteractionError(detail="Нельзя кикнуть себя")
+        self._check_not_self(current_user.id,user_id)
         if user_id == room.owner_id:
             raise RoomPermissionDeniedError(
                 detail="Владельца нельяза кикнуть из комнаты.",
@@ -383,28 +406,25 @@ class RoomMemberService:
                 raise RoomPermissionDeniedError(detail="Нельзя кикнуть Владельца")
 
         try:
-            kick_message_for_room = {
-                "action": "you_weke_kicked",
-                "kicked_user_id": user_id,
-                "kicked_username": target_user.username,
-                "room_id": room_id,
-                "moderator_id": current_user.id,
-                "detail": f"Пользователь {target_user.username} был кикнут из комнаты.",
-            }
-            kick_message_for_user = {
-                "action": "user_kicked_from_room",
-                "kicked_user_id": user_id,
-                "kicked_username": target_user.username,
-                "room_id": room_id,
-                "moderator_id": current_user.id,
-                "detail": f"Вы были кикнуты из комнаты {room.name}",
-            }
             self.member_room_repo.remove_member(user_id, room_id)
 
-            await manager.send_personal_message(
-                json.dumps(kick_message_for_user), user_id
+            await self.notify_service.send_mesasge_for_user(
+                action="user_kicked_from_room",
+                kicked_user_id=user_id,
+                kicked_username=target_user.username,
+                room_id=str(room_id),
+                moderator_id=str(current_user.id),
+                detail=f"Вы были кикнуты из комнаты {room.name}",
             )
-            await manager.broadcast(room_id, json.dumps(kick_message_for_room))
+            await self.notify_service.send_message_for_room(
+                action="user_kicked_from_room",
+                kicked_user_id=user_id,
+                kicked_username=target_user.username,
+                room_id=str(room_id),
+                moderator_id=str(current_user.id),
+                detail=f"Пользователь {target_user.username} был кикнут из комнаты.",
+            )
+            
             return {
                 "action": "kick member",
                 "status": "success",
@@ -437,46 +457,43 @@ class RoomMemberService:
         Returns:
             BanResponse: Объект BanResponse, представляющий созданный бан.
         """
+        
+        room = self.room_repo.get_room_by_id(room_id)
+        if not room:
+            raise RoomNotFoundError()
+
+        current_user_assoc = self.member_room_repo.get_association_by_ids(
+            current_user.id, room_id
+        )
+        if not current_user_assoc or current_user_assoc.role != Role.OWNER.value:
+            raise RoomPermissionDeniedError(
+                detail="У вас нет прав для бана пользователей в этой комнате. Только владелец может банить.",
+            )
+
+        self._check_not_self(current_user.id,target_user_id)
+
+        existing_global_ban = self.ban_repo.is_user_banned_global(target_user_id)
+        if existing_global_ban:
+            raise UserBannedGlobal()
+
+        existing_local_ban = self.ban_repo.is_user_banned_local(
+            target_user_id, room_id
+        )
+        if existing_local_ban:
+            raise UserBannedInRoom()
+
+        existing_member_association = self.member_room_repo.get_association_by_ids(
+            target_user_id, room_id
+        )
+        if existing_member_association:
+            removed_from_room = self.member_room_repo.remove_member(
+                target_user_id, room_id
+            )
+            if not removed_from_room:
+                raise ServerError(
+                    detail="Не удалось подготовить пользователя к бану.",
+                )
         try:
-            room = self.room_repo.get_room_by_id(room_id)
-            if not room:
-                raise RoomNotFoundError()
-
-            current_user_assoc = self.member_room_repo.get_association_by_ids(
-                current_user.id, room_id
-            )
-            if not current_user_assoc or current_user_assoc.role != Role.OWNER.value:
-                raise RoomPermissionDeniedError(
-                    detail="У вас нет прав для бана пользователей в этой комнате. Только владелец может банить.",
-                )
-
-            if current_user.id == target_user_id:
-                raise SelfInteractionError(
-                    detail="Вы не можете забанить самого себя.",
-                )
-
-            existing_global_ban = self.ban_repo.is_user_banned_global(target_user_id)
-            if existing_global_ban:
-                raise UserBannedGlobal()
-
-            existing_local_ban = self.ban_repo.is_user_banned_local(
-                target_user_id, room_id
-            )
-            if existing_local_ban:
-                raise UserBannedInRoom()
-
-            existing_member_association = self.member_room_repo.get_association_by_ids(
-                target_user_id, room_id
-            )
-            if existing_member_association:
-                removed_from_room = self.member_room_repo.remove_member(
-                    target_user_id, room_id
-                )
-                if not removed_from_room:
-                    raise ServerError(
-                        detail="Не удалось подготовить пользователя к бану.",
-                    )
-
             new_ban_entry = self.ban_repo.add_ban(
                 ban_user_id=target_user_id,
                 room_id=room_id,
@@ -484,15 +501,7 @@ class RoomMemberService:
                 by_ban_user_id=current_user.id,
             )
 
-            ban_notification_for_room = {
-                "action": "ban",
-                "room_id": str(room_id),
-                "user_id": str(target_user_id),
-                "banned_by": str(current_user.id),
-                "reason": ban_data.reason if ban_data.reason else "не указана",
-                "detail": f"Пользователь {target_user_id} был забанен в комнате.",
-            }
-            ban_notification_for_user = {
+            await self.notify_service.send_mesasge_for_user({
                 "action": "ban",
                 "room_id": str(room_id),
                 "user_id": str(target_user_id),
@@ -500,10 +509,17 @@ class RoomMemberService:
                 "reason": ban_data.reason if ban_data.reason else "не указана",
                 "detail": f"Вы были забанены в комнате {room.name}.",
             }
-            await manager.send_personal_message(
-                json.dumps(ban_notification_for_user), target_user_id
             )
-            await manager.broadcast(room_id, json.dumps(ban_notification_for_room))
+            await self.notify_service.send_message_for_room(
+                {
+                "action": "ban",
+                "room_id": str(room_id),
+                "user_id": str(target_user_id),
+                "banned_by": str(current_user.id),
+                "reason": ban_data.reason if ban_data.reason else "не указана",
+                "detail": f"Пользователь {target_user_id} был забанен в комнате.",
+                }
+            )
 
             return self.ban_mapper.to_response(new_ban_entry)
 
@@ -542,10 +558,7 @@ class RoomMemberService:
                 detail="У вас нет прав для снятия банов в этой комнате. Только владелец может снимать баны.",
             )
 
-        if current_user.id == target_user_id:
-            raise SelfInteractionError(
-                detail="Вы не можете снять бан с самого себя.",
-            )
+        self._check_not_self(current_user.id,target_user_id)
 
         existing_ban_to_unban = self.ban_repo.is_user_banned_local(
             target_user_id, room_id
@@ -564,24 +577,23 @@ class RoomMemberService:
                     detail="Не удалось снять бан из-за внутренней ошибки сервера.",
                 )
 
-            unban_notification_for_room = {
-                "action": "unban",
-                "room_id": str(room_id),
-                "user_id": str(target_user_id),
-                "unbanned_by": str(current_user.id),
-                "detail": f"Бан пользователя {target_user_id} в комнате снят.",
-            }
-            unban_notification_for_user = {
+            await self.notify_service.send_mesasge_for_user({
                 "action": "unban",
                 "room_id": str(room_id),
                 "user_id": str(target_user_id),
                 "unbanned_by": str(current_user.id),
                 "detail": f"Ваш бан в комнате{room.name} снят.",
             }
-            await manager.send_personal_message(
-                json.dumps(unban_notification_for_user), target_user_id
             )
-            await manager.broadcast(room_id, json.dumps(unban_notification_for_room))
+            await self.notify_service.send_message_for_room(
+                {
+                "action": "unban",
+                "room_id": str(room_id),
+                "user_id": str(target_user_id),
+                "unbanned_by": str(current_user.id),
+                "detail": f"Бан пользователя {target_user_id} в комнате снят.",
+                }
+            )
 
             return {
                 "status": "success",
@@ -612,22 +624,10 @@ class RoomMemberService:
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise RoomNotFoundError()
-        inviter = self.user_repo.get_user_by_id(inviter_id)
-        if not inviter:
-            raise UserNotFound(
-               detail="Приглашающий пользователь не найден"
-            )
+        
+        inviter,invited = self._check_users_exist(inviter_id,invited_user_id)
 
-        invited = self.user_repo.get_user_by_id(invited_user_id)
-        if not invited:
-            raise UserNotFound(
-                detail="Приглашаемый пользователь не найден"
-            )
-
-        if inviter_id == invited_user_id:
-            raise SelfInteractionError(
-                detail="Вы не можете пригласить самого себя в комнату."
-            )
+        self._check_not_self(inviter_id,invited_user_id)
 
         inviter_membership = self.member_room_repo.get_member_room_association(
             room_id, inviter_id
@@ -662,7 +662,8 @@ class RoomMemberService:
             logger.info(
                 f"RoomService: уведомление успешно отправлено пользователю {invited_user_id} из комнаты {room_id}"
             )
-            ws_message = {
+
+            await self.notify_service.send_mesasge_for_user({
                 "action": "room_invite_received",
                 "room_id": str(room_id),
                 "room_name": room.name,
@@ -670,7 +671,8 @@ class RoomMemberService:
                 "inviter_username": inviter.username,
                 "detail": f"Вы получили приглашение в комнату {room.name} от {inviter.username}.",
             }
-            await manager.send_personal_message(json.dumps(ws_message), invited_user_id)
+            )
+
             return {"status": "success", "detail": "Приглашение отправлено."}
         except Exception:
             logger.error(
@@ -703,20 +705,9 @@ class RoomMemberService:
         if not notification:
             raise RoomNotFoundError()
 
-        if not notification.user_id == current_user_id:
-            raise NotificationNotPermission(
-                detail="Это уведомление принадлежит не вам"
-            )
-
-        if not notification.notification_type != NotificationType.ROOM_INVITED.value:
-            raise NotificationTypeError(
-                detail="Это уведомление не является приглашением в комнату.",
-            )
-
-        if not notification.is_read:
-            raise NotificationStateError(
-                detail="Это приглашение уже было обработано."
-            )
+        self._check_notification_owner(notification,current_user_id)
+        self._check_notification_type(notification, NotificationType.ROOM_INVITED.value)
+        self._check_notification_unread(notification)
 
         room_id = notification.room_id
         inviter_id = notification.sender_id
@@ -766,14 +757,15 @@ class RoomMemberService:
                     notification_id, current_user_id
                 )
 
-                websocket_message = {
-                    "action": "user_joined_room",
+                await self.notify_service.send_message_for_room(
+                {
+                "action": "user_joined_room",
                     "room_id": str(room_id),
                     "user_id": str(invited_user_id),
                     "username": invited_user.username,
                     "detail": f"{invited_user.username} присоединился(ась) к комнате.",
                 }
-                await manager.broadcast(room_id, json.dumps(websocket_message))
+            )
 
                 if inviter:
                     self.notify_repo.add_notification(

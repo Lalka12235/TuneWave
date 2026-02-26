@@ -11,7 +11,7 @@ from app.presentation.schemas.room_schemas import TrackInQueueResponse
 from app.application.mappers.mappers import TrackMapper
 from app.domain.interfaces.track_gateway import TrackGateway
 
-from app.infrastructure.ws.connection_manager import manager
+from app.application.services.manager_notify_service import NotifyService
 from app.domain.interfaces.member_room_association import MemberRoomAssociationGateway
 
 from app.domain.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError,RoomPermissionDeniedError,TrackAlreadyInQueueError
@@ -29,11 +29,13 @@ class RoomQueueService:
         room_track_repo: RoomTrackAssociationGateway,
         track_repo: TrackGateway,
         member_room_repo: MemberRoomAssociationGateway,
+        notify_service: NotifyService
     ):
         self.room_repo = room_repo
         self.room_track_repo = room_track_repo
         self.track_repo = track_repo
         self.member_room_repo = member_room_repo
+        self.notify_service = notify_service
     
     
     async def get_room_queue(self,room_id: uuid.UUID) -> list[TrackInQueueResponse]:
@@ -103,8 +105,9 @@ class RoomQueueService:
             )
         try:
             updated_queue = self.room_track_repo.get_queue_for_room( room_id)
-            update_message = {
-                "action": "add",
+            await self.notify_service.send_message_for_room(
+            {
+            "action": "add",
                 "queue": [
                     {
                         "id": str(assoc.id),
@@ -116,7 +119,7 @@ class RoomQueueService:
                     } for assoc in updated_queue
                 ]
             }
-            await manager.broadcast(room_id, json.dumps(update_message))
+        )
         except Exception as e:
             print(f"Ошибка при отправке WebSocket-сообщения: {e}")
 
@@ -166,8 +169,9 @@ class RoomQueueService:
             )
         try:
             updated_queue = self.room_track_repo.get_queue_for_room( room_id)
-            update_message = {
-                "action": "remove",
+            await self.notify_service.send_message_for_room(
+            {
+            "action": "remove",
                 "queue": [
                     {
                         "id": str(assoc.id),
@@ -179,7 +183,7 @@ class RoomQueueService:
                     } for assoc in updated_queue
                 ]
             }
-            await manager.broadcast(room_id, json.dumps(update_message))
+        )
         except Exception as e:
             print(f"Ошибка при отправке WebSocket-сообщения: {e}")
 
@@ -266,7 +270,7 @@ class RoomQueueService:
                     } for assoc in updated_queue
                 ]
             }
-            await manager.broadcast(room_id, json.dumps(update_message))
+            await self.notify_service.send_message_for_room(update_message)
         except Exception as e:
             print(f"Ошибка при отправке WebSocket-сообщения: {e}")
 

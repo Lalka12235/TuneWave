@@ -15,7 +15,7 @@ from app.presentation.schemas.spotify_schemas import SpotifyTrackDetails
 from app.application.mappers.mappers import RoomMapper
 from app.application.services.spotify_service import SpotifyService
 
-from app.infrastructure.ws.connection_manager import manager
+from app.application.services.manager_notify_service import NotifyService
 
 from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.room_exception import (
@@ -38,11 +38,13 @@ class RoomPlaybackService:
         room_track_repo: RoomTrackAssociationGateway,
         room_repo: RoomGateway,
         member_room_repo: MemberRoomAssociationGateway,
+        notify_service: NotifyService,
     ):
         self.user_repo = user_repo
         self.room_track_repo = room_track_repo
         self.room_repo = room_repo
         self.member_room_repo = member_room_repo
+        self.notify_service = notify_service
 
     async def set_playback_host(
         self, room_id: uuid.UUID, user_id: uuid.UUID, current_user: UserEntity
@@ -116,7 +118,8 @@ class RoomPlaybackService:
             )
             raise ServerError(detail="Не удалось назначить хоста воспроизведения.")
 
-        ws_message = {
+        await self.notify_service.send_mesasge_for_user(
+            {
             "action": "playback_host_changed",
             "room_id": str(room_id),
             "playback_host_id": str(room.playback_host_id),
@@ -124,8 +127,8 @@ class RoomPlaybackService:
             "active_spotify_device_id": room.active_spotify_device_id,
             "is_playing": room.is_playing,
             "message": f"'{host_user.username}' стал хостом воспроизведения.",
-        }
-        await manager.broadcast(room_id, json.dumps(ws_message))
+            }
+        )
         logger.info(
             f"RoomService: Отправлено WS-уведомление о смене хоста воспроизведения в комнате '{room_id}'."
         )
@@ -160,14 +163,14 @@ class RoomPlaybackService:
             )
             raise ServerError(detail="Не удалось очистить хоста воспроизведения.")
 
-        ws_message = {
+        await self.notify_service.send_mesasge_for_user(
+            {
             "action": "playback_host_cleared",
             "room_id": str(room_id),
             "old_playback_host_id": str(old_host_id) if old_host_id else None,
             "message": "Хост воспроизведения комнаты был сброшен.",
-        }
-
-        await manager.broadcast(room_id, json.dumps(ws_message))
+            }
+        )
         logger.info(
             f"RoomService: Отправлено WS-уведомление об очистке хоста воспроизведения в комнате '{room_id}'."
         )
@@ -217,7 +220,8 @@ class RoomPlaybackService:
                     current_track_assoc.track
                 )
 
-        ws_message = {
+        await self.notify_service.send_mesasge_for_user(
+            {
             "action": "player_state_changed",
             "room_id": str(room_id),
             "is_playing": is_playing,
@@ -235,8 +239,9 @@ class RoomPlaybackService:
                 if current_track_assoc and current_track_assoc.track
                 else 0
             ),
-        }
-        await manager.broadcast(room_id, json.dumps(ws_message))
+            }
+        )
+        
         logger.debug(
             f"RoomService: Отправлено WS-уведомление об изменении состояния плеера в комнате '{room_id}'."
         )

@@ -15,6 +15,7 @@ from app.domain.exceptions.room_exception import RoomNotFoundError
 from app.domain.exceptions.notification_exception import NotificationNotFound,NotificationNotPermission
 
 
+
 class NotificationService:
     """
     Реализует бизнес логику для работы с уведомлениями
@@ -153,3 +154,5 @@ class NotificationService:
             raise ServerError(
                 detail="Не удалось удалить уведомление из-за внутренней ошибки сервера."
             )
+    
+    

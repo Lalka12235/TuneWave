@@ -9,7 +9,7 @@ from app.domain.interfaces.friendship_gateway import FriendshipGateway
 from app.domain.interfaces.user_gateway import UserGateway
 from app.presentation.schemas.friendship_schemas import FriendshipResponse
 from app.domain.interfaces.notification_gateway import NotificationGateway
-from app.infrastructure.ws.connection_manager import manager
+from app.application.services.manager_notify_service import NotifyService
 from app.application.mappers.friendship_mapper import FriendshipMapper
 
 from app.domain.exceptions.exception import ServerError
@@ -36,11 +36,13 @@ class FriendshipService:
         notify_repo: NotificationGateway,
         user_repo: UserGateway,
         friendship_mapper: FriendshipMapper,
+        notify_service: NotifyService
     ):
         self.friend_repo = friend_repo
         self.notify_repo = notify_repo
         self.user_repo = user_repo
         self.friendship_mapper = friendship_mapper
+        self.notify_service = notify_service
 
     def get_my_fridns(self, user_id: uuid.UUID) -> list[FriendshipResponse]:
         """
@@ -152,9 +154,7 @@ class FriendshipService:
                 "requester_username": req_user.username,
                 "detail": f"Вы получили новый запрос на дружбу от {req_user.username}.",
             }
-            await manager.send_personal_message(
-                json.dumps(notification_data), str(accepter_id)
-            )
+            await self.notify_service.send_message_for_requester(notification_data)
             return self.friendship_mapper.to_response(friendship)
         except Exception:
             logger.error(
@@ -232,12 +232,8 @@ class FriendshipService:
                 "detail": f"Вы приняли запрос на дружбу от {requester.username}. Вы теперь друзья!",
             }
 
-            await manager.send_personal_message(
-                json.dumps(notification_data_accepter), str(current_accepter_id)
-            )
-            await manager.send_personal_message(
-                json.dumps(notification_data_requester), str(friendship.requester_id)
-            )
+            await self.notify_service.send_message_for_accepter(notification_data_accepter)
+            await self.notify_service.send_message_for_requester(notification_data_requester)
 
             return {"status": "success", "message": "Дружба принята"}
         except Exception:
@@ -292,6 +288,7 @@ class FriendshipService:
                 "friendship_id": str(friendship.id),
                 "accepter_id": str(current_accepter_id),
                 "accepter_username": accepter.username,
+                'requester_id':str(friendship.requester_id),
                 "detail": f"Ваш запрос на дружбу к {accepter.username} отклонен.",
             }
             self.notify_repo.add_notification(
@@ -301,9 +298,7 @@ class FriendshipService:
                 sender_id=current_accepter_id,  # Тот, кто отклонил
                 related_object_id=friendship.id,
             )
-            await manager.send_personal_message(
-                json.dumps(notification_data_requester), str(friendship.requester_id)
-            )
+            await self.notify_service.send_message_for_requester(notification_data_requester)
             return {"status": "success", "message": "Friend request accepted"}
         except Exception:
             logger.error(
@@ -376,12 +371,11 @@ class FriendshipService:
             notification_data = {
                 "action": "friendship_deleted",
                 "friendship_id": str(friendship.id),
+                'user_id': str(target_user_id_for_notification),
                 "deleted_by": str(current_user_id),
                 "detail": f"Запись о дружбе с пользователем {current_user_id} удалена.",
             }
-            await manager.send_personal_message(
-                json.dumps(notification_data), target_user_id_for_notification
-            )
+            await self.notify_service.send_mesasge_for_user(notification_data)
             return {"action": "delete friendship", "status": "success"}
         except Exception:
             logger.error(
