@@ -63,3 +63,11 @@ app/
   config/          # Настройки, DI-контейнер, логирование
   main.py          # Точка входа FastAPI
 tests/             # Тесты репозиториев и модулей
+```
+
+## Запуск проекта
+```bash
+git clone https://github.com/your_username/tunewave.git
+cd tunewave
+docker compose up --build
+```
