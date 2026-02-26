@@ -1,13 +1,13 @@
 # TuneWave
 
-**TuneWave is a platform where users can find like-minded music lovers, listen to tracks together in real time, discuss music, and discover new genres. The recommendation algorithm selects rooms with music and people, and suggests interesting tracks based on preferences**
+**TuneWave — это платформа, где пользователи могут найти единомышленников среди любителей музыки, слушать треки вместе в режиме реального времени, обсуждать музыку и открывать для себя новые жанры. Алгоритм рекомендаций выбирает комнаты с музыкой и людьми и предлагает интересные треки на основе предпочтений.**
 
 **Technology Stack**
 
 **Backend:**
 - **Language: Python**
 - **Framework: FastAPI**
-- **Database: PostgreSQL (main)**
+- **Database: PostgreSQL**
 - **ORM: SQLAlchemy**
 - **Migration: Alembic**
 - **Authentication: OAuth2 (Google/Spotify)**
@@ -18,31 +18,6 @@
 **DevOps:**
 - **Containerization: Docker**
 - **CI/CD: GitLab**
-- **Hosting: https://www.heroku.com**
-
-**Frontend:**
-- **Language: TypeScript/JavaScript**
-- **Framework: React**
-- **Styling: Tailwind CSS**
-
-**Additional**
-- **WebSockets – for synchronizing listening and chats**
-- **Redis – for caching**
-- **RabbitMQ – for asynchronous task processing (sending email, background Spotify data processing, notifications) and a reliable message queue**
-
-**Minimum functionality for testing (MVP):**
-1. Registration and authorization (OAuth via Google/Spotify/).
-
-2. Creating rooms (public and private).
-
-3. Joining a room (listening to music in real time).
-
-4. Adding tracks to the queue.
-
-5. Chat in the room (the main method of communication).
-6. Room recommendations based on genres and listening history.
-7. Listening history (in the user profile).
-
 
 # API Docs
 
