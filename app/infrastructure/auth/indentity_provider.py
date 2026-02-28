@@ -1,5 +1,5 @@
 from app.infrastructure.redis.redis_service import RedisService
-from app.application.services.session_service import SessionID
+from app.infrastructure.auth.session_service import SessionID
 import uuid
 from app.domain.entity.user import UserEntity
 from app.domain.exceptions.user_exception import UserNotFound
