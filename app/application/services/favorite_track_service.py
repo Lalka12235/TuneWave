@@ -4,8 +4,7 @@ from app.domain.entity import UserEntity,TrackEntity
 from app.domain.interfaces.favorite_track_gateway import FavoriteTrackGateway
 from app.domain.interfaces.track_gateway import TrackGateway
 from app.presentation.schemas.favorite_track_schemas import FavoriteTrackResponse
-from app.application.services.spotify_public_service import SpotifyPublicService
-from app.application.services.spotify_service import SpotifyService
+from app.infrastructure.external.spotify import SpotifyService,SpotifyPublicService
 
 from app.application.mappers.favorite_track_mapper import FavoriteTrackMapper
 

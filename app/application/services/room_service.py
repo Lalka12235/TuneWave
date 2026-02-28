@@ -9,7 +9,7 @@ from app.domain.enum import Role
 from app.presentation.schemas.room_schemas import RoomResponse
 
 from app.presentation.auth.hash import make_hash_pass
-from app.application.services.manager_notify_service import NotifyService
+from app.infrastructure.ws.manager_notify_service import NotifyService
 from app.application.mappers.room_mapper import RoomMapper
 
 from app.domain.exceptions.room_exception import (

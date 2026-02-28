@@ -11,7 +11,7 @@ from app.presentation.schemas.room_schemas import TrackInQueueResponse
 from app.application.mappers.mappers import TrackMapper
 from app.domain.interfaces.track_gateway import TrackGateway
 
-from app.application.services.manager_notify_service import NotifyService
+from app.infrastructure.ws.manager_notify_service import NotifyService
 from app.domain.interfaces.member_room_association import MemberRoomAssociationGateway
 
 from app.domain.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError,RoomPermissionDeniedError,TrackAlreadyInQueueError

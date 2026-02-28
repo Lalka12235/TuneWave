@@ -24,7 +24,7 @@ from app.application.mappers.mappers import (
 from app.domain.interfaces.notification_gateway import NotificationGateway
 
 from app.presentation.auth.hash import verify_pass
-from app.application.services.manager_notify_service import NotifyService
+from app.infrastructure.ws.manager_notify_service import NotifyService
 from app.presentation.schemas.user_schemas import UserResponse
 
 from app.domain.exceptions.exception import ServerError

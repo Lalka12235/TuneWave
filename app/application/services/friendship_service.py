@@ -9,7 +9,7 @@ from app.domain.interfaces.friendship_gateway import FriendshipGateway
 from app.domain.interfaces.user_gateway import UserGateway
 from app.presentation.schemas.friendship_schemas import FriendshipResponse
 from app.domain.interfaces.notification_gateway import NotificationGateway
-from app.application.services.manager_notify_service import NotifyService
+from app.infrastructure.ws.manager_notify_service import NotifyService
 from app.application.mappers.friendship_mapper import FriendshipMapper
 
 from app.domain.exceptions.exception import ServerError

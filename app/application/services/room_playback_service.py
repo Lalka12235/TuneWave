@@ -13,9 +13,9 @@ from app.presentation.schemas.room_schemas import RoomResponse
 from app.presentation.schemas.spotify_schemas import SpotifyTrackDetails
 
 from app.application.mappers.mappers import RoomMapper
-from app.application.services.spotify_service import SpotifyService
+from app.infrastructure.external.spotify import SpotifyService
 
-from app.application.services.manager_notify_service import NotifyService
+from app.infrastructure.ws.manager_notify_service import NotifyService
 
 from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.room_exception import (
