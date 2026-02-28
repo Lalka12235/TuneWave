@@ -15,7 +15,7 @@ from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.auth_exception import (
     UserBannedError,
 )
-from app.application.services.redis_service import RedisService
+from app.infrastructure.redis.redis_service import RedisService
 from app.application.services.session_service import SessionID, SessionService
 from app.config.settings import settings
 

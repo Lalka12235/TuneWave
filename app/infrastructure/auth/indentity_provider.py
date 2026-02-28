@@ -1,4 +1,4 @@
-from app.application.services.redis_service import RedisService
+from app.infrastructure.redis.redis_service import RedisService
 from app.application.services.session_service import SessionID
 import uuid
 from app.domain.entity.user import UserEntity
