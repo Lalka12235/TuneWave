@@ -1,6 +1,5 @@
 from app.domain.interfaces.ban_gateway import BanGateway
 from app.domain.interfaces.user_gateway import UserGateway
-from app.application.mappers.mappers import UserMapper
 from fastapi.security import HTTPBearer
 import uuid
 from app.domain.entity.user import UserEntity
@@ -8,8 +7,8 @@ from app.config.log_config import logger
 from app.presentation.schemas.user_schemas import (
     GoogleOAuthData,
     SpotifyOAuthData,
-    UserResponse,
 )
+
 from app.infrastructure.celery.tasks import send_email_task
 from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.auth_exception import (
@@ -28,13 +27,11 @@ class AuthService:
         self,
         user_repo: UserGateway,
         ban_repo: BanGateway,
-        user_mapper: UserMapper,
         redis_service: RedisService,
         session_service: SessionService,
     ):
         self.user_repo = user_repo
         self.ban_repo = ban_repo
-        self.user_mapper = user_mapper
         self.redis_service = redis_service
         self.session_service = session_service
 
@@ -121,7 +118,7 @@ class AuthService:
 
     async def authenticate_user_with_google(
         self, google_data: GoogleOAuthData
-    ) -> tuple[UserResponse, SessionID] | None:
+    ) -> tuple[UserEntity, SessionID] | None:
         """
         Аутентифицирует пользователя через Google OAuth.
         Создает или обновляет пользователя в БД и возвращает JWT-токен вашего приложения.
@@ -165,11 +162,11 @@ class AuthService:
             )
             send_email_task.delay(google_data.email, google_data.username)
 
-            return self.user_mapper.to_response(user), session_id
+            return user, session_id
 
     async def authenticate_user_with_spotify(
         self, spotify_data: SpotifyOAuthData
-    ) -> tuple[UserResponse, SessionID]:
+    ) -> tuple[UserEntity, SessionID]:
         """
         Аутентифицирует пользователя через Spotify OAuth.
         Создает или обновляет пользователя в БД и возвращает JWT-токен вашего приложения.
@@ -214,4 +211,4 @@ class AuthService:
             )
             send_email_task.delay(spotify_data.email, spotify_data.username)
 
-        return self.user_mapper.to_response(user), session_id
+        return user, session_id

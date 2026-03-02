@@ -36,21 +36,7 @@ from app.infrastructure.db.gateway.room_gateway import SARoomGateway
 from app.infrastructure.db.gateway.track_gateway import SATrackGateway
 from app.infrastructure.db.gateway.room_track_association_gateway import SARoomTrackAssociationGateway
 
-# 4. МАППЕРЫ (APPLICATION)
-from app.application.mappers.user_mapper import UserMapper
-from app.application.mappers.ban_mapper import BanMapper
-from app.application.mappers.favorite_track_mapper import FavoriteTrackMapper
-from app.application.mappers.friendship_mapper import FriendshipMapper
-from app.application.mappers.notification_mapper import NotificationMapper
-from app.application.mappers.room_mapper import RoomMapper
-from app.application.mappers.track_mapper import TrackMapper
-from app.application.mappers.message_mapper import MessageMapper
-from app.application.mappers.room_member_mapper import RoomMemberMapper
-
 # 5. СЕРВИСЫ (APPLICATION)
-from app.application.services.user_service import UserService
-from app.application.services.ban_service import BanService
-from app.application.services.chat_service import ChatService
 from app.application.services.favorite_track_service import FavoriteTrackService
 from app.application.services.friendship_service import FriendshipService
 from app.application.services.notification_service import NotificationService
@@ -59,12 +45,7 @@ from app.application.services.track_service import TrackService
 from app.application.services.room_member_service import RoomMemberService
 from app.application.services.room_playback_service import RoomPlaybackService
 from app.application.services.room_queue_service import RoomQueueService
-from app.application.services.redis_service import RedisService
 from app.presentation.auth.auth import AuthService
-from app.application.services.google_service import GoogleService
-from app.application.services.spotify_service import SpotifyService
-from app.application.services.indentity_provider import IndentityProvider
-from app.application.services.http_service import HttpService
 
 
 
@@ -117,45 +98,6 @@ def get_room_track_association_repo(db: Session = Depends(get_db)) -> RoomTrackA
 
 def get_avatar_storage_repo() -> AvatarStorageGateway:
     return LocalAvatarStorageGateway()
-
-
-# --- МАППЕРЫ ---
-
-def get_user_mapper() -> UserMapper:
-    return UserMapper()
-
-def get_ban_mapper(user_mapper: Annotated[UserMapper,Depends(get_user_mapper)]) -> BanMapper:
-    return BanMapper(user_mapper)
-
-def get_track_mapper() -> TrackMapper:
-    return TrackMapper()
-
-def get_favorite_track_mapper(
-        user_mapper: Annotated[UserMapper,Depends(get_user_mapper)],
-        track_mapper: Annotated[TrackMapper,Depends(get_track_mapper)],
-) -> FavoriteTrackMapper:
-    return FavoriteTrackMapper(user_mapper,track_mapper)
-
-def get_friendship_mapper(user_mapper: Annotated[UserMapper,Depends(get_user_mapper)]) -> FriendshipMapper:
-    return FriendshipMapper(user_mapper)
-
-def get_notification_mapper(user_mapper: Annotated[UserMapper,Depends(get_user_mapper)]) -> NotificationMapper:
-    return NotificationMapper(user_mapper)
-
-def get_room_mapper(
-        user_mapper: Annotated[UserMapper,Depends(get_user_mapper)],
-        track_mapper: Annotated[TrackMapper,Depends(get_track_mapper)]
-) -> RoomMapper:
-    return RoomMapper(user_mapper,track_mapper)
-
-def get_message_mapper(user_mapper: Annotated[UserMapper,Depends(get_user_mapper)],) -> MessageMapper:
-    return MessageMapper(user_mapper)
-
-def get_room_member_mapper(
-        user_mapper: Annotated[UserMapper,Depends(get_user_mapper)],
-) -> RoomMemberMapper:
-    return RoomMemberMapper(user_mapper)
-
 
 # --- СЕРВИСЫ ---
 
