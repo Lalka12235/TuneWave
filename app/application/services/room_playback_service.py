@@ -12,7 +12,6 @@ from app.domain.enum import Role
 from app.presentation.schemas.room_schemas import RoomResponse
 from app.presentation.schemas.spotify_schemas import SpotifyTrackDetails
 
-from app.application.mappers.mappers import RoomMapper
 from app.infrastructure.external.spotify import SpotifyService
 
 from app.infrastructure.ws.manager_notify_service import NotifyService
@@ -28,10 +27,6 @@ from app.domain.exceptions.spotify_exception import SpotifyAuthorizeError,Spotif
 
 
 class RoomPlaybackService:
-    """
-    Реализует бизнес логику для работы с плеером комнаты
-    """
-
     def __init__(
         self,
         user_repo: UserGateway,
@@ -132,7 +127,7 @@ class RoomPlaybackService:
         logger.info(
             f"RoomService: Отправлено WS-уведомление о смене хоста воспроизведения в комнате '{room_id}'."
         )
-        return RoomMapper.to_response(room)
+        return room
 
     async def clear_playback_host(self, room_id: uuid.UUID) -> RoomResponse:
         """
@@ -143,7 +138,7 @@ class RoomPlaybackService:
             logger.info(
                 f"RoomService: Для комнаты '{room_id}' нет активного хоста воспроизведения для сброса."
             )
-            return RoomMapper.to_response(room)
+            return room
 
         old_host_id = room.playback_host_id
 
@@ -174,7 +169,7 @@ class RoomPlaybackService:
         logger.info(
             f"RoomService: Отправлено WS-уведомление об очистке хоста воспроизведения в комнате '{room_id}'."
         )
-        return RoomMapper.to_response(room)
+        return room
 
     async def update_room_playback_state(
         self,
@@ -245,7 +240,7 @@ class RoomPlaybackService:
         logger.debug(
             f"RoomService: Отправлено WS-уведомление об изменении состояния плеера в комнате '{room_id}'."
         )
-        return RoomMapper.to_response(room)
+        return room
 
     async def player_command_play(
         self,
