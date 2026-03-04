@@ -43,6 +43,7 @@ async def get_user_favorite_tracks(
     return await redis_client.get_or_set(key,fetch,300)
 
 
+#todo
 @ft.post('/me',response_model=FavoriteTrackResponse,status_code=status.HTTP_201_CREATED)
 @inject
 async def add_favorite_track(
