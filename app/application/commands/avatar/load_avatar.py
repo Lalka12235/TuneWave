@@ -8,7 +8,7 @@ from app.domain.interfaces.avatar_storage_gateway import AvatarStorageGateway
 from app.domain.interfaces.user_gateway import UserGateway
 
 
-class AvatarStorageService:
+class LoadAvatar:
 
     def __init__(self,avatar_storage: AvatarStorageGateway,user_repo: UserGateway):
         self.avatar_storage = avatar_storage
@@ -41,18 +41,6 @@ class AvatarStorageService:
     ) -> UserEntity:
         """
         Загружает файл аватарки, сохраняет его и обновляет URL в профиле пользователя.
-
-        Args:
-            user (User): Объект текущего пользователя
-            content (bytes): Содержимое файла в байтах
-            content_type (str): MIME-тип файла
-            filename (str): Имя загружаемого файла
-
-        Raises:
-            HTTPException: Если файл не соответствует требованиям (тип, размер)
-
-        Returns:
-            UserResponse: Обновленный объект пользователя с новым URL аватарки
         """
         self._check_allowed_typed_file(content_type)
         self._check_exceeds_size(content)
