@@ -1,4 +1,3 @@
-from app.application.mappers.user_mapper import UserMapper
 from app.config.log_config import logger
 from app.config.settings import settings
 from app.domain.entity import UserEntity
@@ -7,15 +6,13 @@ from app.domain.exceptions.user_exception import AvatarFyleType, FileExceedsSize
 
 from app.domain.interfaces.avatar_storage_gateway import AvatarStorageGateway
 from app.domain.interfaces.user_gateway import UserGateway
-from app.presentation.schemas.user_schemas import UserResponse
 
 
 class AvatarStorageService:
 
-    def __init__(self,avatar_storage: AvatarStorageGateway,user_repo: UserGateway,user_mapper: UserMapper):
+    def __init__(self,avatar_storage: AvatarStorageGateway,user_repo: UserGateway):
         self.avatar_storage = avatar_storage
         self.user_repo = user_repo
-        self.user_mapper = user_mapper
 
     def _check_allowed_typed_file(self,content_type: str) -> bool:
         allowed_types = ["image/jpeg", "image/png", "image/gif"]
@@ -41,7 +38,7 @@ class AvatarStorageService:
 
     async def load_avatar(
         self, user: UserEntity, content: bytes, content_type: str, filename: str
-    ) -> UserResponse:
+    ) -> UserEntity:
         """
         Загружает файл аватарки, сохраняет его и обновляет URL в профиле пользователя.
 
@@ -71,7 +68,7 @@ class AvatarStorageService:
             logger.info(
                 f"Аватар пользователя '{user.id}' успешно загружен и обновлен. URL: {new_avatar_url}"
             )
-            return self.user_mapper.to_response(updated_user)
+            return updated_user
 
         except Exception as e:
             logger.error(
