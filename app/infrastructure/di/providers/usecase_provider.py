@@ -3,7 +3,7 @@ from app.application.commands.user import CreateUser,UpdateUser,DeleteUser,ReadU
 from app.application.commands.track import CreateTrack,ReadTrack,DeleteTrack
 from app.application.commands.avatar import LoadAvatar
 from app.application.commands.ban import ReadBan,CreateBan,RemoveBan
-from app.application.commands.chat import MessageCreate,ReadMessage
+from app.application.commands.chat import CreateMessage,ReadMessage
 from app.application.commands.favorite_track import ReadFavoriteTrack,DeleteFavoriteTrack,CreateTrackFavorite
 from app.application.commands.friendship import ReadFriendship,SendFriendRequest,AcceptFriendRequest,DeleteFreidnship,DeclineFriendRequest
 from app.application.commands.notification import ReadNotification,CreateNotification,DeleteNotification,MarkReadNotification
@@ -74,6 +74,6 @@ class UseCaseProvider(Provider):
         ReadRoomQueue,
         RemoveTrackFromQueue,
         AddTrackRoomQueue,
-        MessageCreate,
+        CreateMessage,
         ReadMessage,
     )

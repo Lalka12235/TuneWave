@@ -4,22 +4,18 @@ from typing import Annotated
 
 from fastapi import (
     APIRouter,
-    Depends,
     Path,
     WebSocket,
     WebSocketDisconnect,
 )
 
 from app.domain.entity import UserEntity
-from app.application.services.chat_service import ChatService
 from app.infrastructure.ws.connection_manager import manager
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
-from app.presentation.dependencies_deprecate import get_current_user
 
 chat_ws = APIRouter(tags=["Chat WS"], prefix="/ws/chat",route_class=DishkaRoute)
-user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
-chat_service = FromDishka[ChatService]
+user_dependencies = FromDishka[UserEntity]
 
 
 @chat_ws.websocket("/{room_id}")

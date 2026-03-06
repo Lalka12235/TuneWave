@@ -10,7 +10,7 @@ from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError
 
 
-class ChatService:
+class CreateMessage:
 
     def __init__(self,chat_repo: ChatGateway,room_repo: RoomGateway,member_room: MemberRoomAssociationGateway):
         self.chat_repo = chat_repo

@@ -1,13 +1,9 @@
-from typing import Annotated
-
-from fastapi import APIRouter,status,Depends
-
-from app.domain.entity import UserEntity
+from fastapi import APIRouter,status
+from app.application.commands.ban.read_ban import ReadBan
+from app.domain.entity.user import UserEntity
 from app.presentation.schemas.ban_schemas import BanResponse
-from app.application.services.ban_service import BanService
-from app.presentation.dependencies_deprecate import get_current_user
 
-from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
+from dishka.integrations.fastapi import DishkaRoute,FromDishka
 
 ban = APIRouter(
     tags=['Ban'],
@@ -15,31 +11,19 @@ ban = APIRouter(
     route_class=DishkaRoute
 )
 
-user_dependencies = Annotated[UserEntity,Depends(get_current_user)]
-ban_service = FromDishka[BanService]
-
-
 @ban.get(
     '/my-issued',
     response_model=list[BanResponse],
     status_code=status.HTTP_200_OK,
 )
-@inject
 async def get_bans_by_admin(
-    ban_service: ban_service,
-    user: user_dependencies,
-    
+    user: FromDishka[UserEntity],
+    interactor: FromDishka[ReadBan],
 ) -> list[BanResponse]:
     """
     Получает список всех банов, которые были выданы текущим аутентифицированным пользователем.
-
-    Args:
-        current_user (User): Текущий аутентифицированный пользователь.
-
-    Returns:
-        list[BanResponse]: Список объектов BanResponse, представляющих выданные баны.
     """
-    return ban_service.get_bans_by_admin(user.id)
+    return interactor.get_bans_by_admin(user.id)
 
 
 @ban.get(
@@ -47,18 +31,11 @@ async def get_bans_by_admin(
     response_model=list[BanResponse],
     status_code=status.HTTP_200_OK,
 )
-@inject
 async def get_bans_on_user(
-    ban_service: ban_service,
-    user: user_dependencies,
+    user: FromDishka[UserEntity],
+    interactor: FromDishka[ReadBan],
 ) -> list[BanResponse]:
     """
     Получает список всех банов, которые были получены текущим аутентифицированным пользователем.
-
-    Args:
-        current_user (User): Текущий аутентифицированный пользователь.
-
-    Returns:
-        list[BanResponse]: Список объектов BanResponse, представляющих полученные баны.
     """
-    return ban_service.get_bans_on_user(user.id)
+    return interactor.get_bans_on_user(user.id)

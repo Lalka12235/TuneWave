@@ -3,7 +3,7 @@ from typing import Annotated
 from urllib.parse import urlencode
 
 import jwt
-from fastapi import APIRouter, HTTPException, Query, status,Depends
+from fastapi import APIRouter, HTTPException, Query, status,Request
 from fastapi.responses import RedirectResponse
 
 
@@ -11,12 +11,11 @@ from app.config.settings import settings
 from app.presentation.schemas.config_schemas import FrontendConfig
 from app.presentation.schemas.user_schemas import GoogleOAuthData, SpotifyOAuthData
 from app.presentation.auth.auth import AuthService
-from app.application.services.google_service import GoogleService
-from app.application.services.spotify_service import SpotifyService
 
-from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
-from app.presentation.dependencies_deprecate import get_http_service
-from app.application.services.http_service import HttpService
+from dishka.integrations.fastapi import DishkaRoute,FromDishka
+from app.infrastructure.external.http_service import HttpService
+from app.infrastructure.external.google import GoogleService
+from app.infrastructure.external.spotify import SpotifyService
 
 
 
@@ -27,7 +26,6 @@ auth = APIRouter(
 )
 
 @auth.get('/config', response_model=FrontendConfig)
-@inject
 async def get_frontend_config(
 ) -> FrontendConfig:
     """
@@ -44,7 +42,6 @@ async def get_frontend_config(
 
 
 @auth.get('/google/login')
-@inject
 async def google_login():
     params = {
         "client_id": settings.google.GOOGLE_CLIENT_ID,
@@ -58,11 +55,10 @@ async def google_login():
     return RedirectResponse(url=google_auth_url)
 
 @auth.get('/google/callback')
-@inject
 async def google_callback(
     code: Annotated[str,Query(..., description="Код авторизации от Google")],
     auth_service: FromDishka[AuthService],
-    http_service: Annotated[HttpService,Depends(get_http_service)],
+    http_service: FromDishka[HttpService],
     state: str | None = Query(None, description="Параметр состояния для защиты от CSRF"),
 ) -> RedirectResponse: 
     """
@@ -149,11 +145,10 @@ async def google_callback(
 
 
 @auth.get('/spotify/callback')
-@inject
 async def spotify_callback(
     code: Annotated[str, Query(..., description="Код авторизации от Spotify")],
     auth_service: FromDishka[AuthService],
-    http_service: Annotated[HttpService,Depends(get_http_service)],
+    http_service: FromDishka[HttpService],
     state: str | None = Query(None,description="Параметр состояния для защиты от CSRF"),
 ) -> RedirectResponse:
     """
@@ -249,23 +244,20 @@ async def spotify_callback(
 @auth.post(
     '/google/refresh_token',
 )
-@inject
 async def google_refresh_token(
-    user: user_dependencies,
     google_service: FromDishka[GoogleService],
+    request: Request,
 ):
-    google_service.user = user
+    google_service.user = request.state.user
     return await google_service._refresh_access_token()
 
 
 @auth.post(
     '/spotify/refresh_token',
 )
-@inject
 async def spotify_refresh_token(
-    user: user_dependencies,
-    spotify_service: FromDishka[SpotifyService]
+    spotify_service: FromDishka[SpotifyService],
+    request: Request
 ):
-    spotify_service.user = user
-
+    spotify_service.user = request.state.user
     return await spotify_service._refresh_access_token()
