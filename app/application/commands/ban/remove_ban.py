@@ -6,7 +6,7 @@ from app.domain.exceptions.ban_exception import UserNotExistingBan
 from app.domain.exceptions.exception import ServerError
 
 
-class BanService:
+class RemoveBan:
     
     def __init__(self,ban_repo: BanGateway):
         self.ban_repo = ban_repo

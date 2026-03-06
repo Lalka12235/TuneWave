@@ -8,7 +8,7 @@ from app.domain.exceptions.exception import ServerError
 from app.domain.exceptions.favorite_track_exception import TrackNotFound
 
 
-class FavoriteTrackService:
+class DeleteFavoriteTrack:
     def __init__(self,ft_repo: FavoriteTrackGateway,track_repo: TrackGateway):
         self.ft_repo = ft_repo
         self.track_repo = track_repo

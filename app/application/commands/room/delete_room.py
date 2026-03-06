@@ -9,7 +9,7 @@ from app.domain.exceptions.room_exception import (
     RoomPermissionDeniedError,
 )
 
-class RoomService:
+class DeleteRoom:
 
 
     def __init__(

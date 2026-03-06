@@ -3,7 +3,7 @@ import uuid
 from app.domain.interfaces.room_gateway import RoomGateway
 from app.domain.exceptions.room_exception import RoomNotFoundError
 
-class RoomQueueService:
+class ReadRoomQueue:
 
     def __init__(
         self,

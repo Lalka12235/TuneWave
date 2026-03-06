@@ -3,7 +3,7 @@ from app.domain.interfaces.ban_gateway import BanGateway
 from app.domain.entity import UserEntity
 
 
-class BanService:
+class ReadBan:
     
     def __init__(self,ban_repo: BanGateway):
         self.ban_repo = ban_repo

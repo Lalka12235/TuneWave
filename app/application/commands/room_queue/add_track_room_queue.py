@@ -1,5 +1,6 @@
 import uuid
 
+from app.domain.entity import UserEntity,RoomTrackAssociationEntity
 from app.domain.interfaces.room_gateway import RoomGateway
 from app.domain.interfaces.room_track_association_gateway import RoomTrackAssociationGateway
 
@@ -10,10 +11,11 @@ from app.domain.interfaces.track_gateway import TrackGateway
 from app.infrastructure.ws.manager_notify_service import NotifyService
 from app.domain.interfaces.member_room_association import MemberRoomAssociationGateway
 
-from app.domain.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError,RoomPermissionDeniedError
+from app.domain.exceptions.room_exception import RoomNotFoundError,UserNotInRoomError,RoomPermissionDeniedError,TrackAlreadyInQueueError
+from app.domain.exceptions.track_exception import TrackNotFound
 from app.domain.exceptions.exception import ServerError
 
-class RoomQueueService:
+class AddTrackRoomQueue:
     def __init__(
         self,
         room_repo: RoomGateway,
@@ -28,45 +30,47 @@ class RoomQueueService:
         self.member_room_repo = member_room_repo
         self.notify_service = notify_service
     
-    async def remove_track_from_queue(
-        self,
-        room_id: uuid.UUID,
-        association_id: uuid.UUID,
-        current_user_id: uuid.UUID,
-) -> dict[str,str]:
+    async def add_track_to_queue(
+    self, 
+    room_id: uuid.UUID,
+    track_spotify_id: str, 
+    current_user: UserEntity,
+        ) -> RoomTrackAssociationEntity:
         """
-        Удаляет конкретный трек из очереди комнаты по ID ассоциации.
+        Добавляет трек в очередь конкретной комнаты.
         """
         room = self.room_repo.get_room_by_id(room_id)
         if not room:
             raise RoomNotFoundError()
         
-        user_assoc = self.member_room_repo.get_association_by_ids(current_user_id,room_id)
+        user_assoc = self.member_room_repo.get_association_by_ids(current_user.id,room_id)
 
         if not user_assoc:
             raise UserNotInRoomError()
 
-        is_owner = (room.owner_id == current_user_id)
+        is_owner = (room.owner_id == current_user.id)
         is_moderator = (user_assoc and user_assoc.role == Role.MODERATOR.value)
 
         if not is_owner or not is_moderator:
             raise RoomPermissionDeniedError(detail="У вас недостаточно прав.")
-
-        self.db_association = self.room_track_repo.get_association_by_id(association_id)
-        if not self.db_association or str(self.db_association.room_id) != str(room_id):
-            raise ValueError("Ассоциация не найдена или не принадлежит этой комнате.")
         
+        #todo
+        track = self.track_repo.get_track_by_spotify_id(track_spotify_id)
+        if not track:
+            raise TrackNotFound()
+        
+        dublicate_in_queue = self.room_track_repo.get_association_by_room_and_track(room_id,track.id)
+        if dublicate_in_queue:
+            raise TrackAlreadyInQueueError()
+        
+        order_in_queue = self.room_track_repo.get_last_order_in_queue(room_id)
+
         try:
-            deleted_successfully = self.room_track_repo.remove_track_from_queue_by_association_id(
-                association_id
-            )
-            if deleted_successfully:
-                self._reorder_queue(room_id)
-            
+            add_track = self.room_track_repo.add_track_to_queue(room_id,track.id,order_in_queue,current_user.id)
             updated_queue = self.room_track_repo.get_queue_for_room( room_id)
             await self.notify_service.send_message_for_room(
             {
-            "action": "remove",
+            "action": "add",
                 "queue": [
                     {
                         "id": str(assoc.id),
@@ -76,15 +80,11 @@ class RoomQueueService:
                         "artist": assoc.track.artist_names,
                         "album_art_url": assoc.track.album_name
                     } for assoc in updated_queue
-                ]
-            }
-        )
-            return {
-            'status': 'success',
-            'detail': 'remove track from queue',
-            'response': deleted_successfully
-        }       
+                    ]
+                }
+            )
+            return add_track
         except Exception as e:
             raise ServerError(
-                detail=f"Не удалось удалить трек из очередь{e}."
+                detail=f"Не удалось добавить трек в очередь{e}."
             )

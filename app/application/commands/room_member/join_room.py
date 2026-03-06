@@ -19,7 +19,7 @@ from app.domain.exceptions.room_exception import (
 )
 from app.domain.exceptions.ban_exception import UserBannedGlobal, UserBannedInRoom
 
-class JoinRoomCommand:
+class JoinRoom:
     def __init__(
         self,
         room_repo: RoomGateway,

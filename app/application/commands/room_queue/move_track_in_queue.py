@@ -13,7 +13,7 @@ from app.domain.interfaces.member_room_association import MemberRoomAssociationG
 from app.domain.exceptions.room_exception import RoomNotFoundError,RoomPermissionDeniedError
 from app.domain.exceptions.exception import ServerError
 
-class RoomQueueService:
+class MoveTrackInQueue:
     def __init__(
         self,
         room_repo: RoomGateway,
