@@ -15,7 +15,7 @@ from app.application.services.chat_service import ChatService
 from app.infrastructure.ws.connection_manager import manager
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
-from app.presentation.dependencies import get_current_user
+from app.presentation.dependencies_deprecate import get_current_user
 
 chat_ws = APIRouter(tags=["Chat WS"], prefix="/ws/chat",route_class=DishkaRoute)
 user_dependencies = Annotated[UserEntity,Depends(get_current_user)]

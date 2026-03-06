@@ -1,11 +1,13 @@
 from dishka import Provider, make_async_container,AsyncContainer
-from app.config.di.providers.db_provider import DataBaseProvider
-from app.config.di.providers.gateway_provider import GatewayProvider
+from app.infrastructure.di.providers.db_provider import DataBaseProvider
+from app.infrastructure.di.providers.gateway_provider import GatewayProvider
+from app.infrastructure.di.providers.usecase_provider import UseCaseProvider
 
 def provide_set() -> list[Provider]:
     return [
         DataBaseProvider(),
         GatewayProvider(),
+        UseCaseProvider(),
     ]
 
 

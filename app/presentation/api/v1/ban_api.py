@@ -5,7 +5,7 @@ from fastapi import APIRouter,status,Depends
 from app.domain.entity import UserEntity
 from app.presentation.schemas.ban_schemas import BanResponse
 from app.application.services.ban_service import BanService
-from app.presentation.dependencies import get_current_user
+from app.presentation.dependencies_deprecate import get_current_user
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 

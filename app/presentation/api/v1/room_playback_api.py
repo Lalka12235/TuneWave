@@ -8,7 +8,7 @@ from app.application.services.room_playback_service import RoomPlaybackService
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
-from app.presentation.dependencies import get_current_user
+from app.presentation.dependencies_deprecate import get_current_user
 room_playback = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 
 user_dependencies = Annotated[UserEntity,Depends(get_current_user)]

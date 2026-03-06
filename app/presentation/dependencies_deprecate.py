@@ -7,7 +7,7 @@ from redis.asyncio import Redis
 
 from app.application.services.avatar_storage_service import AvatarStorageService
 # 1. КОНФИГУРАЦИЯ И СЕССИИ
-from app.config.session import get_engine,get_sessionmaker,get_session
+from app.infrastructure.db.session import get_engine,get_sessionmaker,get_session
 from app.infrastructure.db.gateway.avatar_storage_gateway import LocalAvatarStorageGateway
 from app.infrastructure.redis.redis import get_redis_client
 

@@ -15,7 +15,7 @@ from app.application.services.room_service import RoomService
 from app.application.services.redis_service import RedisService
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
-from app.presentation.dependencies import get_current_user
+from app.presentation.dependencies_deprecate import get_current_user
 
 room = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 

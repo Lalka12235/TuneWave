@@ -1,4 +1,3 @@
-#import base64
 import time
 from typing import Annotated
 from urllib.parse import urlencode
@@ -6,7 +5,6 @@ from urllib.parse import urlencode
 import jwt
 from fastapi import APIRouter, HTTPException, Query, status,Depends
 from fastapi.responses import RedirectResponse
-from app.domain.entity import UserEntity
 
 
 from app.config.settings import settings
@@ -17,12 +15,10 @@ from app.application.services.google_service import GoogleService
 from app.application.services.spotify_service import SpotifyService
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
-from app.presentation.dependencies import get_http_service
+from app.presentation.dependencies_deprecate import get_http_service
 from app.application.services.http_service import HttpService
 
 
-
-user_dependencies = FromDishka[UserEntity]
 
 auth = APIRouter(
     tags=['auth'],

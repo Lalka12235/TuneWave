@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Path, Query, status
 from app.domain.entity import UserEntity
 from app.presentation.schemas.notification_schemas import NotificationResponse
 from app.application.services.notification_service import NotificationService
-from app.presentation.dependencies import get_current_user
+from app.presentation.dependencies_deprecate import get_current_user
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 

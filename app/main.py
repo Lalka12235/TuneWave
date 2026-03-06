@@ -13,6 +13,9 @@ from app.presentation.api.v1.error_handler import register_errors_handlers
 import uvicorn
 import multiprocessing
 
+from dishka.integrations.fastapi import setup_dishka
+from app.infrastructure.di.container import get_container
+
 configure_logging()
 
 
@@ -68,6 +71,7 @@ def create_app() -> FastAPI:
     register_errors_handlers(app)
 
     setup_router(app, V1_ROUTERS)
+    setup_dishka(get_container,app)
     
     os.makedirs(settings.avatar.AVATARS_STORAGE_DIR, exist_ok=True)
     app.mount("/avatars", StaticFiles(directory=settings.avatar.AVATARS_STORAGE_DIR), name="avatars")

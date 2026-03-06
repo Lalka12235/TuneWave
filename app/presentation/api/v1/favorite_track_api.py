@@ -7,7 +7,7 @@ from app.domain.entity import UserEntity
 from app.presentation.schemas.favorite_track_schemas import FavoriteTrackAdd, FavoriteTrackResponse
 from app.application.services.favorite_track_service import FavoriteTrackService
 from app.application.services.redis_service import RedisService
-from app.presentation.dependencies import get_current_user
+from app.presentation.dependencies_deprecate import get_current_user
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
 ft = APIRouter(

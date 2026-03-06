@@ -4,9 +4,9 @@ from app.application.services.spotify_service import SpotifyService
 from fastapi import APIRouter,Query,Depends
 
 from app.domain.entity import UserEntity
-from app.presentation.dependencies import get_spotify_service
+from app.presentation.dependencies_deprecate import get_spotify_service
 from dishka.integrations.fastapi import DishkaRoute
-from app.presentation.dependencies import get_current_user
+from app.presentation.dependencies_deprecate import get_current_user
 
 spotify = APIRouter(
     tags=['Spotify'],

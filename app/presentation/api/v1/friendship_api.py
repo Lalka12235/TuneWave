@@ -8,7 +8,7 @@ from app.presentation.schemas.friendship_schemas import FriendshipRequestCreate,
 from app.application.services.friendship_service import FriendshipService
 
 from app.application.services.redis_service import RedisService
-from app.presentation.dependencies import get_current_user
+from app.presentation.dependencies_deprecate import get_current_user
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 

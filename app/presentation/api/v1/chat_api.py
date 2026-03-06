@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends,Path, Query
 from app.domain.entity import UserEntity
 from app.presentation.schemas.message_schemas import MessageCreate, MessageResponse
 from app.application.services.chat_service import ChatService
-from app.presentation.dependencies import get_current_user
+from app.presentation.dependencies_deprecate import get_current_user
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka,inject
 
