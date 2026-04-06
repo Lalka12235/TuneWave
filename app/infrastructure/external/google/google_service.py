@@ -3,7 +3,7 @@ from app.domain.entity import UserEntity
 
 from app.domain.exceptions.user_exception import UserNotAuthorized
 from app.infrastructure.redis.redis_service import RedisService
-from app.application.services.http_service import HttpService
+from app.infrastructure.external.http_service import HttpService
 
 
 

@@ -11,7 +11,7 @@ from app.presentation.schemas.user_schemas import (
 
 from app.infrastructure.celery.tasks import send_email_task
 from app.domain.exceptions.exception import ServerError
-from app.domain.exceptions.auth_exception import (
+from app.infrastructure.auth.exception.auth_exception import (
     UserBannedError,
 )
 from app.infrastructure.redis.redis_service import RedisService

@@ -9,8 +9,8 @@ from app.presentation.schemas.spotify_schemas import (
     SpotifyTrackDetails,
 )
 
-from app.domain.exceptions.spotify_exception import SpotifyAuthorizeError,SpotifyAPIError
-from app.application.services.http_service import HttpService
+from app.infrastructure.external.exception.spotify_exception import SpotifyAuthorizeError,SpotifyAPIError
+from app.infrastructure.external.http_service import HttpService
 
 class SpotifyPublicService:
     """

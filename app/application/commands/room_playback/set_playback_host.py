@@ -19,7 +19,7 @@ from app.domain.exceptions.room_exception import (
     RoomNotFoundError,
     RoomPermissionDeniedError,
 )
-from app.domain.exceptions.spotify_exception import SpotifyAuthorizeError,SpotifyDeviceNotFoundError
+from app.infrastructure.external.exception.spotify_exception import SpotifyAuthorizeError,SpotifyDeviceNotFoundError
 
 
 class SetPlaybackHost:

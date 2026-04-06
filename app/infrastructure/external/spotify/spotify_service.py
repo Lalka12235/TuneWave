@@ -13,9 +13,9 @@ from app.presentation.schemas.spotify_schemas import (
 )
 
 from app.domain.exceptions.exception import ServerError
-from app.domain.exceptions.spotify_exception import SpotifyAPIError,SpotifyAuthorizeError,CommandError
+from app.infrastructure.external.exception.spotify_exception import SpotifyAPIError,SpotifyAuthorizeError,CommandError
 from app.infrastructure.redis.redis_service import RedisService
-from app.application.services.http_service import HttpService
+from app.infrastructure.external.http_service import HttpService
 
 
 class SpotifyService:
