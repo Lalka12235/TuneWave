@@ -23,7 +23,18 @@ async def get_track_by_id(
     """
     Находит трек по ID в базе данных
     """
-    return interactor.get_track_by_Spotify_id(spotify_id)
+    result = interactor.get_track_by_Spotify_id(spotify_id)
+    return TrackBase(
+        spotify_id=result.spotify_id,
+        spotify_uri=result.spotify_uri,
+        title=result.title,
+        artist_names=result.artist_names,
+        album_name=result.album_name,
+        album_cover_url=result.album_cover_url,
+        duration_ms=result.duration_ms,
+        is_playable=result.is_playable,
+        spotify_track_url=result.spotify_track_url
+    )
 
 
 @track.post('/',response_model=TrackCreate)
@@ -35,4 +46,18 @@ async def create_track_from_spotify_data(
     Создает трек в базе данных на основе Spotify data
     """
     track_data = spotify_data.model_dump()
-    return await interactor.get_or_create_track_from_spotify(track_data)
+    result = interactor.get_or_create_track_from_spotify(track_data)
+    return TrackResponse(
+        spotify_id=result.spotify_id,
+        spotify_uri=result.spotify_uri,
+        title=result.title,
+        artist_names=result.artist_names,
+        album_name=result.album_name,
+        album_cover_url=result.album_cover_url,
+        duration_ms=result.duration_ms,
+        is_playable=result.is_playable,
+        spotify_track_url=result.spotify_track_url,
+        created_at=result.created_at,
+        id=result.id,
+        last_synced_at=result.last_synced_at
+    )

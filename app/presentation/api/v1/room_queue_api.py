@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path,status
 
-from app.domain.entity import UserEntity
+from app.domain.entity import UserEntity,TrackEntity, RoomTrackAssociationEntity
 from app.infrastructure.redis.redis_service import RedisService
 from app.presentation.schemas.room_schemas import (
     AddTrackToQueueRequest,
@@ -18,6 +18,14 @@ room_queue = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 
 user_dependencies = FromDishka[UserEntity]
 redis_service = FromDishka[RedisService]
+
+def convert_entity_to_schema(entity_track: TrackEntity | None = None,entity_room_track: RoomTrackAssociationEntity | None = None) -> TrackInQueueResponse:
+    return TrackInQueueResponse(
+        track=entity_track,
+        order_in_queue=entity_room_track.order_in_queue,
+        id=entity_room_track.id,
+        added_at=entity_room_track.added_at
+    )
 
 @room_queue.post(
     "/{room_id}/queue",
@@ -53,7 +61,7 @@ async def get_room_queue(
     """
     key = f'rooms_queue:get_room_queue:{room_id}'
     async def fetch():
-        return interactor.get_room_queue(room_id)
+        return await interactor.get_room_queue(room_id)
     return await redis_client.get_or_set(key,fetch,300)
 
 

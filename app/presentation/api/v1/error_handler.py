@@ -32,5 +32,3 @@ def register_errors_handlers(app: FastAPI) -> None:
                 'error': exc.errors(),
             }
         )
-    
-    

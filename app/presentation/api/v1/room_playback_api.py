@@ -12,6 +12,7 @@ room_playback = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute
 
 user_dependencies = FromDishka[UserEntity]
 
+
 @room_playback.put(
     "/{room_id}/playback-host",
     status_code=status.HTTP_200_OK,

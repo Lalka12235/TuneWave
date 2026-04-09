@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, status
 
-from app.domain.entity import UserEntity
+from app.domain.entity import UserEntity,FriendshipEntity
 from app.infrastructure.redis.redis_service import RedisService
 from app.presentation.schemas.friendship_schemas import FriendshipRequestCreate, FriendshipResponse
 
@@ -20,7 +20,17 @@ friendship = APIRouter(
 user_dependencies = FromDishka[UserEntity]
 redis_service = FromDishka[RedisService]
 
-
+def convert_entity_to_schema(entity: FriendshipEntity) -> FriendshipResponse:
+    return FriendshipResponse(
+        id=entity.id,
+        requester_id=entity.requester_id,
+        accepter_id=entity.accepter_id,
+        status=entity.status,
+        created_at=entity.created_at,
+        accepted_at=entity.accepted_at,
+        #requester=entity.requester,
+        #accepter=entity.accepter
+    )
 
 @friendship.post(
     '/send-request',
@@ -35,8 +45,8 @@ async def send_friend_request(
     """
     Отправляет запрос на дружбу указанному пользователю.
     """
-    return await interactor.send_friend_request(user.id,request_data.accepter_id)
-
+    result = await interactor.send_friend_request(user.id,request_data.accepter_id)
+    return convert_entity_to_schema(result)
 
 @friendship.put(
     '/{friendship_id}/accept',
@@ -51,7 +61,8 @@ async def accept_friend_request(
     """
     Принимает ожидающий запрос на дружбу.
     """
-    return await interactor.accept_friend_request(friendship_id,user.id)
+    result = await interactor.accept_friend_request(friendship_id,user.id)
+    return convert_entity_to_schema(result)
 
 
 @friendship.put(
@@ -67,7 +78,8 @@ async def decline_friend_request(
     """
     Отклоняет ожидающий запрос на дружбу.
     """
-    return await interactor.decline_friend_request(friendship_id,user.id)
+    result = await interactor.decline_friend_request(friendship_id,user.id)
+    return convert_entity_to_schema(result)
 
 
 @friendship.delete(
@@ -101,7 +113,8 @@ async def get_my_friend(
     """
     key = f'friendship:get_my_friend:{user.id}'
     async def fetch():
-        return interactor.get_my_fridns(user.id)
+        result = interactor.get_my_fridns(user.id)
+        return [convert_entity_to_schema(res) for res in result]
     return await redis_client.get_or_set(key,fetch,300)
 
 @friendship.get(
@@ -120,7 +133,8 @@ async def get_my_sent_requests(
     """
     key = f'friendship:get_my_sent_requests:{current_user.id}'
     async def fetch():
-        return await interactor.get_my_sent_requests(current_user.id)
+        result = await interactor.get_my_sent_requests(current_user.id)
+        return [convert_entity_to_schema(res) for res in result]
     return await redis_client.get_or_set(key,fetch,300)
 
 
@@ -140,5 +154,6 @@ async def get_my_received_requests(
     """
     key = f'friendship:get_my_received_requests:{current_user.id}'
     async def fetch():
-        return await interactor.get_my_received_requests(current_user.id)
+        result = await interactor.get_my_received_requests(current_user.id)
+        return [convert_entity_to_schema(res) for res in result]
     return await redis_client.get_or_set(key,fetch,300)

@@ -1,9 +1,9 @@
 import uuid
 
 from app.config.log_config import logger
+from app.domain.entity.message import MessageEntity
 from app.domain.interfaces.chat_gateway import ChatGateway
 from app.domain.interfaces.member_room_association import MemberRoomAssociationGateway
-from app.presentation.schemas.message_schemas import MessageCreate, MessageResponse
 from app.domain.interfaces.room_gateway import RoomGateway
 
 from app.domain.exceptions.exception import ServerError
@@ -17,7 +17,7 @@ class CreateMessage:
         self.room_repo = room_repo
         self.member_room = member_room
         
-    def create_message(self,room_id: uuid.UUID,user_id: uuid.UUID,message: MessageCreate) -> MessageResponse | list:
+    def create_message(self,room_id: uuid.UUID,user_id: uuid.UUID,message: str) -> MessageEntity | list:
         """
         Создает новое сообщение в комнате.
         """
@@ -32,7 +32,7 @@ class CreateMessage:
         if user_id not in [member.user_id for member in members]:
             raise UserNotInRoomError()
         try:
-            new_message = self.chat_repo.create_message(room_id,user_id,message.text)
+            new_message = self.chat_repo.create_message(room_id,user_id,message)
         except Exception as e:
             logger.error(f'ChatService: произошла ошибка при отправке сообщения от пользователя {user_id} в комнату {room_id}.{e}',exc_info=True)
             raise ServerError(

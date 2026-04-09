@@ -3,7 +3,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Path,status
 
-from app.domain.entity import UserEntity
+from app.domain.entity import UserEntity,RoomEntity
 from app.infrastructure.redis.redis_service import RedisService
 from app.presentation.schemas.ban_schemas import BanCreate, BanResponse
 from app.presentation.schemas.room_member_schemas import JoinRoomRequest,RoomMemberResponse,RoomMemberRoleUpdate
@@ -20,6 +20,20 @@ room_member = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 user_dependencies = FromDishka[UserEntity]
 redis_service = FromDishka[RedisService]
 
+def convert_entity_to_schema(entity: RoomEntity) -> RoomResponse:
+    return RoomResponse(
+        id=entity.id,
+        name=entity.name,
+        max_members=entity.max_members,
+        is_private=entity.is_private,
+        owner_id=entity.owner_id,
+        created_at=entity.created_at,
+        current_track_id=entity.current_track_id,
+        current_track_position_ms=entity.current_track_position_ms,
+        is_playing=entity.is_playing,
+        #queue=
+        #owner=
+    )
 
 @room_member.post(
     "/{room_id}/join",
@@ -39,7 +53,8 @@ async def join_room(
     Пользователь присоединяется к комнате.
     Требуется аутентификация. Если комната приватная, требуется пароль.
     """
-    return await interactor.join_room(current_user, room_id, request_data.password)
+    result = await interactor.join_room(current_user, room_id, request_data.password)
+    return convert_entity_to_schema(result)
 
 
 
@@ -50,12 +65,13 @@ async def leave_room(
     ],
     current_user: user_dependencies,
     interactor: FromDishka[LeaveRoom],
-) -> dict:
+) -> dict[str,str]:
     """
     Пользователь покидает комнату.
     Требуется аутентификация.
     """
-    return await interactor.leave_room(room_id, current_user)
+    result = await interactor.leave_room(room_id, current_user)
+    return convert_entity_to_schema(result)
 
 
 @room_member.get(
@@ -75,7 +91,8 @@ async def get_room_members(
     """
     key = f'rooms_member:get_room_member:{room_id}'
     async def fetch():
-        return await interactor.get_room_members(room_id)
+        result = await interactor.get_room_members(room_id)
+        return [convert_entity_to_schema(res) for res in result]
     return await redis_client.get_or_set(key,fetch,300)
 
 
@@ -105,12 +122,13 @@ async def add_ban(
     Только владелец комнаты может банить в своей комнате.
     """
     ban_data = ban_data.model_dump()
-    return await interactor.ban_user_from_room(room_id, user_id, ban_data, user)
+    result = await interactor.ban_user_from_room(room_id, user_id, ban_data, user)
+    return convert_entity_to_schema(result)
 
 
 @room_member.delete(
     "/{room_id}/members/{user_id}/ban",
-    response_model=dict[str, Any],
+    response_model=dict[str, str],
     status_code=status.HTTP_200_OK,
 )
 async def unban_user(
@@ -126,7 +144,7 @@ async def unban_user(
     ],
     current_user: user_dependencies,
     interactor: FromDishka[UnbanUserInRoom],
-) -> dict[str, Any]:
+) -> dict[str, str]:
     """
     Снимает бан с пользователя в конкретной комнате или глобально.
 
@@ -195,6 +213,13 @@ async def update_member_role(
     """
     Изменяет роль члена комнаты. Доступно только владельцу комнаты.
     """
-    return await interactor.update_member_role(
+    result = await interactor.update_member_role(
         room_id, target_user_id, new_role.role, user
+    )
+    return RoomMemberResponse(
+        user_id=result.user_id,
+        room_id=result.room_id,
+        joined_at=result.joined_at,
+        role=result.role,
+        #user=result.user
     )

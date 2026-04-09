@@ -12,6 +12,8 @@ from app.presentation.schemas.spotify_schemas import (
 from app.infrastructure.external.exception.spotify_exception import SpotifyAuthorizeError,SpotifyAPIError
 from app.infrastructure.external.http_service import HttpService
 
+from app.config.log_config import logger
+
 class SpotifyPublicService:
     """
     Сервис для взаимодействия с публичным Spotify API (без авторизации пользователя),
@@ -76,16 +78,26 @@ class SpotifyPublicService:
             )
         
         
-    async def search_public_track(self,query: str, limit: int = 10) -> dict[str,str]:
+    async def search_public_track(self,query: str, limit: int = 10) -> list[SpotifyTrackDetails]:
         """
         Ищет треки на Spotify (публичный поиск).
         """
         await self._get_access_token_client()
-        return await self._make_spotify_request(
+        response_data = await self._make_spotify_request(
             'GET',
             '/search',
-            params={'q':query,'type':'track','limit':str(limit)}
+            params={'q': query, 'type': 'track', 'limit': limit}
         )
+        if 'tracks' in response_data and 'items' in response_data['tracks']:
+            tracks_list = [
+                SpotifyTrackDetails.model_validate(item)
+                for item in response_data['tracks']['items'] 
+                if item
+            ]
+            logger.info(f"SpotifyService: Найдены треки для запроса '{query}'. Количество: {len(tracks_list)}.")
+            return tracks_list
+        logger.warning(f"SpotifyService: Поиск треков Spotify для запроса '{query}' не вернул ожидаемую структуру 'tracks.items': {response_data}")
+        return []
     
     async def search_track_by_spotify_id(self,spotify_id: str) -> dict[str, str]:
         """

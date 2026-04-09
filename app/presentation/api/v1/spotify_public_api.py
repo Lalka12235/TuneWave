@@ -1,4 +1,4 @@
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Query
 
@@ -12,12 +12,12 @@ spotify_public = APIRouter(
     route_class=DishkaRoute,
 )
 
-@spotify_public.get('/search/tracks',response_model=dict[str,Any])
+@spotify_public.get('/search/tracks',response_model=list[SpotifyPublicService])
 async def search_public_track(
     spotify: FromDishka[SpotifyPublicService],
     query: Annotated[str, Query(description='Поисковый запрос для треков Spotify')],
     limit: Annotated[int, Query(ge=1, le=50, description="Максимальное количество результатов")] = 10,
-) -> dict[str,Any]:
+) -> list[SpotifyPublicService]:
     """
     Ищет треки на Spotify по заданному запросу.
     Без аутентификации пользователя в вашем приложении и наличия привязанного аккаунта Spotify.

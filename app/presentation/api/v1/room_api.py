@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query, status
 
 
-from app.domain.entity import UserEntity
+from app.domain.entity import UserEntity,RoomEntity
 from app.infrastructure.redis.redis_service import RedisService
 from app.presentation.schemas.room_schemas import (
     RoomCreate,
@@ -20,6 +20,20 @@ room = APIRouter(tags=["Room"], prefix="/rooms",route_class=DishkaRoute)
 user_dependencies = FromDishka[UserEntity]
 redis_service = FromDishka[RedisService]
 
+def convert_entity_to_schema(entity: RoomEntity) -> RoomResponse:
+    return RoomResponse(
+        id=entity.id,
+        name=entity.name,
+        max_members=entity.max_members,
+        is_private=entity.is_private,
+        owner_id=entity.owner_id,
+        created_at=entity.created_at,
+        current_track_id=entity.current_track_id,
+        current_track_position_ms=entity.current_track_position_ms,
+        is_playing=entity.is_playing,
+        #queue=
+        #owner=
+    )
 
 @room.post(
     "/",
@@ -36,7 +50,8 @@ async def create_room(
     Требуется аутентификация. Владелец комнаты будет текущим аутентифицированным пользователем.
     """
     room_data = room_data.model_dump()
-    return await interactor.create_room(room_data, current_user)
+    result = await interactor.create_room(room_data, current_user)
+    return convert_entity_to_schema(result)
 
 
 @room.put(
@@ -54,7 +69,8 @@ def update_room(
     Требуется аутентификация. Только владелец комнаты может ее обновить.
     """
     update_data = update_data.model_dump(exclude_unset=True)
-    return interactor.update_room(room_id, update_data, current_user)
+    result = interactor.update_room(room_id, update_data, current_user)
+    return convert_entity_to_schema(result)
 
 
 @room.delete(
@@ -65,7 +81,7 @@ def delete_room(
     room_id: Annotated[uuid.UUID, Path(..., description="ID комнаты для удаления")],
     current_user: user_dependencies,
     interactor: FromDishka[DeleteRoom],
-) -> dict:
+) -> dict[str,str]:
     """
     Удаляет комнату по ее ID.
     Требуется аутентификация. Только владелец комнаты может ее удалить.
@@ -87,7 +103,8 @@ async def get_room_by_name(
     """
     key = f'rooms:get_room_by_name:{name}'
     async def fetch():
-        return await interactor.get_room_by_name(name)
+        result = await interactor.get_room_by_name(name)
+        return convert_entity_to_schema(result)
     return await redis_client.get_or_set(key,fetch,300)
 
 
@@ -104,7 +121,8 @@ async def get_my_rooms(
     """
     key = f'rooms:get_my_rooms:{current_user.id}'
     async def fetch():
-        return await interactor.get_user_rooms(current_user)
+        result = await interactor.get_user_rooms(current_user)
+        return [convert_entity_to_schema(res) for res in result]
     return await redis_client.get_or_set(key,fetch,300)
 
 @room.get(
@@ -118,7 +136,8 @@ async def get_all_rooms(
     Получает список всех доступных комнат.
     Не требует аутентификации.
     """
-    return await interactor.get_all_rooms()
+    result = await interactor.get_all_rooms()
+    return [convert_entity_to_schema(res) for res in result]
 
 
 @room.get(
@@ -136,5 +155,6 @@ async def get_room_by_id(
     """
     key = f'rooms:get_room_by_id:{room_id}'
     async def fetch():
-        return await interactor.get_room_by_id(room_id)
+        result = await interactor.get_room_by_id(room_id)
+        return convert_entity_to_schema(result)
     return await redis_client.get_or_set(key,fetch,300)

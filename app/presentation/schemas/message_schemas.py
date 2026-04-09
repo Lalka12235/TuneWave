@@ -15,4 +15,3 @@ class MessageResponse(BaseModel):
 
 class MessageCreate(BaseModel):
     text: str = Field(..., max_length=1000)
-

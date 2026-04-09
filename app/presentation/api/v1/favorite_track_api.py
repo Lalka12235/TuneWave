@@ -1,9 +1,9 @@
 import uuid
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Path, status
 
-from app.domain.entity import UserEntity
+from app.domain.entity import UserEntity,FavoriteTrackEntity
 from app.infrastructure.redis.redis_service import RedisService
 from app.presentation.schemas.favorite_track_schemas import FavoriteTrackAdd, FavoriteTrackResponse
 from dishka.integrations.fastapi import DishkaRoute,FromDishka
@@ -17,6 +17,14 @@ ft = APIRouter(
 
 user_dependencies = FromDishka[UserEntity]
 
+def convert_entity_to_schema(entity: FavoriteTrackEntity) -> FavoriteTrackResponse:
+    return FavoriteTrackResponse(
+        id=entity.id,
+        track_id=entity.track_id,
+        added_at=entity.added_at,
+        #track=entity.track
+    )
+
 @ft.get('/me',response_model=list[FavoriteTrackResponse])
 async def get_user_favorite_tracks(
     interactor: FromDishka[ReadFavoriteTrack],
@@ -28,7 +36,8 @@ async def get_user_favorite_tracks(
     """
     key = f'favorite_track:get_user_favorite_track:{user.id}'
     async def fetch():
-        return interactor.get_user_favorite_tracks(user.id)
+        result = interactor.get_user_favorite_tracks(user.id)
+        return [convert_entity_to_schema(res) for res in result]
     return await redis_client.get_or_set(key,fetch,300)
 
 
@@ -41,15 +50,16 @@ async def add_favorite_track(
     """
     Добавляет трек в список любимых треков текущего аутентифицированного пользователя.
     """
-    return await interactor.add_favorite_track(user.id,add_data.spotify_id)
+    result = await interactor.add_favorite_track(user.id,add_data.spotify_id)
+    return convert_entity_to_schema(result)
 
 
-@ft.delete('/me{spotify_id}', response_model=dict[str,Any])
+@ft.delete('/me{spotify_id}', response_model=dict[str,str])
 async def remove_favorite_track(
     interactor: FromDishka[DeleteFavoriteTrack],
     user: user_dependencies,
     spotify_id: Annotated[str,Path(...,description='Spotify ID трека для удаления из избранного')],
-) -> dict[str,Any]:
+) -> dict[str,str]:
     """
     Добавляет трек в список любимых треков текущего аутентифицированного пользователя.
     """
@@ -68,5 +78,6 @@ async def get_user_favorite_tracks_public(
     """
     key = f'favorite_track:get_user_favorite_track_public:{user_id}'
     async def fetch():
-        return interactor.get_user_favorite_tracks(user_id)
+        result = interactor.get_user_favorite_tracks(user_id)
+        return [convert_entity_to_schema(res) for res in result]
     return await redis_client.get_or_set(key,fetch,300)

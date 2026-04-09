@@ -17,3 +17,4 @@ class UserEntity:
     spotify_id: str
     spotify_profile_url: str
     spotify_image_url: str
+    

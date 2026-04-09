@@ -126,7 +126,7 @@ async def google_callback(
         google_token_expires_at=google_token_expires_at
     )
 
-    user_response, session_id = await auth_service.authenticate_user_with_google(google_oauth_data)
+    _, session_id = await auth_service.authenticate_user_with_google(google_oauth_data)
 
     redirect_url = "http://127.0.0.1:5500/frontend/auth.html"
     response = RedirectResponse(url=redirect_url)
@@ -224,7 +224,7 @@ async def spotify_callback(
         spotify_scope=spotify_scope
     )
 
-    user_response, session_id = await auth_service.authenticate_user_with_spotify(spotify_oauth_data)
+    _, session_id = await auth_service.authenticate_user_with_spotify(spotify_oauth_data)
 
     redirect_url = "http://127.0.0.1:5500/frontend/auth.html"
     response = RedirectResponse(url=redirect_url)

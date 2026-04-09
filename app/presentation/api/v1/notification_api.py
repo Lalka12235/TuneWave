@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, status
 
-from app.domain.entity import UserEntity
+from app.domain.entity import UserEntity,NotificationEntity
 from app.presentation.schemas.notification_schemas import NotificationResponse
 
 from dishka.integrations.fastapi import DishkaRoute,FromDishka
@@ -17,6 +17,17 @@ notification = APIRouter(
 
 user_dependencies = FromDishka[UserEntity]
 
+def convert_entity_to_schema(entity: NotificationEntity) -> NotificationResponse:
+    return NotificationResponse(
+        id=entity.id,
+        user_id=entity.user_id,
+        #sender=entity.sender,
+        room_id=entity.room_id,
+        notification_type=entity.notification_type,
+        message=entity.message,
+        is_read=entity.is_read,
+        created_at=entity.created_at
+    )
 
 @notification.get(
     '/my',
@@ -32,10 +43,10 @@ async def get_my_notifications(
     """
     Получает список уведомлений для текущего аутентифицированного пользователя.
     """
-    return interactor.get_user_notifications(
+    result = interactor.get_user_notifications(
         user.id,limit=limit, offset=offset
     )
-
+    return [convert_entity_to_schema(res) for res in result]
 
 @notification.put(
     '/{notification_id}/mark-read',
@@ -50,9 +61,10 @@ async def mark_notification_as_read(
     """
     Отмечает конкретное уведомление как прочитанное.
     """
-    return interactor.mark_notification_as_read(
+    result = interactor.mark_notification_as_read(
         notification_id, user.id
     )
+    return convert_entity_to_schema(result)
 
 
 @notification.delete(
